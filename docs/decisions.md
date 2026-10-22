@@ -28,3 +28,4 @@ Mỗi dòng: ngày · quyết định · lý do ngắn. Đổi quyết định c
 | 22 | 2026-10-22 | Tên IndexedDB là `vocab-app`, cố định | Origin GitHub Pages dùng chung cho mọi repo của tài khoản |
 | 23 | 2026-10-22 | `versionchange` → `close({ disableAutoOpen: true })` | Mặc định Dexie tự mở lại, tab cũ sẽ ghi dữ liệu sai cấu trúc vào DB mới |
 | 24 | 2026-10-22 | Validate khi ghi, không validate lại khi đọc từ DB; có test bảo đảm bản ghi repository tạo ra parse được qua schema | Mọi lần ghi đều qua repository; dữ liệu cũ đi qua migration có test |
+| 25 | 2026-10-22 | Cảnh báo từ trùng cả trong cùng file, không chỉ file khác; vẫn cho thêm | Người dùng chọn; trùng trong cùng file thường là nhập nhầm, nhưng từ nhiều nghĩa vẫn hợp lệ |

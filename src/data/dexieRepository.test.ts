@@ -298,6 +298,13 @@ describe('findTermsByWord', () => {
     ])
   })
 
+  it('also finds the same word in the same file (decision #25)', async () => {
+    const { repo } = setup()
+    const { file, term } = await seedTerm(repo)
+    const second = await repo.createTerm(file.id, { word: 'Run', meaning: 'điều hành' })
+    expect((await repo.findTermsByWord('run', second.id)).map((t) => t.termId)).toEqual([term.id])
+  })
+
   it('excludes the term being edited and returns nothing for a blank word', async () => {
     const { repo } = setup()
     const { term } = await seedTerm(repo)

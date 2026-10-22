@@ -5,7 +5,7 @@
 ## Đang ở đâu
 - **Giai đoạn:** 1 xong (tầng dữ liệu, chưa nối vào UI). Sắp vào giai đoạn 2.
 - **Việc tiếp theo:** Giai đoạn 2 — đọc `docs/ui.md`, cài React Router (`HashRouter`), tạo `RepositoryContext` trong `src/app/` (tạo `VocabDb` với `onVersionChange` → hiện "A new version is available. Reloading…" rồi reload), sau đó làm màn Home (folder).
-- **Đang vướng:** cần chốt trong `docs/ui.md`: có cảnh báo trùng từ trong **cùng file** không (`findTermsByWord` trả cả cùng file; `scope.md` F3 chỉ nói "file khác").
+- **Đang vướng:** không
 
 ## Kế hoạch
 Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn đề nghiêm trọng đã biết, người dùng dùng thử OK. Khi nào gọi agent: xem CLAUDE.md.

@@ -7,7 +7,7 @@ Web app học từ vựng cá nhân (một người dùng), chỉ có chế đ�
 |---|-----------|-------|
 | F1 | Folder | Tạo / đổi tên / xóa folder theo chủ đề |
 | F2 | File (bộ từ) | Trong folder tạo / đổi tên / xóa file |
-| F3 | Từ vựng | 3 ô: **Từ vựng**, **Nghĩa**, **Ví dụ** (ví dụ không bắt buộc). Thêm / sửa / xóa bất cứ lúc nào. Từ đã có ở file khác → cảnh báo "Already in *Folder / File*" nhưng vẫn cho thêm |
+| F3 | Từ vựng | 3 ô: **Từ vựng**, **Nghĩa**, **Ví dụ** (ví dụ không bắt buộc). Thêm / sửa / xóa bất cứ lúc nào. Từ đã có (ở file khác **hoặc cùng file**) → cảnh báo "Already in *Folder / File*" nhưng vẫn cho thêm (từ nhiều nghĩa là hợp lệ) |
 | F4 | Xem danh sách | Bấm vào file → **list** toàn bộ từ (không dùng thẻ lật), từ mới nhất trên cùng. Mỗi file hiện số từ và % đã thuộc |
 | F5 | Learn | Trắc nghiệm + viết lại, ưu tiên từ hay sai → [learn-algorithm.md](learn-algorithm.md) |
 | F6 | Streak | Ngày đã học, chuỗi ngày liên tiếp, lịch → [streak.md](streak.md) |
