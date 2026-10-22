@@ -1,7 +1,8 @@
 import { useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { ValidationError } from '../../domain/errors.ts'
-import type { TermInput } from '../../domain/schemas.ts'
+import { PARTS_OF_SPEECH, type PartOfSpeech, type TermInput } from '../../domain/schemas.ts'
 import { errorMessage } from '../../shared/errorMessage.ts'
+import { PART_OF_SPEECH_ABBREVIATIONS } from './partOfSpeech.ts'
 import { formatLocations, useDuplicateWarning } from './useDuplicateWarning.ts'
 
 interface TermFormProps {
@@ -17,7 +18,7 @@ interface TermFormProps {
 
 type FieldErrors = Readonly<Record<string, readonly string[]>>
 
-const EMPTY: TermInput = { word: '', meaning: '', example: '' }
+const EMPTY: TermInput = { word: '', partOfSpeech: '', meaning: '', example: '' }
 
 export function TermForm({
   submitLabel,
@@ -28,6 +29,7 @@ export function TermForm({
   autoFocus = false,
 }: TermFormProps) {
   const [word, setWord] = useState(initial.word)
+  const [partOfSpeech, setPartOfSpeech] = useState<PartOfSpeech | ''>(initial.partOfSpeech ?? '')
   const [meaning, setMeaning] = useState(initial.meaning)
   const [example, setExample] = useState(initial.example ?? '')
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
@@ -38,6 +40,7 @@ export function TermForm({
   const baseId = useId()
   const ids = {
     word: `${baseId}-word`,
+    partOfSpeech: `${baseId}-part-of-speech`,
     meaning: `${baseId}-meaning`,
     example: `${baseId}-example`,
     warning: `${baseId}-warning`,
@@ -50,8 +53,9 @@ export function TermForm({
     setFieldErrors({})
     setFormError(undefined)
     try {
-      await onSubmit({ word, meaning, example })
+      await onSubmit({ word, partOfSpeech, meaning, example })
       setWord(initial.word)
+      setPartOfSpeech(initial.partOfSpeech ?? '')
       setMeaning(initial.meaning)
       setExample(initial.example ?? '')
       // Ready for the next term without reaching for the mouse.
@@ -74,6 +78,7 @@ export function TermForm({
   }
 
   const wordError = errorFor('word')
+  const partOfSpeechError = errorFor('partOfSpeech')
   const meaningError = errorFor('meaning')
   const exampleError = errorFor('example')
 
@@ -103,6 +108,25 @@ export function TermForm({
         >
           {duplicates.length > 0 && `Already in ${formatLocations(duplicates)}`}
         </p>
+      </div>
+      <div className="field">
+        <label htmlFor={ids.partOfSpeech}>Part of speech</label>
+        <select
+          id={ids.partOfSpeech}
+          value={partOfSpeech}
+          // Options come from PARTS_OF_SPEECH, and the repository validates again anyway.
+          onChange={(event) => setPartOfSpeech(event.target.value as PartOfSpeech | '')}
+          aria-invalid={partOfSpeechError !== undefined}
+          aria-describedby={describedBy(partOfSpeechError && `${ids.partOfSpeech}-error`)}
+        >
+          <option value="">—</option>
+          {PARTS_OF_SPEECH.map((value) => (
+            <option key={value} value={value}>
+              {value} ({PART_OF_SPEECH_ABBREVIATIONS[value]})
+            </option>
+          ))}
+        </select>
+        <FieldError id={`${ids.partOfSpeech}-error`} message={partOfSpeechError} />
       </div>
       <div className="field">
         <label htmlFor={ids.meaning}>Meaning</label>

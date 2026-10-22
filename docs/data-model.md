@@ -3,7 +3,7 @@
 ```ts
 Folder       { id, name, createdAt, updatedAt }
 VocabFile    { id, folderId, name, createdAt, updatedAt }   // không đặt tên "File" vì trùng kiểu File có sẵn của trình duyệt
-Term         { id, fileId, word, meaning, example?, createdAt, updatedAt }
+Term         { id, fileId, word, partOfSpeech?, meaning, example?, createdAt, updatedAt }
 TermProgress { termId, box, correctCount, wrongCount, lastWrongAt?, lastStudiedAt? }
 StudyDay     { date /* YYYY-MM-DD */, answeredCount }
 Meta         { key, value }  // lastBackupAt
@@ -33,6 +33,7 @@ Không có index `createdAt`: danh sách từ lọc theo `fileId` rồi sắp x�
 IndexedDB không có khóa ngoại nên kiểm tra ở `domain/` (Zod) và trong repository:
 - `id`: UUID.
 - `name`, `word`, `meaning`: bắt buộc, đã trim, 1–200 ký tự. `example`: tối đa 500 ký tự.
+- `partOfSpeech`: một giá trị trong `PARTS_OF_SPEECH` (`src/domain/schemas.ts`) hoặc không có. Ô để trống → không lưu trường. Giá trị lưu là tên đầy đủ (`"verb"`), chữ viết tắt (`v.`) chỉ để hiển thị, nên đổi cách hiển thị không cần migration. Bỏ một giá trị khỏi danh sách thì phải migration.
 - Tên folder không trùng. Tên file không trùng trong cùng folder. So sánh qua `nameKey`: repository tra index trong cùng transaction ghi để báo lỗi `DuplicateNameError` kèm tên, và **unique index của DB là lớp chặn cuối**. IndexedDB chạy tuần tự các transaction rw trên cùng bảng (kể cả giữa các tab), nên khi đã kiểm tra trước thì `ConstraintError` chỉ xảy ra khi có bug; lỗi này **không** bị đổi thành `DuplicateNameError` để khỏi che bug. Không bắt lỗi bên trong callback của transaction: bắt mà không ném lại thì Dexie không hủy transaction.
 - Tạo mới dùng `add` (trùng `id` thì báo lỗi), không dùng `put` (ghi đè im lặng).
 - `folderId`, `fileId`, `termId` phải trỏ tới bản ghi tồn tại. Kiểm tra **trong cùng transaction rw có cả bảng cha**, kể cả khi sửa/đổi tên: đọc bản ghi → không có thì `EntityNotFoundError` → kiểm tra cha còn tồn tại → ghi. Nhờ vậy tab khác xóa cha cùng lúc không tạo ra bản ghi mồ côi.

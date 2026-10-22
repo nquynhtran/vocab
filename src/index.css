@@ -90,7 +90,8 @@ a {
 
 /* ---- Controls ---- */
 
-input {
+input,
+select {
   width: 100%;
   min-height: var(--tap-size);
   padding: 8px 12px;
@@ -103,7 +104,8 @@ input {
   font-size: 1rem;
 }
 
-input[aria-invalid='true'] {
+input[aria-invalid='true'],
+select[aria-invalid='true'] {
   border-color: var(--color-danger);
 }
 
@@ -249,8 +251,28 @@ label {
   display: none;
 }
 
+.term__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
 .term__word {
   font-weight: 600;
+}
+
+.term__pos {
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  font-style: italic;
+  text-decoration: none;
+}
+
+.icon-button {
+  min-width: var(--tap-size);
+  padding: 0;
+  line-height: 1;
 }
 
 .term__example {
@@ -281,7 +303,7 @@ label {
   }
 
   .term-form {
-    grid-template-columns: 1fr 1fr 1.5fr;
+    grid-template-columns: 1fr 10rem 1fr 1.5fr;
     align-items: start;
   }
 

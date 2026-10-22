@@ -246,6 +246,43 @@ describe('terms', () => {
     expect((await repo.listTerms(file.id)).map((t) => t.word)).toEqual(['a', 'b', 'walk', 'run'])
   })
 
+  it('stores a part of speech, and omits an empty one', async () => {
+    const { repo, db } = setup()
+    const { file } = await seedTerm(repo)
+    const verb = await repo.createTerm(file.id, {
+      word: 'walk',
+      meaning: 'đi bộ',
+      partOfSpeech: 'verb',
+    })
+    const unset = await repo.createTerm(file.id, {
+      word: 'jog',
+      meaning: 'chạy bộ',
+      partOfSpeech: '',
+    })
+    expect(verb.partOfSpeech).toBe('verb')
+    expect(await db.terms.get(verb.id)).toMatchObject({ partOfSpeech: 'verb' })
+    expect(unset).not.toHaveProperty('partOfSpeech')
+    expect(await db.terms.get(unset.id)).not.toHaveProperty('partOfSpeech')
+  })
+
+  it('reads terms stored before partOfSpeech existed (decision #29: no migration)', async () => {
+    const { repo, db } = setup()
+    const { file } = await seedTerm(repo)
+    const oldRow = {
+      id: '00000000-0000-4000-8000-0000000000bb',
+      fileId: file.id,
+      word: 'swim',
+      wordKey: 'swim',
+      meaning: 'bơi',
+      createdAt: '2026-10-22T07:00:00.000Z',
+      updatedAt: '2026-10-22T07:00:00.000Z',
+    }
+    await db.terms.add(oldRow)
+    const { wordKey: _, ...expected } = oldRow
+    expect((await repo.listTerms(file.id)).find((t) => t.id === oldRow.id)).toEqual(expected)
+    expect(TermSchema.parse(expected)).toEqual(expected)
+  })
+
   it('omits a blank example instead of storing it', async () => {
     const { repo, db } = setup()
     const { file } = await seedTerm(repo)
@@ -262,9 +299,15 @@ describe('terms', () => {
     expect(await db.terms.count()).toBe(0)
   })
 
-  it('updates content, keeps createdAt and progress, and can remove the example', async () => {
+  it('updates content, keeps createdAt and progress, and can remove optional fields', async () => {
     const { repo, db } = setup()
-    const { file, term } = await seedTerm(repo)
+    const { file, term: seeded } = await seedTerm(repo)
+    const term = await repo.updateTerm(seeded.id, {
+      word: 'run',
+      meaning: 'chạy',
+      partOfSpeech: 'verb',
+      example: 'I run.',
+    })
     const progress = { termId: term.id, box: 3, correctCount: 4, wrongCount: 1 }
     await db.progress.add(progress)
 
@@ -276,7 +319,7 @@ describe('terms', () => {
       word: 'Run',
       meaning: 'chạy bộ',
       createdAt: term.createdAt,
-      updatedAt: '2026-10-22T08:00:03.000Z',
+      updatedAt: '2026-10-22T08:00:04.000Z',
     })
     expect(await db.terms.get(term.id)).toEqual({ ...updated, wordKey: 'run' })
     expect(await db.progress.get(term.id)).toEqual(progress)
@@ -350,6 +393,7 @@ describe('stored data', () => {
     const { repo, db } = setup()
     const { term } = await seedTerm(repo)
     await repo.updateTerm(term.id, { word: ' Don’t  ', meaning: ' đi\nbộ ' })
+    await repo.createTerm(term.fileId, { word: 'walk', meaning: 'đi bộ', partOfSpeech: 'verb' })
 
     for (const { nameKey, ...folder } of await db.folders.toArray()) {
       expect(FolderSchema.parse(folder)).toEqual(folder)

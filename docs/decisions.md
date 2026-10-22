@@ -32,3 +32,6 @@ Mỗi dòng: ngày · quyết định · lý do ngắn. Đổi quyết định c
 | 26 | 2026-10-22 | Xác nhận xóa bằng `window.confirm` | Người dùng chọn; đơn giản, iPhone hiện hộp thoại hệ thống |
 | 27 | 2026-10-22 | Cảnh báo từ trùng hiện ngay khi gõ, không chặn nút Add | Thấy ngay trước khi gõ nghĩa; không thêm bước xác nhận |
 | 28 | 2026-10-22 | Dùng `react-router` (v8) | Đã chọn `HashRouter` ở architecture.md; v8 gộp hết vào một gói |
+| 29 | 2026-10-22 | Thêm `partOfSpeech` (danh sách cố định, không bắt buộc, một loại mỗi từ). Không thêm version Dexie | Người dùng yêu cầu. Danh sách giúp hiển thị đồng nhất. Trường không có index và không bắt buộc, nên dữ liệu cũ vẫn hợp lệ, không cần migration (có test đọc bản ghi cũ). Backup chưa phát hành nên `schemaVersion` vẫn là 1 |
+| 30 | 2026-10-22 | Phát âm bằng Web Speech API (`speechSynthesis`), giọng en-GB, chỉ trong danh sách từ. Thay một phần cho mục "âm thanh" trong Không làm | Người dùng yêu cầu, chọn giọng Anh-Anh. Miễn phí, offline, không thư viện, không nới CSP, đọc được cả cụm từ; đổi lại giọng đọc tùy thiết bị |
+| 31 | 2026-10-22 | Làm đồng bộ cloud (giai đoạn 7) ngay sau giai đoạn 2, trước Learn | Người dùng muốn dùng cả máy tính và iPhone ngay; làm sau thì phải viết `recordAnswer` hai lần và chuyển dữ liệu local lên cloud |

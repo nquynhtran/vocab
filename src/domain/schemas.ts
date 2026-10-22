@@ -33,6 +33,31 @@ const ExampleSchema = z
       .optional(),
   )
 
+/**
+ * Stored as these full names; abbreviations ("v.") are display only (features/terms).
+ * Removing or renaming a value needs a migration of stored terms and backups.
+ */
+export const PARTS_OF_SPEECH = [
+  'noun',
+  'verb',
+  'adjective',
+  'adverb',
+  'phrasal verb',
+  'phrase',
+  'preposition',
+  'conjunction',
+  'pronoun',
+  'other',
+] as const
+export type PartOfSpeech = (typeof PARTS_OF_SPEECH)[number]
+
+/** The form's empty choice '' means "not set", stored as an absent field like a blank example. */
+const PartOfSpeechSchema = z
+  .enum(['', ...PARTS_OF_SPEECH], { error: 'Choose a part of speech from the list' })
+  .optional()
+  .transform((value) => value || undefined)
+  .pipe(z.enum(PARTS_OF_SPEECH).optional())
+
 const IdSchema = z.uuid()
 const TimestampSchema = z.iso.datetime()
 const CountSchema = z.int().min(0)
@@ -41,6 +66,7 @@ export const FolderInputSchema = z.object({ name: requiredText('Name', NAME_MAX_
 export const FileInputSchema = z.object({ name: requiredText('Name', NAME_MAX_LENGTH) })
 export const TermInputSchema = z.object({
   word: requiredText('Term', NAME_MAX_LENGTH),
+  partOfSpeech: PartOfSpeechSchema,
   meaning: requiredText('Meaning', NAME_MAX_LENGTH),
   example: ExampleSchema,
 })

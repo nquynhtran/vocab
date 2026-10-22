@@ -52,6 +52,23 @@ describe('input schemas', () => {
   })
 })
 
+describe('part of speech', () => {
+  it('accepts a listed value and treats the empty choice as not set', () => {
+    const base = { word: 'run', meaning: 'chạy' }
+    expect(TermInputSchema.parse({ ...base, partOfSpeech: 'phrasal verb' }).partOfSpeech).toBe(
+      'phrasal verb',
+    )
+    expect(TermInputSchema.parse({ ...base, partOfSpeech: '' }).partOfSpeech).toBeUndefined()
+    expect(TermInputSchema.parse(base).partOfSpeech).toBeUndefined()
+  })
+
+  it('rejects a value outside the list, e.g. from a tampered backup', () => {
+    expect(() =>
+      parseOrThrow(TermInputSchema, { word: 'run', meaning: 'chạy', partOfSpeech: 'Verb' }),
+    ).toThrow(new ValidationError({ partOfSpeech: ['Choose a part of speech from the list'] }))
+  })
+})
+
 describe('entity schemas', () => {
   it('accepts a valid term', () => {
     const term = {

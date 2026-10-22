@@ -206,6 +206,57 @@ describe('terms', () => {
     expect(await repository.listTerms(unit2.id)).toMatchObject([{ meaning: 'đi bộ' }])
   })
 
+  it('saves an optional part of speech and shows its abbreviation', async () => {
+    const { repository, unit2 } = await renderFile()
+    typeInto('Part of speech', 'phrasal verb')
+    await addTerm('give up', 'từ bỏ')
+    expect(screen.getByText('phr. v.')).toHaveAttribute('title', 'phrasal verb')
+    // Reset for the next term.
+    expect(screen.getByLabelText('Part of speech')).toHaveValue('')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit "give up"' }))
+    const editRow = screen.getByRole('button', { name: 'Save' }).closest('li')
+    if (!editRow) throw new Error('edit row not found')
+    const select = within(editRow).getByLabelText('Part of speech')
+    expect(select).toHaveValue('phrasal verb')
+    fireEvent.change(select, { target: { value: '' } })
+    fireEvent.click(within(editRow).getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => expect(screen.queryByText('phr. v.')).not.toBeInTheDocument())
+    expect((await repository.listTerms(unit2.id))[0]).not.toHaveProperty('partOfSpeech')
+  })
+
+  it('reads a word aloud in British English', async () => {
+    const speak = vi.fn()
+    const cancel = vi.fn()
+    vi.stubGlobal('speechSynthesis', { speak, cancel, getVoices: () => [] })
+    vi.stubGlobal(
+      'SpeechSynthesisUtterance',
+      class {
+        lang = ''
+        readonly text: string
+        constructor(text: string) {
+          this.text = text
+        }
+      },
+    )
+    try {
+      await renderFile()
+      await addTerm('walk', 'đi bộ')
+      fireEvent.click(screen.getByRole('button', { name: 'Listen to "walk"' }))
+      expect(cancel).toHaveBeenCalled()
+      expect(speak).toHaveBeenCalledWith(expect.objectContaining({ text: 'walk', lang: 'en-GB' }))
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('hides the Listen button when the browser cannot speak', async () => {
+    await renderFile()
+    await addTerm('walk', 'đi bộ')
+    expect(screen.queryByRole('button', { name: /Listen/ })).not.toBeInTheDocument()
+  })
+
   it('asks before deleting a term', async () => {
     const { repository, unit2 } = await renderFile()
     await addTerm('walk', 'đi bộ')

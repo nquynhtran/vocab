@@ -195,7 +195,7 @@ export class DexieRepository implements Repository {
       const current = await this.db.terms.get(id)
       if (!current) throw new EntityNotFoundError('term', id)
       await this.assertFileExists(current.fileId)
-      // Built from scratch and written with put, so a removed example is really removed.
+      // Built from scratch and written with put, so a removed optional field is really removed.
       const row = toTermRow(
         {
           id,
@@ -293,11 +293,21 @@ function toFile({ id, folderId, name, createdAt, updatedAt }: FileRow): VocabFil
   return { id, folderId, name, createdAt, updatedAt }
 }
 
-function toTerm({ id, fileId, word, meaning, example, createdAt, updatedAt }: TermRow): Term {
+function toTerm({
+  id,
+  fileId,
+  word,
+  partOfSpeech,
+  meaning,
+  example,
+  createdAt,
+  updatedAt,
+}: TermRow): Term {
   return {
     id,
     fileId,
     word,
+    ...(partOfSpeech !== undefined && { partOfSpeech }),
     meaning,
     ...(example !== undefined && { example }),
     createdAt,
@@ -305,16 +315,18 @@ function toTerm({ id, fileId, word, meaning, example, createdAt, updatedAt }: Te
   }
 }
 
-type TermContent = Pick<Term, 'word' | 'meaning' | 'example'>
+type TermContent = Pick<Term, 'word' | 'partOfSpeech' | 'meaning' | 'example'>
 type TermMeta = Pick<Term, 'id' | 'fileId' | 'createdAt' | 'updatedAt'>
 
-function toTermRow(meta: TermMeta, { word, meaning, example }: TermContent): TermRow {
+function toTermRow(meta: TermMeta, { word, partOfSpeech, meaning, example }: TermContent): TermRow {
   return {
     ...meta,
     word,
     wordKey: toKey(word),
+    // Optional fields are omitted rather than stored as undefined, so stored rows match what a
+    // backup contains.
+    ...(partOfSpeech !== undefined && { partOfSpeech }),
     meaning,
-    // Omitted rather than stored as undefined, so stored rows match what a backup contains.
     ...(example !== undefined && { example }),
   }
 }
