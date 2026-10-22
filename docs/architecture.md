@@ -50,3 +50,5 @@ src/
 - UI không dùng `liveQuery`; ghi xong thì tải lại qua repository.
 - `id` do client sinh (`crypto.randomUUID()`).
 - UI lấy repository qua React Context (Dependency Injection), test truyền bản giả vào.
+- Interface tách theo thực thể (`FolderRepository`, `FileRepository`, `TermRepository`…), `Repository` ghép tất cả lại. Component chỉ khai báo phần nó dùng; bản giả trong test chỉ cần cài phần đó.
+- **Test hợp đồng (LSP):** giai đoạn 7 phải chạy cùng bộ test hành vi cho `SupabaseRepository` (lỗi, thứ tự, xóa dây chuyền, xóa không tồn tại là no-op). Khi làm thì tách phần test không đụng `db` trực tiếp thành bộ test dùng chung, nhận vào một factory tạo repository.
