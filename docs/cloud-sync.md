@@ -9,6 +9,7 @@ Không đăng nhập thì dữ liệu nằm riêng trong trình duyệt của t�
 - Đăng nhập email + mật khẩu, một tài khoản duy nhất; tắt đăng ký sau khi tạo.
 - **Row Level Security** trên mọi bảng: mỗi dòng có `user_id`, policy chỉ cho `auth.uid() = user_id`. Khóa `anon` được phép nằm trong frontend vì quyền do RLS kiểm soát. Không bao giờ đưa khóa `service_role` vào frontend hay repo.
 - Ràng buộc ở [data-model.md](data-model.md) chuyển thành khóa ngoại, `ON DELETE CASCADE`, `UNIQUE`, `CHECK` trong Postgres.
+- Trùng tên: lưu cột `name_key`/`word_key` do client tính bằng `toKey` của domain, `UNIQUE (user_id, name_key)`. **Không** dùng index trên biểu thức `lower(...)`: `lower()` và `\s` của Postgres khác JS, local và cloud sẽ hiểu "trùng" khác nhau. Sắp xếp cũng dùng `compareNames` của domain, không dựa vào `ORDER BY` theo collation.
 - Thao tác nhiều bảng (`recordAnswer`, nhập backup) là hàm Postgres gọi qua RPC, chạy trong một transaction.
 - `SupabaseRepository` cài đặt cùng interface với `DexieRepository` ([architecture.md](architecture.md#quy-tắc-repository)). UI và domain không đổi.
 - Chuyển dữ liệu: xuất JSON từ bản local → nhập vào bản cloud.

@@ -43,7 +43,7 @@ Code ở `src/domain/learn/`, là **hàm thuần**: nhận state, trả state m�
 - Ghi qua một lệnh `repository.recordAnswer(...)`: cập nhật `TermProgress` và `StudyDay` trong một transaction. Thoát giữa chừng chỉ mất câu đang ở màn phản hồi.
 
 ## Chấm câu viết
-- Chuẩn hóa: Unicode NFC, trim, gộp khoảng trắng, chữ thường, bỏ dấu câu hai đầu, nháy cong → nháy thẳng.
+- Chuẩn hóa: `toKey` của `domain/text.ts` (NFC, trim, gộp khoảng trắng, chữ thường, nháy cong → nháy thẳng), sau đó bỏ thêm dấu câu ở hai đầu.
 - Từ (đã chuẩn hóa) ≥ 5 ký tự và lệch đúng 1 ký tự (Levenshtein = 1) → **gần đúng**: tính đúng nhưng hiện chỗ sai chính tả.
 - Nút **"I was right"**: đổi kết quả câu vừa chấm sai thành đúng (dùng khi máy chấm sai, ví dụ từ đồng nghĩa).
 

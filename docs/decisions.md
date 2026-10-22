@@ -24,3 +24,7 @@ Mỗi dòng: ngày · quyết định · lý do ngắn. Đổi quyết định c
 | 18 | 2026-10-22 | Dùng oxlint thay ESLint | Template Vite hiện tại mặc định oxlint; nhanh hơn, có sẵn luật React hooks, không cần cấu hình |
 | 19 | 2026-10-22 | Bật `noUncheckedIndexedAccess` trong TypeScript | Bắt kiểm tra khi lấy phần tử mảng (chọn từ, đáp án nhiễu), tránh lỗi `undefined` |
 | 20 | 2026-10-22 | Push qua SSH key có sẵn, không cài `gh` | Máy đã có SSH key kết nối GitHub; bớt một công cụ |
+| 21 | 2026-10-22 | `nameKey`/`wordKey` không có trong kiểu domain, chỉ có trong bản ghi DB; giai đoạn 7 lưu cột key do client tính | Key là chi tiết lưu trữ; một hàm `toKey` duy nhất để local và cloud hiểu "trùng" giống nhau |
+| 22 | 2026-10-22 | Tên IndexedDB là `vocab-app`, cố định | Origin GitHub Pages dùng chung cho mọi repo của tài khoản |
+| 23 | 2026-10-22 | `versionchange` → `close({ disableAutoOpen: true })` | Mặc định Dexie tự mở lại, tab cũ sẽ ghi dữ liệu sai cấu trúc vào DB mới |
+| 24 | 2026-10-22 | Validate khi ghi, không validate lại khi đọc từ DB; có test bảo đảm bản ghi repository tạo ra parse được qua schema | Mọi lần ghi đều qua repository; dữ liệu cũ đi qua migration có test |

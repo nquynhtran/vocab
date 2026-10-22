@@ -14,6 +14,7 @@ Web tĩnh, **không có backend** (giai đoạn 0–6).
 | Xóa dữ liệu trình duyệt → mất từ vựng | Xuất/nhập JSON, `navigator.storage.persist()`, nhắc sao lưu nếu > 7 ngày chưa xuất |
 | Máy tính và iPhone không dùng chung dữ liệu | Chấp nhận ở MVP; giải quyết ở giai đoạn 7 ([cloud-sync.md](cloud-sync.md)) |
 | Đổi cấu trúc dữ liệu | Version Dexie + migration ([data-model.md](data-model.md#migration)) |
+| Repo Pages khác cùng origin `nquynhtran.github.io` đụng IndexedDB | Tên DB riêng `vocab-app`, không bao giờ đổi |
 
 ## Công nghệ
 | Thành phần | Chọn | Lý do |
