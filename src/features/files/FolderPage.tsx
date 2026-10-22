@@ -1,14 +1,14 @@
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { Link, useParams } from 'react-router'
 import { masteredPercent } from '../../domain/mastery.ts'
 import type { VocabFile } from '../../domain/schemas.ts'
 import { deleteFileMessage, plural } from '../../shared/deleteMessages.ts'
-import { errorMessage } from '../../shared/errorMessage.ts'
 import { NamedItemRow } from '../../shared/NamedItemRow.tsx'
 import { NameForm } from '../../shared/NameForm.tsx'
-import { LoadError, Loading, NotFound } from '../../shared/PageStatus.tsx'
+import { ActionError, LoadError, Loading, NotFound } from '../../shared/PageStatus.tsx'
 import { useRepository } from '../../shared/repositoryContext.ts'
 import { useAsync } from '../../shared/useAsync.ts'
+import { usePageWrites } from '../../shared/usePageWrites.ts'
 
 export function FolderPage() {
   const { folderId = '' } = useParams()
@@ -23,30 +23,15 @@ export function FolderPage() {
     return { folder, files, stats: new Map(stats.map((s) => [s.fileId, s])) }
   }, [repository, folderId])
   const [state, reload] = useAsync(load)
-  const [actionError, setActionError] = useState<string>()
+  const { write, run, actionError } = usePageWrites(reload)
 
-  /**
-   * Reloads after every write, failed ones too: if the folder/file was deleted in another tab,
-   * the page then shows "no longer exists" instead of a form that keeps failing.
-   */
-  async function write(action: () => Promise<unknown>) {
-    setActionError(undefined)
-    try {
-      await action()
-    } finally {
-      reload()
-    }
-  }
-
-  async function handleDelete(file: VocabFile) {
-    try {
+  function handleDelete(file: VocabFile) {
+    void run(async () => {
       const stats = await repository.listFileStats(folderId)
       const termCount = stats.find((s) => s.fileId === file.id)?.termCount ?? 0
       if (!window.confirm(deleteFileMessage(file.name, termCount))) return
       await write(() => repository.deleteFile(file.id))
-    } catch (error) {
-      setActionError(errorMessage(error))
-    }
+    })
   }
 
   if (state.status === 'loading') return <Loading />
@@ -65,11 +50,7 @@ export function FolderPage() {
         submitLabel="Create"
         onSubmit={(name) => write(() => repository.createFile(folder.id, { name }))}
       />
-      {actionError && (
-        <p className="field-error" role="alert">
-          {actionError}
-        </p>
-      )}
+      <ActionError message={actionError} />
       {files.length === 0 ? (
         <p className="muted">No files yet. Create one, then add terms to it.</p>
       ) : (
@@ -84,7 +65,7 @@ export function FolderPage() {
                 to={`/files/${file.id}`}
                 detail={`${plural(termCount, 'term')} · ${masteredPercent(masteredCount, termCount)}% mastered`}
                 onRename={(name) => write(() => repository.renameFile(file.id, { name }))}
-                onDelete={() => void handleDelete(file)}
+                onDelete={() => handleDelete(file)}
               />
             )
           })}

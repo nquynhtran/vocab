@@ -23,6 +23,14 @@ function typeInto(label: string | RegExp, value: string) {
   fireEvent.change(screen.getByLabelText(label), { target: { value } })
 }
 
+/** Opens the in-place edit form of a term and returns queries scoped to it. */
+function startEditing(word: string) {
+  fireEvent.click(screen.getByRole('button', { name: `Edit "${word}"` }))
+  const row = screen.getByRole('button', { name: 'Save' }).closest('li')
+  if (!row) throw new Error(`edit form for "${word}" not found`)
+  return within(row)
+}
+
 async function addTerm(word: string, meaning: string, example = '') {
   typeInto('Term', word)
   typeInto('Meaning', meaning)
@@ -169,10 +177,8 @@ describe('terms', () => {
     const { repository, unit2 } = await renderFile()
     await addTerm('walk', 'đi bộ')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Edit "walk"' }))
-    const editRow = screen.getByRole('button', { name: 'Save' }).closest('li')
-    if (!editRow) throw new Error('edit row not found')
-    fireEvent.change(within(editRow).getByLabelText('Meaning'), { target: { value: 'đi dạo' } })
+    const editRow = startEditing('walk')
+    fireEvent.change(editRow.getByLabelText('Meaning'), { target: { value: 'đi dạo' } })
     // Wait past the debounce: no warning should appear for the term itself.
     await new Promise((resolve) => setTimeout(resolve, 400))
     for (const region of screen.getAllByRole('status')) expect(region).toHaveTextContent(/^$/)
@@ -189,16 +195,14 @@ describe('terms', () => {
     await addTerm('walk', 'đi bộ')
 
     for (const cancel of ['escape', 'button'] as const) {
-      fireEvent.click(screen.getByRole('button', { name: 'Edit "walk"' }))
-      const editRow = screen.getByRole('button', { name: 'Save' }).closest('li')
-      if (!editRow) throw new Error('edit row not found')
-      fireEvent.change(within(editRow).getByLabelText('Meaning'), {
+      const editRow = startEditing('walk')
+      fireEvent.change(editRow.getByLabelText('Meaning'), {
         target: { value: 'changed' },
       })
       if (cancel === 'escape') {
-        fireEvent.keyDown(within(editRow).getByLabelText('Meaning'), { key: 'Escape' })
+        fireEvent.keyDown(editRow.getByLabelText('Meaning'), { key: 'Escape' })
       } else {
-        fireEvent.click(within(editRow).getByRole('button', { name: 'Cancel' }))
+        fireEvent.click(editRow.getByRole('button', { name: 'Cancel' }))
       }
       expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument()
     }
@@ -214,13 +218,11 @@ describe('terms', () => {
     // Reset for the next term.
     expect(screen.getByLabelText('Part of speech')).toHaveValue('')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Edit "give up"' }))
-    const editRow = screen.getByRole('button', { name: 'Save' }).closest('li')
-    if (!editRow) throw new Error('edit row not found')
-    const select = within(editRow).getByLabelText('Part of speech')
+    const editRow = startEditing('give up')
+    const select = editRow.getByLabelText('Part of speech')
     expect(select).toHaveValue('phrasal verb')
     fireEvent.change(select, { target: { value: '' } })
-    fireEvent.click(within(editRow).getByRole('button', { name: 'Save' }))
+    fireEvent.click(editRow.getByRole('button', { name: 'Save' }))
 
     await waitFor(() => expect(screen.queryByText('phr. v.')).not.toBeInTheDocument())
     expect((await repository.listTerms(unit2.id))[0]).not.toHaveProperty('partOfSpeech')

@@ -1,11 +1,11 @@
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { Link, useParams } from 'react-router'
 import type { Term } from '../../domain/schemas.ts'
 import { deleteTermMessage, plural } from '../../shared/deleteMessages.ts'
-import { errorMessage } from '../../shared/errorMessage.ts'
-import { LoadError, Loading, NotFound } from '../../shared/PageStatus.tsx'
+import { ActionError, LoadError, Loading, NotFound } from '../../shared/PageStatus.tsx'
 import { useRepository } from '../../shared/repositoryContext.ts'
 import { useAsync } from '../../shared/useAsync.ts'
+import { usePageWrites } from '../../shared/usePageWrites.ts'
 import { TermForm } from './TermForm.tsx'
 import { TermRow } from './TermRow.tsx'
 
@@ -22,28 +22,11 @@ export function FilePage() {
     return folder && { file, folder, terms }
   }, [repository, fileId])
   const [state, reload] = useAsync(load)
-  const [actionError, setActionError] = useState<string>()
+  const { write, run, actionError } = usePageWrites(reload)
 
-  /**
-   * Reloads after every write, failed ones too: if the folder/file was deleted in another tab,
-   * the page then shows "no longer exists" instead of a form that keeps failing.
-   */
-  async function write(action: () => Promise<unknown>) {
-    setActionError(undefined)
-    try {
-      await action()
-    } finally {
-      reload()
-    }
-  }
-
-  async function handleDelete(term: Term) {
+  function handleDelete(term: Term) {
     if (!window.confirm(deleteTermMessage(term.word))) return
-    try {
-      await write(() => repository.deleteTerm(term.id))
-    } catch (error) {
-      setActionError(errorMessage(error))
-    }
+    void run(() => write(() => repository.deleteTerm(term.id)))
   }
 
   if (state.status === 'loading') return <Loading />
@@ -64,11 +47,7 @@ export function FilePage() {
         submitLabel="Add"
         onSubmit={(input) => write(() => repository.createTerm(file.id, input))}
       />
-      {actionError && (
-        <p className="field-error" role="alert">
-          {actionError}
-        </p>
-      )}
+      <ActionError message={actionError} />
       {terms.length > 0 && (
         <ul className="term-list" aria-label="Terms">
           <li className="term term--header" aria-hidden="true">
@@ -81,7 +60,7 @@ export function FilePage() {
               key={term.id}
               term={term}
               onUpdate={(input) => write(() => repository.updateTerm(term.id, input))}
-              onDelete={() => void handleDelete(term)}
+              onDelete={() => handleDelete(term)}
             />
           ))}
         </ul>
