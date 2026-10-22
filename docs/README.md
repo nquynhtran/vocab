@@ -11,7 +11,7 @@ Chỉ mở file liên quan đến việc đang làm. Mỗi file chỉ nói về 
 | [learn-algorithm.md](learn-algorithm.md) | Chọn từ, loại câu hỏi, chấm điểm, trường hợp biên | Làm `domain/learn/` hoặc màn Learn |
 | [streak.md](streak.md) | Quy tắc tính ngày học và chuỗi ngày | Làm `domain/streak/` hoặc ô streak |
 | [security.md](security.md) | XSS, dữ liệu không tin cậy, secret, CSP | Xử lý input, render nội dung người dùng, CI |
-| [cloud-sync.md](cloud-sync.md) | Giai đoạn 7: đăng nhập, Supabase, iPhone | Chỉ khi làm giai đoạn 7 |
+| [cloud-sync.md](cloud-sync.md) | Giai đoạn 7: đăng nhập, Supabase, iPhone (làm trước Learn, #31) | Khi làm giai đoạn 7 |
 | [decisions.md](decisions.md) | Nhật ký quyết định đã chốt và lý do | Trước khi đề xuất đổi một quyết định đã có |
 
 Kế hoạch và tiến độ: [../PROGRESS.md](../PROGRESS.md) · Bài học từ lỗi đã mắc: [../LESSONS.md](../LESSONS.md).

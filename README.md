@@ -1,10 +1,13 @@
 # Vocab
 
-A personal English vocabulary trainer with a single Learn mode (multiple choice + typing the answer) and a daily study streak.
+A personal English vocabulary trainer.
+
+- **Now:** folders → files → terms (term, part of speech, meaning, example), a warning when a word already exists, and British pronunciation via the browser's speech synthesis.
+- **Planned:** sync between computer and phone, a Learn mode (multiple choice + typing the answer), a daily study streak, JSON backup.
 
 **Open the app:** https://nquynhtran.github.io/vocab/
 
-Your vocabulary is stored only in your browser (IndexedDB) and is never sent to a server. Clearing your browser data deletes it, so back it up with the JSON export (planned).
+For now your vocabulary is stored only in the browser you typed it in (IndexedDB) and is never sent to a server, so another device shows none of it. Clearing browser data deletes it, and iPhone Safari clears it after 7 days without a visit.
 
 ## Run locally
 
