@@ -21,8 +21,8 @@ Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn 
 - [ ] **7. Cloud & iPhone** — dùng chung dữ liệu máy tính ↔ iPhone ([cloud-sync.md](docs/cloud-sync.md))
   - [x] Qua `challenger`, chốt #33–37 (chuyển dữ liệu, client cũ, validate khi đọc, không service worker, test bằng Supabase CLI)
   - [x] Export JSON trên bản local (`exportBackup`, `validateBackup`), qua `reviewer`
-  - [ ] Tài khoản + project Supabase; Docker + Supabase CLI
-  - [ ] SQL + RLS + `app_config` + `import_snapshot`; mapper + `SupabaseRepository` + test hợp đồng chung
+  - [x] Tài khoản + project Supabase (Singapore, đã tắt đăng ký); Docker đã cài
+  - [ ] Supabase CLI (devDependency); SQL + RLS + `app_config` + `import_snapshot`; mapper + `SupabaseRepository` + test hợp đồng chung
   - [ ] Đăng nhập, `min_client_version`, Dexie v3; màn chuyển dữ liệu; CSP, deploy
   - [ ] Manifest, thử trên iPhone; giữ project hoạt động
 - [ ] **3. Learn** — học một file đến khi thuộc hết ([learn-algorithm.md](docs/learn-algorithm.md))
