@@ -13,7 +13,7 @@ import {
 } from '../domain/schemas.ts'
 import { compareNames, toKey } from '../domain/text.ts'
 import type { FileRow, FolderRow, TermRow, VocabDb } from './db.ts'
-import type { FileStats, Repository, TermLocation } from './repository.ts'
+import type { FolderContents, Repository, TermLocation } from './repository.ts'
 
 export interface RepositoryDeps {
   now: () => Date
@@ -48,6 +48,38 @@ export class DexieRepository implements Repository {
   async getFolder(id: string): Promise<Folder | undefined> {
     const row = await this.db.folders.get(id)
     return row && toFolder(row)
+  }
+
+  async getFolderContents(id: string): Promise<FolderContents | undefined> {
+    const { folders, files, terms, progress } = this.db
+    // One read transaction so the list and its counts never mix states from before and after
+    // another tab's write.
+    return this.db.transaction('r', [folders, files, terms, progress], async () => {
+      const folderRow = await folders.get(id)
+      if (!folderRow) return undefined
+      const fileRows = await files.where('folderId').equals(id).toArray()
+      const termRows = await terms
+        .where('fileId')
+        .anyOf(fileRows.map((file) => file.id))
+        .toArray()
+      const progressRows = await progress.bulkGet(termRows.map((term) => term.id))
+
+      const counts = new Map<string, { termCount: number; masteredCount: number }>()
+      termRows.forEach((term, index) => {
+        const current = counts.get(term.fileId) ?? { termCount: 0, masteredCount: 0 }
+        counts.set(term.fileId, {
+          termCount: current.termCount + 1,
+          masteredCount: current.masteredCount + (isMastered(progressRows[index]) ? 1 : 0),
+        })
+      })
+      return {
+        folder: toFolder(folderRow),
+        files: fileRows.toSorted(byName).map((row) => ({
+          ...toFile(row),
+          ...(counts.get(row.id) ?? { termCount: 0, masteredCount: 0 }),
+        })),
+      }
+    })
   }
 
   async createFolder(input: FolderInput): Promise<Folder> {
@@ -102,27 +134,6 @@ export class DexieRepository implements Repository {
   async getFile(id: string): Promise<VocabFile | undefined> {
     const row = await this.db.files.get(id)
     return row && toFile(row)
-  }
-
-  async listFileStats(folderId: string): Promise<FileStats[]> {
-    const { files, terms, progress } = this.db
-    // One read transaction so counts never mix states from before and after another tab's write.
-    return this.db.transaction('r', [files, terms, progress], async () => {
-      const fileIds = await files.where('folderId').equals(folderId).primaryKeys()
-      const termRows = await terms.where('fileId').anyOf(fileIds).toArray()
-      const progressRows = await progress.bulkGet(termRows.map((term) => term.id))
-
-      const stats = new Map(fileIds.map((fileId) => [fileId, { termCount: 0, masteredCount: 0 }]))
-      termRows.forEach((term, index) => {
-        const current = stats.get(term.fileId)
-        if (!current) return
-        stats.set(term.fileId, {
-          termCount: current.termCount + 1,
-          masteredCount: current.masteredCount + (isMastered(progressRows[index]) ? 1 : 0),
-        })
-      })
-      return [...stats].map(([fileId, counts]) => ({ fileId, ...counts }))
-    })
   }
 
   async createFile(folderId: string, input: FileInput): Promise<VocabFile> {

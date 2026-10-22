@@ -17,9 +17,9 @@ export function HomePage() {
   function handleDelete(folder: Folder) {
     void run(async () => {
       // Counted fresh, not from the list, so the message matches what will really be deleted.
-      const stats = await repository.listFileStats(folder.id)
-      const termCount = stats.reduce((sum, file) => sum + file.termCount, 0)
-      if (!window.confirm(deleteFolderMessage(folder.name, stats.length, termCount))) return
+      const files = (await repository.getFolderContents(folder.id))?.files ?? []
+      const termCount = files.reduce((sum, file) => sum + file.termCount, 0)
+      if (!window.confirm(deleteFolderMessage(folder.name, files.length, termCount))) return
       await write(() => repository.deleteFolder(folder.id))
     })
   }

@@ -15,12 +15,17 @@ export interface TermLocation {
   fileName: string
 }
 
-/** Numbers shown for a file in its folder and in delete confirmations. */
-export interface FileStats {
-  fileId: string
+/** A file with the numbers shown in its folder and in delete confirmations. */
+export interface FileSummary extends VocabFile {
   termCount: number
   /** Terms whose progress counts as mastered (`isMastered`). */
   masteredCount: number
+}
+
+export interface FolderContents {
+  folder: Folder
+  /** Every file of the folder, empty ones included, sorted by `compareNames`. */
+  files: FileSummary[]
 }
 
 /**
@@ -40,6 +45,8 @@ export interface FolderRepository {
   /** Sorted by `compareNames`. */
   listFolders(): Promise<Folder[]>
   getFolder(id: string): Promise<Folder | undefined>
+  /** Read in one snapshot, so the counts always match the file list. */
+  getFolderContents(id: string): Promise<FolderContents | undefined>
   createFolder(input: FolderInput): Promise<Folder>
   renameFolder(id: string, input: FolderInput): Promise<Folder>
   /** Also deletes its files, their terms and the terms' progress. */
@@ -50,8 +57,6 @@ export interface FileRepository {
   /** Sorted by `compareNames`. */
   listFiles(folderId: string): Promise<VocabFile[]>
   getFile(id: string): Promise<VocabFile | undefined>
-  /** One entry per file in the folder, including empty ones; order unspecified. */
-  listFileStats(folderId: string): Promise<FileStats[]>
   createFile(folderId: string, input: FileInput): Promise<VocabFile>
   renameFile(id: string, input: FileInput): Promise<VocabFile>
   /** Also deletes its terms and their progress. */

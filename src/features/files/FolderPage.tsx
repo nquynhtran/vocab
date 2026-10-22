@@ -13,22 +13,15 @@ import { usePageWrites } from '../../shared/usePageWrites.ts'
 export function FolderPage() {
   const { folderId = '' } = useParams()
   const repository = useRepository()
-  const load = useCallback(async () => {
-    const folder = await repository.getFolder(folderId)
-    if (!folder) return undefined
-    const [files, stats] = await Promise.all([
-      repository.listFiles(folderId),
-      repository.listFileStats(folderId),
-    ])
-    return { folder, files, stats: new Map(stats.map((s) => [s.fileId, s])) }
-  }, [repository, folderId])
+  const load = useCallback(() => repository.getFolderContents(folderId), [repository, folderId])
   const [state, reload] = useAsync(load)
   const { write, run, actionError } = usePageWrites(reload)
 
   function handleDelete(file: VocabFile) {
     void run(async () => {
-      const stats = await repository.listFileStats(folderId)
-      const termCount = stats.find((s) => s.fileId === file.id)?.termCount ?? 0
+      // Counted fresh, not from the list, so the message matches what will really be deleted.
+      const contents = await repository.getFolderContents(folderId)
+      const termCount = contents?.files.find((f) => f.id === file.id)?.termCount ?? 0
       if (!window.confirm(deleteFileMessage(file.name, termCount))) return
       await write(() => repository.deleteFile(file.id))
     })
@@ -37,7 +30,7 @@ export function FolderPage() {
   if (state.status === 'loading') return <Loading />
   if (state.status === 'error') return <LoadError error={state.error} />
   if (!state.data) return <NotFound message="This folder no longer exists." />
-  const { folder, files, stats } = state.data
+  const { folder, files } = state.data
 
   return (
     <section>
@@ -56,7 +49,7 @@ export function FolderPage() {
       ) : (
         <ul className="item-list" aria-label="Files">
           {files.map((file) => {
-            const { termCount = 0, masteredCount = 0 } = stats.get(file.id) ?? {}
+            const { termCount, masteredCount } = file
             return (
               <NamedItemRow
                 key={file.id}
