@@ -12,6 +12,9 @@ export function normalizeText(text: string): string {
  * - `toLowerCase`, not `toLocaleLowerCase`, so the key never depends on the device locale.
  * - Curly quotes become straight ones because iOS Smart Punctuation turns "don't" into "don’t".
  * - Diacritics are kept because "ma" and "má" are different words.
+ *
+ * Its output is stored (nameKey, wordKey), so changing it needs a DB version whose migration
+ * recomputes every key. See docs/data-model.md#migration.
  */
 export function toKey(text: string): string {
   return normalizeText(text).toLowerCase().replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
