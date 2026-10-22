@@ -5,11 +5,13 @@ Stack: TypeScript strict · React + Vite · Dexie (IndexedDB) · Zod · Vitest �
 
 @PROGRESS.md
 @docs/README.md
+@LESSONS.md
 
 ## Cách làm việc
 - Đầu phiên: xem "Đang ở đâu" ở trên rồi làm tiếp. Chỉ mở file tài liệu liên quan theo mục lục `docs/README.md`, không đọc hết.
 - Xong một mục checklist hoặc trước khi chuyển phiên: chạy `/save-progress`.
 - Thiết kế thay đổi → sửa tài liệu trước hoặc cùng lúc với code. Tài liệu và code không được lệch nhau.
+- Phát hiện lỗi do chính mình gây ra (tự thấy, test bắt được, agent hay người dùng chỉ ra) → ghi ngay vào `LESSONS.md`, ngắn gọn: lỗi → cách tránh. Trước khi làm, xem các bài học liên quan.
 - **Phiên dài → chủ động nhắc đổi phiên.** Dấu hiệu: vừa xong một giai đoạn; đã làm nhiều mục checklist trong cùng phiên; đã đọc nhiều file lớn; hoặc ngữ cảnh đã bị tóm tắt tự động. Khi đó dừng ở điểm an toàn (test xanh, đã commit), chạy `/save-progress` và đưa bản tóm tắt để người dùng dán sang phiên mới.
 
 ## Dùng công cụ đúng lúc

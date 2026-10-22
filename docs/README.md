@@ -14,6 +14,6 @@ Chỉ mở file liên quan đến việc đang làm. Mỗi file chỉ nói về 
 | [cloud-sync.md](cloud-sync.md) | Giai đoạn 7: đăng nhập, Supabase, iPhone | Chỉ khi làm giai đoạn 7 |
 | [decisions.md](decisions.md) | Nhật ký quyết định đã chốt và lý do | Trước khi đề xuất đổi một quyết định đã có |
 
-Kế hoạch và tiến độ: [../PROGRESS.md](../PROGRESS.md).
+Kế hoạch và tiến độ: [../PROGRESS.md](../PROGRESS.md) · Bài học từ lỗi đã mắc: [../LESSONS.md](../LESSONS.md).
 
 **Quy tắc ghi tài liệu:** mỗi file dưới ~150 dòng; quá dài thì tách tiếp và thêm dòng vào bảng trên. Quyết định mới ghi vào `decisions.md`, nội dung chi tiết ghi vào file chủ đề.
