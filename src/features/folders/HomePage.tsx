@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import type { Folder } from '../../domain/schemas.ts'
+import { ExportButton } from '../backup/ExportButton.tsx'
 import { deleteFolderMessage } from '../../shared/deleteMessages.ts'
 import { NamedItemRow } from '../../shared/NamedItemRow.tsx'
 import { NameForm } from '../../shared/NameForm.tsx'
@@ -52,6 +53,7 @@ export function HomePage() {
             ))}
           </ul>
         ))}
+      <ExportButton />
     </section>
   )
 }

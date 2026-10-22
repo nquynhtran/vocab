@@ -34,7 +34,7 @@ Một dòng hỏng → cả thao tác báo lỗi rõ ràng (fail fast), không b
 
 ## Chuyển dữ liệu local lên cloud (#33)
 Chỉ máy tính có dữ liệu (iPhone chưa dùng), nên chỉ chuyển một chiều, một lần, không gộp.
-1. Làm sớm phần lõi của giai đoạn 5: `buildSnapshot()` đọc hết Dexie ra đúng định dạng backup `schemaVersion: 1`; `validateSnapshot()` (Zod, tham chiếu, trùng `toKey`); nút **Export JSON**.
+1. Làm sớm phần lõi của giai đoạn 5: `exportBackup()` của repository đọc hết dữ liệu trong một transaction ra đúng định dạng backup `schemaVersion: 1`; `validateBackup()` ở `domain/backup.ts` (Zod, tham chiếu, trùng `toKey`); nút **Export JSON** ở Home.
 2. Màn chuyển dữ liệu: tải JSON về trước (bản sao an toàn độc lập với Supabase) → gọi RPC `import_snapshot(payload)`: một transaction, **từ chối nếu tài khoản đã có dữ liệu** ("Cloud already has data"), nên bấm hai lần không nhân đôi. RPC này sau dùng lại cho "Replace all" của giai đoạn 5.
 3. Bản cloud vẫn mở `VocabDb` ở **version 3** (giữ nguyên index) lúc khởi động, để tab cũ còn chạy bản local nhận `versionchange` và reload. Nếu không, tab đó vẫn ghi vào IndexedDB, báo "đã lưu" nhưng từ không bao giờ lên cloud.
 4. Không tự xóa IndexedDB; ghi `meta.migratedAt`, hiện "Local data was uploaded on …" kèm nút xóa thủ công sau khi người dùng đã kiểm tra trên cloud.
@@ -61,10 +61,10 @@ Cùng loại lỗi với #32. Không có `versionchange` cho Supabase, nên:
 - Kiểm tra trên Safari iOS: bàn phím che ô nhập, safe area (tai thỏ), kích thước chạm.
 
 ## Thứ tự làm
-1. Export JSON trên bản local (`buildSnapshot`, `validateSnapshot`, nút Export), chưa cần Supabase.
+1. Export JSON trên bản local (`exportBackup`, `validateBackup`, nút Export), chưa cần Supabase.
 2. Người dùng tạo tài khoản + project Supabase; cài Docker + Supabase CLI.
 3. SQL: bảng, ràng buộc, RLS, `app_config`, `import_snapshot`.
 4. Mapper + `SupabaseRepository` + bộ test hợp đồng dùng chung.
 5. Đăng nhập, kiểm tra `min_client_version`, Dexie v3.
-6. Màn chuyển dữ liệu; CSP, biến build, deploy; chuyển dữ liệu thật.
+6. Màn chuyển dữ liệu (lỗi validate hiện vài lỗi đầu kèm đường dẫn trong `fieldErrors`, không nối hết thành một câu dài); CSP, biến build, deploy; chuyển dữ liệu thật.
 7. Manifest, thử trên iPhone; quyết định giữ project hoạt động.

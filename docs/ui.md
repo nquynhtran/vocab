@@ -9,7 +9,7 @@ Giai đoạn 0–6 ưu tiên máy tính, nhưng CSS **responsive ngay từ đầ
 - `<html lang="en">`.
 
 ## Màn hình
-1. **Home**: danh sách folder, nút "New folder", ô streak (🔥 N-day streak, "Today: 4/10 answers") và lịch nhỏ.
+1. **Home**: danh sách folder, nút "New folder", ô streak (🔥 N-day streak, "Today: 4/10 answers") và lịch nhỏ; cuối trang là mục Backup với nút "Export JSON" (tải file `vocab-backup-YYYY-MM-DD.json`, ngày theo giờ máy).
 2. **Folder**: danh sách file (tên, số từ, % mastered), nút "New file".
 3. **File**: bảng từ (Term (loại từ) 🔊 · Meaning · Example), từ mới nhất trên cùng, form thêm từ ở đầu bảng, nút **Learn** (ẩn khi file trống, thay bằng "Add some terms to start learning").
 4. **Learn**: một câu hỏi mỗi lần, thanh tiến độ (số từ đã đạt mức 2 / tổng), nút "Stop". Phản hồi đúng/sai ngay; câu sai và câu viết có màn phản hồi với nút **Continue** (và **"I was right"** nếu câu viết bị chấm sai).

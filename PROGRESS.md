@@ -4,7 +4,7 @@
 
 ## Đang ở đâu
 - **Giai đoạn:** 2 xong và đã deploy. Tiếp theo là **giai đoạn 7 (cloud)**, làm trước Learn (quyết định #31).
-- **Việc tiếp theo:** làm theo "Thứ tự làm" trong `docs/cloud-sync.md`: Export JSON trên bản local; song song hướng dẫn người dùng tạo project Supabase, cài Docker + Supabase CLI.
+- **Việc tiếp theo:** chờ người dùng tạo project Supabase (gửi Project URL + publishable key) và cài Docker; rồi bước 3 trong "Thứ tự làm" của `docs/cloud-sync.md` (thêm gói `supabase` CLI vào devDependencies, viết SQL).
 - **Đang vướng:** không. Người dùng chưa thử bản có loại từ + nút 🔊.
 - **Câu hỏi mở (để giai đoạn 3):** có hiện loại từ làm gợi ý trong câu hỏi Learn không.
 
@@ -20,7 +20,7 @@ Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn 
   - [x] Theo feedback: loại từ (#29, Dexie v2 theo #32), nút 🔊 en-GB (#30)
 - [ ] **7. Cloud & iPhone** — dùng chung dữ liệu máy tính ↔ iPhone ([cloud-sync.md](docs/cloud-sync.md))
   - [x] Qua `challenger`, chốt #33–37 (chuyển dữ liệu, client cũ, validate khi đọc, không service worker, test bằng Supabase CLI)
-  - [ ] Export JSON trên bản local (`buildSnapshot`, `validateSnapshot`)
+  - [x] Export JSON trên bản local (`exportBackup`, `validateBackup`), qua `reviewer`
   - [ ] Tài khoản + project Supabase; Docker + Supabase CLI
   - [ ] SQL + RLS + `app_config` + `import_snapshot`; mapper + `SupabaseRepository` + test hợp đồng chung
   - [ ] Đăng nhập, `min_client_version`, Dexie v3; màn chuyển dữ liệu; CSP, deploy

@@ -2,6 +2,7 @@
 import Dexie from 'dexie'
 import { IDBFactory, IDBKeyRange } from 'fake-indexeddb'
 import { describe, expect, it, vi } from 'vitest'
+import { validateBackup } from '../domain/backup.ts'
 import { DuplicateNameError, EntityNotFoundError, ValidationError } from '../domain/errors.ts'
 import { FolderSchema, TermSchema, VocabFileSchema } from '../domain/schemas.ts'
 import { toKey } from '../domain/text.ts'
@@ -384,6 +385,43 @@ describe('findTermsByWord', () => {
     const { term } = await seedTerm(repo)
     expect(await repo.findTermsByWord('run', term.id)).toEqual([])
     expect(await repo.findTermsByWord('   ')).toEqual([])
+  })
+})
+
+describe('exportBackup', () => {
+  it('exports every table without storage keys, in a shape that passes import validation', async () => {
+    const { db, repo } = setup()
+    const { folder, file, term } = await seedTerm(repo)
+    const bare = await repo.createTerm(file.id, { word: 'walk', meaning: 'đi bộ' })
+    // No repository method writes these yet (Learn comes later), so they are seeded directly.
+    const progress = { termId: term.id, box: 2, correctCount: 1, wrongCount: 0 }
+    const studyDay = { date: '2026-10-22', answeredCount: 10 }
+    await db.progress.add(progress)
+    await db.studyDays.add(studyDay)
+
+    const backup = await repo.exportBackup()
+
+    expect(backup).toStrictEqual({
+      schemaVersion: 1,
+      exportedAt: '2026-10-22T08:00:04.000Z',
+      folders: [folder],
+      files: [file],
+      terms: [term, bare],
+      progress: [progress],
+      studyDays: [studyDay],
+    })
+    expect(JSON.parse(JSON.stringify(validateBackup(backup)))).toStrictEqual(backup)
+  })
+
+  it('exports an empty database as an empty backup', async () => {
+    const { repo } = setup()
+    expect(await repo.exportBackup()).toMatchObject({
+      folders: [],
+      files: [],
+      terms: [],
+      progress: [],
+      studyDays: [],
+    })
   })
 })
 

@@ -363,3 +363,39 @@ describe('missing pages', () => {
     expect(await screen.findByRole('heading', { name: 'Page not found.' })).toBeInTheDocument()
   })
 })
+
+describe('backup', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('downloads every folder, file and term as a JSON file', async () => {
+    const indexedDB = new IDBFactory()
+    const seed = openRepository(indexedDB)
+    const folder = await seed.createFolder({ name: 'IELTS' })
+    const file = await seed.createFile(folder.id, { name: 'Unit 1' })
+    await seed.createTerm(file.id, { word: 'run', meaning: 'chạy' })
+    const blobs: Blob[] = []
+    vi.spyOn(URL, 'createObjectURL').mockImplementation((blob) => {
+      blobs.push(blob as Blob)
+      return 'blob:backup'
+    })
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+    renderApp('/', indexedDB)
+    fireEvent.click(await screen.findByRole('button', { name: 'Export JSON' }))
+
+    await waitFor(() => expect(click).toHaveBeenCalledOnce())
+    expect(click.mock.contexts[0]).toMatchObject({
+      download: expect.stringMatching(/^vocab-backup-\d{4}-\d{2}-\d{2}\.json$/),
+    })
+    const backup = JSON.parse(await blobs[0]!.text())
+    expect(backup).toMatchObject({
+      schemaVersion: 1,
+      folders: [{ name: 'IELTS' }],
+      files: [{ name: 'Unit 1' }],
+      terms: [{ word: 'run', meaning: 'chạy' }],
+    })
+  })
+})

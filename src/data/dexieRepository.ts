@@ -1,3 +1,4 @@
+import { BACKUP_SCHEMA_VERSION, type Backup } from '../domain/backup.ts'
 import { DuplicateNameError, EntityNotFoundError, parseOrThrow } from '../domain/errors.ts'
 import { isMastered } from '../domain/mastery.ts'
 import {
@@ -7,8 +8,10 @@ import {
   type FileInput,
   type Folder,
   type FolderInput,
+  type StudyDay,
   type Term,
   type TermInput,
+  type TermProgress,
   type VocabFile,
 } from '../domain/schemas.ts'
 import { compareNames, toKey } from '../domain/text.ts'
@@ -261,6 +264,21 @@ export class DexieRepository implements Repository {
     })
   }
 
+  // ---- Backup ----
+
+  async exportBackup(): Promise<Backup> {
+    const { folders, files, terms, progress, studyDays } = this.db
+    return this.db.transaction('r', [folders, files, terms, progress, studyDays], async () => ({
+      schemaVersion: BACKUP_SCHEMA_VERSION,
+      exportedAt: this.timestamp(),
+      folders: (await folders.toArray()).map(toFolder),
+      files: (await files.toArray()).map(toFile),
+      terms: (await terms.toArray()).map(toTerm),
+      progress: (await progress.toArray()).map(toProgress),
+      studyDays: (await studyDays.toArray()).map(toStudyDay),
+    }))
+  }
+
   // ---- Helpers (must run inside the caller's transaction) ----
 
   private timestamp(): string {
@@ -324,6 +342,28 @@ function toTerm({
     createdAt,
     updatedAt,
   }
+}
+
+function toProgress({
+  termId,
+  box,
+  correctCount,
+  wrongCount,
+  lastWrongAt,
+  lastStudiedAt,
+}: TermProgress): TermProgress {
+  return {
+    termId,
+    box,
+    correctCount,
+    wrongCount,
+    ...(lastWrongAt !== undefined && { lastWrongAt }),
+    ...(lastStudiedAt !== undefined && { lastStudiedAt }),
+  }
+}
+
+function toStudyDay({ date, answeredCount }: StudyDay): StudyDay {
+  return { date, answeredCount }
 }
 
 type TermContent = Pick<Term, 'word' | 'partOfSpeech' | 'meaning' | 'example'>

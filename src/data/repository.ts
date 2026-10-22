@@ -1,3 +1,4 @@
+import type { Backup } from '../domain/backup.ts'
 import type {
   FileInput,
   Folder,
@@ -39,7 +40,8 @@ export interface FolderContents {
  * `EntityNotFoundError` when renaming/updating (or creating inside) something that no longer exists.
  * Deleting something that no longer exists is a no-op.
  */
-export interface Repository extends FolderRepository, FileRepository, TermRepository {}
+export interface Repository
+  extends FolderRepository, FileRepository, TermRepository, BackupRepository {}
 
 export interface FolderRepository {
   /** Sorted by `compareNames`. */
@@ -73,4 +75,12 @@ export interface TermRepository {
   deleteTerm(id: string): Promise<void>
   /** Terms whose word matches `word` (compared with `toKey`), in any file including the same one. */
   findTermsByWord(word: string, excludeTermId?: string): Promise<TermLocation[]>
+}
+
+export interface BackupRepository {
+  /**
+   * Everything the user owns, read in one snapshot, in the backup format. Not validated here:
+   * a safety copy must still download when some stored record is off; import validates it.
+   */
+  exportBackup(): Promise<Backup>
 }

@@ -47,7 +47,7 @@ IndexedDB không có khóa ngoại nên kiểm tra ở `domain/` (Zod) và trong
 ```json
 { "schemaVersion": 1, "exportedAt": "...", "folders": [], "files": [], "terms": [], "progress": [], "studyDays": [] }
 ```
-Không xuất `nameKey`/`wordKey` (tính lại khi nhập) và `Meta`.
+Không xuất `nameKey`/`wordKey` (tính lại khi nhập) và `Meta`. Xuất: `Repository.exportBackup()` đọc mọi bảng trong một transaction, không validate (bản sao an toàn vẫn phải tải được). Validate khi nhập: `validateBackup()` ở `src/domain/backup.ts` (xuất đã có từ giai đoạn 7, nhập chưa có). Dữ liệu mà schema sẽ đổi (chưa chuẩn hóa, trường lạ, ô trống) bị **từ chối** kèm đường dẫn, không lặng lẽ sửa (#35): file backup chỉ do app ghi, khác đi nghĩa là có bug hoặc bị sửa tay.
 Nhập: kiểm tra kích thước ≤ 5 MB → parse → validate bằng Zod (kể cả ràng buộc tham chiếu, và trùng `toKey` giữa các bản ghi trong chính file, ví dụ "IELTS" và "ielts ") → migration nếu là bản cũ → hỏi xác nhận "Replace all current data?" → ghi trong **một transaction**. Lỗi ở bất kỳ bước nào thì dữ liệu hiện tại giữ nguyên.
 
 ## Migration

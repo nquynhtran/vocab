@@ -59,7 +59,7 @@ const PartOfSpeechSchema = z
   .pipe(z.enum(PARTS_OF_SPEECH).optional())
 
 const IdSchema = z.uuid()
-const TimestampSchema = z.iso.datetime()
+export const TimestampSchema = z.iso.datetime()
 const CountSchema = z.int().min(0)
 
 export const FolderInputSchema = z.object({ name: requiredText('Name', NAME_MAX_LENGTH) })

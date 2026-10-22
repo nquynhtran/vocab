@@ -312,3 +312,19 @@ label {
     grid-column: 1 / -1;
   }
 }
+
+/* ---- Backup ---- */
+
+.backup {
+  display: grid;
+  gap: calc(var(--space) / 2);
+  justify-items: start;
+  margin-top: calc(var(--space) * 2);
+  padding-top: var(--space);
+  border-top: 1px solid var(--color-border);
+}
+
+.backup h2 {
+  margin: 0;
+  font-size: 1.125rem;
+}
