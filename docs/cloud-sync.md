@@ -23,6 +23,8 @@ Không đăng nhập thì dữ liệu nằm riêng trong trình duyệt của t�
 - CHECK chỉ là lưới an toàn (độ dài đếm theo ký tự, `box`, số ≥ 0, `part_of_speech`). Danh sách `part_of_speech` lặp lại `PARTS_OF_SPEECH`: đổi danh sách phải thêm migration SQL; bộ test hợp đồng (bước 4) tạo từ với mọi giá trị để bắt lệch.
 - `import_snapshot(payload)`: payload gồm đủ 5 mảng `folders, files, terms, progress, study_days`, mỗi phần tử là dòng snake_case có **đúng đủ** các cột (trống thì `null`), gồm `name_key`/`word_key` do client tính, không có `user_id`. Lỗi: `VC001` "Cloud already has data", `22023` thiếu mảng hoặc sai bộ key (`jsonb_populate_recordset` lặng lẽ bỏ key lạ, nên phải tự kiểm tra). Khóa advisory theo user để hai lần nhập đồng thời không cùng lọt.
 - `export_backup()`: một câu SQL (một snapshot), trả `{ folders, files, terms, progress, study_days }` gồm cả `user_id`, `name_key`, `null`; mapper bỏ đi, client tự thêm `schemaVersion`, `exportedAt`.
+- Thêm cột về sau: sửa cả danh sách cột trong `import_snapshot` (thiếu thì payload có cột mới bị từ chối, lỗi rõ chứ không mất dữ liệu).
+- `user_id` trỏ `auth.users` với `on delete cascade`: xóa tài khoản trên dashboard là xóa hết dữ liệu. Export JSON trước nếu cần.
 - `app_config`: đúng một dòng, `min_client_version = 1`; chỉ `authenticated` đọc được, nên client kiểm tra version **sau khi đăng nhập** (chưa đăng nhập thì `anon` bị từ chối, không phải lỗi mạng).
 - Chưa có: RPC `record_answer` (giai đoạn 3, migration mới); bảng `meta` (`migratedAt` chỉ ở local; `lastBackupAt` tính ở giai đoạn 5).
 - `supabase/config.toml` (chỉ cho local): tắt đăng ký như cloud; tắt realtime, storage, edge functions, analytics cho nhẹ.

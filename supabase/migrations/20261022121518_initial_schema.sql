@@ -1,5 +1,6 @@
 -- Initial cloud schema (phase 7). Rules: docs/cloud-sync.md, constraints: docs/data-model.md.
--- Never edit this file once it has been pushed; add a new migration instead.
+-- Never edit this file once it has been applied to the cloud project (`supabase db push`);
+-- add a new migration instead.
 --
 -- Conventions:
 -- * `id`, `created_at`, `updated_at` come from the client (kept as-is when local data is
@@ -186,6 +187,8 @@ declare
   -- The exact keys of each row. jsonb_populate_recordset silently ignores unknown keys and
   -- fills missing ones with null, so a mapper typo ("partOfSpeech") would drop data unnoticed.
   -- No user_id: ownership comes from auth.uid() only.
+  -- A migration that adds a column must update this list and the inserts below; until then
+  -- a payload carrying the new key is rejected, so the gap fails loudly instead of losing data.
   columns constant jsonb := '{
     "folders": ["id", "name", "name_key", "created_at", "updated_at"],
     "files": ["id", "folder_id", "name", "name_key", "created_at", "updated_at"],
