@@ -57,4 +57,5 @@ Nhập: kiểm tra kích thước ≤ 5 MB → parse → validate bằng Zod (k�
 - Đổi `toKey` (hoặc `normalizeText`) cũng là đổi dữ liệu: key đã lưu sẽ lệch, cảnh báo trùng sót và unique index chặn sai. Phải thêm version Dexie có migration tính lại mọi `nameKey`/`wordKey`, và xử lý trường hợp hai bản ghi cũ thành trùng key.
 - Không bao giờ sửa migration đã phát hành; chỉ thêm migration mới.
 - Nhiều tab: khi bản mới nâng version DB, tab cũ nhận sự kiện `versionchange` → `db.close({ disableAutoOpen: true })` rồi báo "A new version is available. Reloading…". Phải tắt tự mở lại: handler mặc định của Dexie cho tự mở lại, khi đó code cũ sẽ ghi dữ liệu theo cấu trúc cũ vào DB đã nâng version. Handler có sẵn từ version 1, vì tab đang chạy bản cũ phải có nó thì mới xử lý được khi bản mới ra.
+- Trên cloud (giai đoạn 7) không có `versionchange`: thay bằng ghi đủ cột + `min_client_version`, xem [cloud-sync.md](cloud-sync.md#client-cũ-ghi-đè-cột-mới-34).
 - File backup có `schemaVersion` lớn hơn app hiện tại → từ chối nhập, báo "This backup is from a newer version. Reload the page to update the app.".

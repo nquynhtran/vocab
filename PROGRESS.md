@@ -4,7 +4,7 @@
 
 ## Đang ở đâu
 - **Giai đoạn:** 2 xong và đã deploy. Tiếp theo là **giai đoạn 7 (cloud)**, làm trước Learn (quyết định #31).
-- **Việc tiếp theo:** đọc `docs/cloud-sync.md` → gọi `challenger` soát kế hoạch, nhất là cách đưa dữ liệu local hiện có lên cloud → chốt với người dùng → hướng dẫn người dùng tạo project Supabase (gói miễn phí) rồi mới code.
+- **Việc tiếp theo:** làm theo "Thứ tự làm" trong `docs/cloud-sync.md`: Export JSON trên bản local; song song hướng dẫn người dùng tạo project Supabase, cài Docker + Supabase CLI.
 - **Đang vướng:** không. Người dùng chưa thử bản có loại từ + nút 🔊.
 - **Câu hỏi mở (để giai đoạn 3):** có hiện loại từ làm gợi ý trong câu hỏi Learn không.
 
@@ -19,6 +19,12 @@ Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn 
   - [x] Cảnh báo trùng khi gõ (#27); ghi xong luôn tải lại (bị xóa ở tab khác → "no longer exists")
   - [x] Theo feedback: loại từ (#29, Dexie v2 theo #32), nút 🔊 en-GB (#30)
 - [ ] **7. Cloud & iPhone** — dùng chung dữ liệu máy tính ↔ iPhone ([cloud-sync.md](docs/cloud-sync.md))
+  - [x] Qua `challenger`, chốt #33–37 (chuyển dữ liệu, client cũ, validate khi đọc, không service worker, test bằng Supabase CLI)
+  - [ ] Export JSON trên bản local (`buildSnapshot`, `validateSnapshot`)
+  - [ ] Tài khoản + project Supabase; Docker + Supabase CLI
+  - [ ] SQL + RLS + `app_config` + `import_snapshot`; mapper + `SupabaseRepository` + test hợp đồng chung
+  - [ ] Đăng nhập, `min_client_version`, Dexie v3; màn chuyển dữ liệu; CSP, deploy
+  - [ ] Manifest, thử trên iPhone; giữ project hoạt động
 - [ ] **3. Learn** — học một file đến khi thuộc hết ([learn-algorithm.md](docs/learn-algorithm.md))
 - [ ] **4. Streak** — đủ các test trong [streak.md](docs/streak.md)
 - [ ] **5. Sao lưu** — khôi phục toàn bộ dữ liệu từ file backup
