@@ -1,19 +1,28 @@
 # Vocab
 
-App học từ vựng tiếng Anh cá nhân, chỉ có chế độ Learn (trắc nghiệm + viết lại), kèm streak ngày học.
+A personal English vocabulary trainer with a single Learn mode (multiple choice + typing the answer) and a daily study streak.
 
-**Dùng app:** https://nquynhtran.github.io/vocab/
+**Open the app:** https://nquynhtran.github.io/vocab/
 
-## Chạy trên máy
-Cần Node.js theo `.nvmrc` (cài qua `nvm install`).
+Your vocabulary is stored only in your browser (IndexedDB) and is never sent to a server. Clearing your browser data deletes it, so back it up with the JSON export (planned).
+
+## Run locally
+
+Requires the Node.js version in `.nvmrc` (install it with `nvm install`).
 
 ```bash
 npm install
-npm run dev      # chạy local
-npm run check    # lint + format + typecheck + test
-npm run build    # build bản production vào dist/
+npm run dev      # start the dev server
+npm run check    # lint + format check + typecheck + tests
+npm run build    # production build into dist/
 ```
 
-Mỗi lần push lên `main`, GitHub Actions tự kiểm tra và deploy lên GitHub Pages.
+Every push to `main` runs the checks in GitHub Actions and deploys to GitHub Pages.
 
-Tài liệu thiết kế: [docs/README.md](docs/README.md) · Tiến độ: [PROGRESS.md](PROGRESS.md)
+## Tech stack
+
+TypeScript (strict) · React · Vite · Dexie (IndexedDB) · Zod · Vitest · GitHub Pages
+
+## Documentation
+
+Design notes and the progress log are written in Vietnamese: [docs/README.md](docs/README.md) · [PROGRESS.md](PROGRESS.md)
