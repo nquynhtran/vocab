@@ -6,6 +6,10 @@ export function canSpeak(): boolean {
   return 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined'
 }
 
+// Chrome and Safari load voices asynchronously and return [] on the first call; asking once at
+// startup means the list is usually ready by the first click on 🔊.
+if (canSpeak()) window.speechSynthesis.getVoices()
+
 /** Must run inside a click handler: iOS Safari only speaks in response to a user gesture. */
 export function speak(text: string): void {
   const synth = window.speechSynthesis
