@@ -4,7 +4,7 @@
 
 ## Đang ở đâu
 - **Giai đoạn:** 2 xong và đã deploy. Tiếp theo là **giai đoạn 7 (cloud)**, làm trước Learn (quyết định #31).
-- **Việc tiếp theo:** bước 3 trong "Thứ tự làm" của `docs/cloud-sync.md`: `npm i -D supabase` → `npx supabase init` → viết migration đầu tiên trong `supabase/migrations/` (bảng, ràng buộc, GRANT cho `authenticated`, RLS, `app_config`, `import_snapshot`) → `npx supabase start` chạy local trên Docker. Chưa liên kết project cloud (`supabase link`) trước khi SQL qua test.
+- **Việc tiếp theo:** bước 4 của `docs/cloud-sync.md`: `npm i @supabase/supabase-js` → mapper đọc (snake→camel, null, thời gian, so với schema, #35) có unit test → tách bộ test hợp đồng của `src/data/dexieRepository.test.ts` thành bộ dùng chung nhận factory → `SupabaseRepository`. Đọc mục "SQL đã có" và "Khác biệt so với Dexie" trước khi làm.
 - **Đang vướng:** không. Loại từ + nút 🔊: người dùng đã thử, OK.
 - **Câu hỏi mở (để giai đoạn 3):** có hiện loại từ làm gợi ý trong câu hỏi Learn không.
 
@@ -22,7 +22,8 @@ Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn 
   - [x] Qua `challenger`, chốt #33–37 (chuyển dữ liệu, client cũ, validate khi đọc, không service worker, test bằng Supabase CLI)
   - [x] Export JSON trên bản local (`exportBackup`, `validateBackup`), qua `reviewer`
   - [x] Tài khoản + project Supabase (Singapore, đã tắt đăng ký); Docker đã cài
-  - [ ] Supabase CLI (devDependency); SQL + RLS + `app_config` + `import_snapshot`; mapper + `SupabaseRepository` + test hợp đồng chung
+  - [x] Supabase CLI (devDependency); SQL + RLS + `app_config` + `import_snapshot`/`export_backup`, 66 test pgTAP, qua `reviewer`
+  - [ ] Mapper + `SupabaseRepository` + test hợp đồng chung (cả `max_rows` 1000, mọi `PARTS_OF_SPEECH`)
   - [ ] Đăng nhập, `min_client_version`, Dexie v3; màn chuyển dữ liệu; CSP, deploy
   - [ ] Manifest, thử trên iPhone; giữ project hoạt động
 - [ ] **3. Learn** — học một file đến khi thuộc hết ([learn-algorithm.md](docs/learn-algorithm.md))
@@ -31,8 +32,8 @@ Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn 
 - [ ] **6. Hoàn thiện** — phím tắt, dark mode, README; dùng thử 1 tuần
 
 ## Nhật ký (5 mục gần nhất, mới nhất trên cùng)
+- 2026-10-22 — Giai đoạn 7 bước 3: Supabase CLI + config local, migration đầu (khóa ngoại kèm `user_id`, RLS, quyền tường minh, `import_snapshot` kiểm tra đúng bộ key, `export_backup` một snapshot), 66 test pgTAP qua `reviewer`; #38; CI xanh. Chưa `supabase link`.
 - 2026-10-22 — Giai đoạn 7: `challenger` soát kế hoạch, chốt #33–37; Export JSON + `validateBackup` qua `reviewer` (114 test, đã deploy); tạo project Supabase, tắt đăng ký; cài Docker.
 - 2026-10-22 — Rà soát lại giai đoạn 2: gom code lặp, đọc màn Folder trong một transaction, Dexie v2 (#32) chặn tab cũ xóa loại từ, sửa giọng đọc; 86 test.
 - 2026-10-22 — Feedback giai đoạn 2: thêm loại từ, phát âm en-GB; chốt làm cloud trước Learn (#29–31).
 - 2026-10-22 — Xong giai đoạn 2: UI folder/file/từ, 84 test, qua `reviewer` (6 điểm, đã sửa hết).
-- 2026-10-22 — Xong giai đoạn 1: domain + DexieRepository, qua `challenger` và `reviewer`; README tiếng Anh; thêm `LESSONS.md`.

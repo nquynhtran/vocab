@@ -35,6 +35,7 @@ PostgREST mỗi request là một transaction riêng, nên không "kiểm tra r�
 - Thao tác nhiều bảng (`recordAnswer`, nhập snapshot) là hàm Postgres gọi qua RPC, `SECURITY INVOKER` để RLS vẫn áp dụng; `user_id` lấy từ `auth.uid()` trong hàm, không lấy từ payload.
 - Lỗi mạng và phiên hết hạn (401) có lớp lỗi riêng; UI báo lỗi và giữ nguyên nội dung form đang gõ.
 - PostgREST cắt ngầm SELECT ở `max_rows` = 1000 dòng: đọc danh sách (`listTerms`, `findTermsByWord`) phải phân trang hoặc báo lỗi khi chạm giới hạn, có test hợp đồng. `export_backup` không bị vì trả một giá trị jsonb.
+- Chuỗi Zod nhận nhưng Postgres từ chối: ký tự `\u0000` (lỗi `22P05`) và surrogate UTF-16 lẻ (JSON không hợp lệ). Bước 4 quyết định: chặn ở schema domain hay chuyển lỗi thành thông báo rõ.
 
 ## Validate dữ liệu tải về (#35)
 Dữ liệu từ cloud là dữ liệu từ biên: **validate khi đọc**, ngoại lệ của #24. Không tin vào CHECK của Postgres. Mapper riêng (có test), theo thứ tự:
