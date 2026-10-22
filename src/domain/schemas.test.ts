@@ -42,6 +42,20 @@ describe('input schemas', () => {
     }
   })
 
+  it('rejects characters the cloud cannot store, but accepts emoji', () => {
+    for (const bad of ['a\u0000b', 'a\uD800b', 'a\uDC00']) {
+      expect(() =>
+        parseOrThrow(TermInputSchema, { word: bad, meaning: 'x', example: bad }),
+      ).toThrow(
+        new ValidationError({
+          word: ['Term contains a character that cannot be saved'],
+          example: ['Example contains a character that cannot be saved'],
+        }),
+      )
+    }
+    expect(FolderInputSchema.parse({ name: 'Fun 😀' })).toEqual({ name: 'Fun 😀' })
+  })
+
   it('drops a blank example', () => {
     expect(TermInputSchema.parse({ word: 'run', meaning: 'chạy', example: '   ' })).toEqual({
       word: 'run',

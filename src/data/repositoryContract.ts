@@ -114,6 +114,10 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
       await expect(repo.createFolder({ name: 'x'.repeat(201) })).rejects.toBeInstanceOf(
         ValidationError,
       )
+      // Postgres cannot store these; the domain must reject them before any request.
+      for (const name of ['a\u0000b', 'a\uD800b']) {
+        await expect(repo.createFolder({ name })).rejects.toBeInstanceOf(ValidationError)
+      }
       expect(await repo.listFolders()).toEqual([])
     })
 

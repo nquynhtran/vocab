@@ -6,17 +6,28 @@ export const EXAMPLE_MAX_LENGTH = 500
 export const BOX_MIN = 1
 export const BOX_MAX = 5
 
+/**
+ * Text Postgres cannot store: U+0000 (error 22P05) and lone UTF-16 surrogates (invalid JSON on
+ * the way to the cloud). Rejected here so local and cloud accept exactly the same input.
+ * With the `u` flag, \p{Cs} matches only unpaired surrogates; emoji pairs are fine.
+ */
+const UNSTORABLE_TEXT = /[\0\p{Cs}]/u
+
+function storableText(label: string, max: number) {
+  return z
+    .string()
+    .max(max, { error: `${label} must be at most ${max} characters` })
+    .refine((text) => !UNSTORABLE_TEXT.test(text), {
+      error: `${label} contains a character that cannot be saved`,
+    })
+}
+
 /** Normalizes first so the length limits apply to what is actually stored. */
 function requiredText(label: string, max: number) {
   return z
     .string()
     .transform(normalizeText)
-    .pipe(
-      z
-        .string()
-        .min(1, { error: `${label} is required` })
-        .max(max, { error: `${label} must be at most ${max} characters` }),
-    )
+    .pipe(storableText(label, max).min(1, { error: `${label} is required` }))
 }
 
 /** A blank example is stored as "no example", so the field is simply absent. */
@@ -24,14 +35,7 @@ const ExampleSchema = z
   .string()
   .optional()
   .transform((value) => (value === undefined ? undefined : normalizeText(value) || undefined))
-  .pipe(
-    z
-      .string()
-      .max(EXAMPLE_MAX_LENGTH, {
-        error: `Example must be at most ${EXAMPLE_MAX_LENGTH} characters`,
-      })
-      .optional(),
-  )
+  .pipe(storableText('Example', EXAMPLE_MAX_LENGTH).optional())
 
 /**
  * Stored as these full names; abbreviations ("v.") are display only (features/terms).
