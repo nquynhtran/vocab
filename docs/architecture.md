@@ -1,0 +1,51 @@
+# Kiến trúc
+
+## Triển khai
+Web tĩnh, **không có backend** (giai đoạn 0–6).
+- **Hosting:** GitHub Pages, link dạng `https://<username>.github.io/vocab/` (Vite cần `base: '/vocab/'`). Mỗi lần push lên `main`, GitHub Actions chạy lint → test → build → deploy.
+- **Git:** làm việc trực tiếp trên `main` (trunk-based, phù hợp một người). CI đỏ thì không deploy.
+- **Node:** phiên bản ghi trong `.nvmrc`; CI đọc cùng file đó, để máy local và CI giống nhau.
+- **Repo public** (GitHub Pages miễn phí yêu cầu vậy). Chỉ code là public; từ vựng nằm trong trình duyệt, không bao giờ lên GitHub.
+- **Lưu trữ:** IndexedDB qua Dexie, riêng cho từng trình duyệt.
+
+## Rủi ro
+| Rủi ro | Xử lý |
+|--------|-------|
+| Xóa dữ liệu trình duyệt → mất từ vựng | Xuất/nhập JSON, `navigator.storage.persist()`, nhắc sao lưu nếu > 7 ngày chưa xuất |
+| Máy tính và iPhone không dùng chung dữ liệu | Chấp nhận ở MVP; giải quyết ở giai đoạn 7 ([cloud-sync.md](cloud-sync.md)) |
+| Đổi cấu trúc dữ liệu | Version Dexie + migration ([data-model.md](data-model.md#migration)) |
+
+## Công nghệ
+| Thành phần | Chọn | Lý do |
+|-----------|------|-------|
+| Ngôn ngữ | TypeScript `strict` | Bắt lỗi kiểu từ lúc viết |
+| UI | React + Vite | Phổ biến, build nhanh |
+| Router | React Router `HashRouter` | GitHub Pages không rewrite URL |
+| CSDL | Dexie | Transaction, index, migration theo version |
+| Validate | Zod | Một schema cho form, file nhập và kiểu TS |
+| Test | Vitest + Testing Library + fake-indexeddb | Unit test domain, test repository |
+| Chất lượng | oxlint + Prettier | oxlint là mặc định của template Vite, nhanh, không cần cấu hình; chạy trong CI |
+| CI/CD | GitHub Actions → GitHub Pages | Tự động hoàn toàn |
+
+Thêm thư viện mới → ghi lý do vào [decisions.md](decisions.md).
+
+## Cấu trúc thư mục
+```
+src/
+  domain/      # Kiểu, Zod schema, logic thuần. Không import React/Dexie
+    learn/     #   thuật toán học
+    streak/    #   tính chuỗi ngày
+  data/        # Repository interface, DexieRepository, migration, export/import
+  features/    # UI theo tính năng: folders/ files/ terms/ learn/ streak/ backup/
+  shared/      # Component dùng chung, tiện ích (date, id)
+  app/         # Router, layout, khởi tạo
+```
+**Phụ thuộc một chiều:** `features → domain, data` · `data → domain` · `domain` không phụ thuộc gì. Test cạnh file: `foo.ts` ↔ `foo.test.ts`.
+
+## Quy tắc `Repository`
+Để giai đoạn 7 thay `DexieRepository` bằng `SupabaseRepository` mà không sửa UI hay domain:
+- Mọi phương thức `async`, trả về plain object; không lộ kiểu của Dexie/Supabase.
+- Thao tác cần toàn vẹn gói thành **một** phương thức, ví dụ `deleteFolder(id)` (xóa dây chuyền) hay `recordAnswer(termId, result, date)` (cập nhật tiến độ + ngày học). UI không tự ghép nhiều lệnh ghi. Dexie dùng transaction, Supabase dùng hàm Postgres (RPC).
+- UI không dùng `liveQuery`; ghi xong thì tải lại qua repository.
+- `id` do client sinh (`crypto.randomUUID()`).
+- UI lấy repository qua React Context (Dependency Injection), test truyền bản giả vào.

@@ -1,0 +1,51 @@
+/* Mobile-first: base styles target narrow screens; wider layouts are added with min-width queries. */
+:root {
+  --color-bg: #f6f7fb;
+  --color-surface: #ffffff;
+  --color-text: #2e3856;
+  --color-muted: #586380;
+  --color-primary: #4255ff;
+  --space: 16px;
+  --content-max-width: 720px;
+
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    sans-serif;
+  line-height: 1.5;
+  color: var(--color-text);
+  background: var(--color-bg);
+  -webkit-text-size-adjust: 100%;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--color-bg);
+}
+
+.page {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: var(--space);
+}
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 1.75rem;
+}
+
+p {
+  margin: 0;
+  color: var(--color-muted);
+}
