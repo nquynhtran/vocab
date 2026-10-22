@@ -29,3 +29,6 @@ Mỗi dòng: ngày · quyết định · lý do ngắn. Đổi quyết định c
 | 23 | 2026-10-22 | `versionchange` → `close({ disableAutoOpen: true })` | Mặc định Dexie tự mở lại, tab cũ sẽ ghi dữ liệu sai cấu trúc vào DB mới |
 | 24 | 2026-10-22 | Validate khi ghi, không validate lại khi đọc từ DB; có test bảo đảm bản ghi repository tạo ra parse được qua schema | Mọi lần ghi đều qua repository; dữ liệu cũ đi qua migration có test |
 | 25 | 2026-10-22 | Cảnh báo từ trùng cả trong cùng file, không chỉ file khác; vẫn cho thêm | Người dùng chọn; trùng trong cùng file thường là nhập nhầm, nhưng từ nhiều nghĩa vẫn hợp lệ |
+| 26 | 2026-10-22 | Xác nhận xóa bằng `window.confirm` | Người dùng chọn; đơn giản, iPhone hiện hộp thoại hệ thống |
+| 27 | 2026-10-22 | Cảnh báo từ trùng hiện ngay khi gõ, không chặn nút Add | Thấy ngay trước khi gõ nghĩa; không thêm bước xác nhận |
+| 28 | 2026-10-22 | Dùng `react-router` (v8) | Đã chọn `HashRouter` ở architecture.md; v8 gộp hết vào một gói |

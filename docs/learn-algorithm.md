@@ -19,7 +19,7 @@ Code ở `src/domain/learn/`, là **hàm thuần**: nhận state, trả state m�
 | `correctCount`, `wrongCount` | Tổng số câu đúng / sai |
 | `lastWrongAt`, `lastStudiedAt` | Thời điểm sai / học gần nhất |
 
-**Đã thuộc** = `box ≥ MASTERED_BOX` (= 3), tức đã qua ít nhất 2 phiên liên tiếp không sai. Dùng để tính "% đã thuộc" của file.
+**Đã thuộc** = `box ≥ MASTERED_BOX` (= 3), tức đã qua ít nhất 2 phiên liên tiếp không sai. Dùng để tính "% đã thuộc" của file, làm tròn xuống (chỉ 100% khi thuộc hết; file trống là 0%). Code: `src/domain/mastery.ts`.
 
 **Cập nhật `box`** (mỗi từ tối đa một lần tăng mỗi phiên, để việc trả lời nhiều câu trong một phiên không làm hộp tăng vọt):
 - Trả lời sai bất kỳ lúc nào → `box = 1` ngay.

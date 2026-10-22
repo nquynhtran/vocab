@@ -202,6 +202,36 @@ describe('files', () => {
   })
 })
 
+describe('listFileStats', () => {
+  it('counts terms and mastered terms per file of one folder, including empty files', async () => {
+    const { repo, db } = setup()
+    const { folder, file, term } = await seedTerm(repo)
+    const walk = await repo.createTerm(file.id, { word: 'walk', meaning: 'đi bộ' })
+    await repo.createTerm(file.id, { word: 'jump', meaning: 'nhảy' }) // never studied
+    const empty = await repo.createFile(folder.id, { name: 'Unit 2' })
+    const other = await seedTerm(repo, 'TOEIC')
+    await db.progress.bulkAdd([
+      { termId: term.id, box: 3, correctCount: 2, wrongCount: 0 },
+      { termId: walk.id, box: 2, correctCount: 1, wrongCount: 0 },
+      { termId: other.term.id, box: 5, correctCount: 4, wrongCount: 0 },
+    ])
+
+    const stats = await repo.listFileStats(folder.id)
+
+    expect(stats.toSorted((a, b) => a.fileId.localeCompare(b.fileId))).toEqual(
+      [
+        { fileId: file.id, termCount: 3, masteredCount: 1 },
+        { fileId: empty.id, termCount: 0, masteredCount: 0 },
+      ].toSorted((a, b) => a.fileId.localeCompare(b.fileId)),
+    )
+  })
+
+  it('returns nothing for a missing folder', async () => {
+    const { repo } = setup()
+    expect(await repo.listFileStats(MISSING_ID)).toEqual([])
+  })
+})
+
 describe('terms', () => {
   it('lists terms newest first, breaking timestamp ties by id', async () => {
     const { repo, db } = setup()

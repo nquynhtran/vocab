@@ -15,6 +15,14 @@ export interface TermLocation {
   fileName: string
 }
 
+/** Numbers shown for a file in its folder and in delete confirmations. */
+export interface FileStats {
+  fileId: string
+  termCount: number
+  /** Terms whose progress counts as mastered (`isMastered`). */
+  masteredCount: number
+}
+
 /**
  * The only way the UI touches stored data, so phase 7 can swap Dexie for Supabase.
  * Rules: docs/architecture.md#quy-tắc-repository. Constraints: docs/data-model.md.
@@ -42,6 +50,8 @@ export interface FileRepository {
   /** Sorted by `compareNames`. */
   listFiles(folderId: string): Promise<VocabFile[]>
   getFile(id: string): Promise<VocabFile | undefined>
+  /** One entry per file in the folder, including empty ones; order unspecified. */
+  listFileStats(folderId: string): Promise<FileStats[]>
   createFile(folderId: string, input: FileInput): Promise<VocabFile>
   renameFile(id: string, input: FileInput): Promise<VocabFile>
   /** Also deletes its terms and their progress. */
