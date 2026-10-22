@@ -38,10 +38,10 @@ src/
     streak/    #   tính chuỗi ngày
   data/        # Repository interface, DexieRepository, migration, export/import
   features/    # UI theo tính năng: folders/ files/ terms/ learn/ streak/ backup/
-  shared/      # Component dùng chung, tiện ích (date, id)
-  app/         # Router, layout, khởi tạo
+  shared/      # Component, hook dùng chung; RepositoryContext + useRepository
+  app/         # Router, layout, khởi tạo (main.tsx tạo VocabDb + DexieRepository)
 ```
-**Phụ thuộc một chiều:** `features → domain, data` · `data → domain` · `domain` không phụ thuộc gì. Test cạnh file: `foo.ts` ↔ `foo.test.ts`.
+**Phụ thuộc một chiều:** `app → features, shared` · `features → shared, domain, data` · `shared → domain, data` · `data → domain` · `domain` không phụ thuộc gì. `RepositoryContext` nằm ở `shared/` (không ở `app/`) để `features` không phải import ngược `app`. Test cạnh file: `foo.ts` ↔ `foo.test.ts`.
 
 ## Quy tắc `Repository`
 Để giai đoạn 7 thay `DexieRepository` bằng `SupabaseRepository` mà không sửa UI hay domain:

@@ -19,11 +19,11 @@ Giai đoạn 0–6 ưu tiên máy tính, nhưng CSS **responsive ngay từ đầ
 Đường dẫn (`HashRouter`): `#/` Home · `#/folders/:folderId` Folder · `#/files/:fileId` File · đường dẫn khác → "Page not found" kèm link về Home.
 
 ## Thao tác
-- Xóa folder / file / từ luôn hỏi xác nhận bằng `window.confirm` có sẵn của trình duyệt, ghi rõ sẽ xóa bao nhiêu thứ bên trong (ví dụ "Delete folder 'IELTS' and its 3 files (120 terms)?").
+- Xóa folder / file / từ luôn hỏi xác nhận bằng `window.confirm` có sẵn của trình duyệt, ghi rõ sẽ xóa bao nhiêu thứ bên trong (ví dụ `Delete folder "IELTS" and its 3 files (120 terms)?`; folder/file trống thì chỉ `Delete folder "IELTS"?`).
 - Đổi tên folder/file và sửa từ: sửa ngay tại dòng (form thay chỗ dòng đó), `Escape` hoặc "Cancel" để hủy.
 - Thêm từ: thêm xong thì xóa form và đưa con trỏ về ô Term để nhập liên tục.
 - Cảnh báo từ trùng hiện **ngay khi gõ** ô Term (chờ ~300 ms sau lần gõ cuối, bỏ qua kết quả cũ về muộn), cả khi thêm và khi sửa (khi sửa không so với chính nó). Không chặn nút Add.
-- Lỗi nhập (`ValidationError`, `DuplicateNameError`) hiện cạnh ô nhập. Thứ đang mở đã bị xóa ở tab khác (`EntityNotFoundError`) → thông báo kèm link về Home.
+- Lỗi nhập (`ValidationError`, `DuplicateNameError`) hiện cạnh ô nhập. Sau mỗi lần ghi (kể cả lỗi) trang tải lại, nên thứ đang mở đã bị xóa ở tab khác (`EntityNotFoundError`) → trang "no longer exists" kèm link về Home. Lỗi không lường trước → "Something went wrong. Please try again.".
 - Nút **Learn** chỉ xuất hiện từ giai đoạn 3.
 
 ## Responsive

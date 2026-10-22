@@ -5,6 +5,12 @@
   --color-text: #2e3856;
   --color-muted: #586380;
   --color-primary: #4255ff;
+  --color-border: #d9dde8;
+  --color-danger: #c0263b;
+  --color-warning-bg: #fff4d6;
+  --color-warning-text: #6b4a00;
+  --radius: 8px;
+  --tap-size: 44px;
   --space: 16px;
   --content-max-width: 720px;
 
@@ -41,11 +47,246 @@ body {
 }
 
 h1 {
-  margin: 0 0 8px;
-  font-size: 1.75rem;
+  margin: 0 0 var(--space);
+  font-size: 1.5rem;
+  overflow-wrap: anywhere;
 }
 
 p {
   margin: 0;
+}
+
+a {
+  color: var(--color-primary);
+}
+
+.muted {
   color: var(--color-muted);
+}
+
+/* ---- Header ---- */
+
+.app-header {
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  padding: 0 var(--space);
+}
+
+.app-header__title {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-size);
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.breadcrumb {
+  margin-bottom: 4px;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+/* ---- Controls ---- */
+
+input {
+  width: 100%;
+  min-height: var(--tap-size);
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  /* 16px stops iOS Safari from zooming into the field on focus. */
+  font: inherit;
+  font-size: 1rem;
+}
+
+input[aria-invalid='true'] {
+  border-color: var(--color-danger);
+}
+
+label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.button {
+  min-height: var(--tap-size);
+  padding: 8px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.button--primary {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.button--danger {
+  color: var(--color-danger);
+}
+
+.field-error {
+  margin-top: 4px;
+  color: var(--color-danger);
+  font-size: 0.9rem;
+}
+
+.field-warning {
+  margin-top: 4px;
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+/* ---- Forms ---- */
+
+.inline-form {
+  margin-bottom: var(--space);
+}
+
+.inline-form__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.inline-form__row input {
+  flex: 1 1 12rem;
+}
+
+.term-form {
+  display: grid;
+  gap: 12px;
+  margin-bottom: var(--space);
+  padding: var(--space);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.term-form__actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ---- Folder and file lists ---- */
+
+.item-list,
+.term-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.item .inline-form {
+  flex: 1;
+  margin: 0;
+}
+
+.item__link {
+  display: flex;
+  flex: 1 1 12rem;
+  flex-direction: column;
+  justify-content: center;
+  min-height: var(--tap-size);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.item__name {
+  font-weight: 600;
+}
+
+.item__detail {
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+.item__actions,
+.term__actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ---- Terms: stacked cards on phones, a three-column table on wider screens ---- */
+
+.term {
+  display: grid;
+  gap: 4px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+  overflow-wrap: anywhere;
+}
+
+.term--header {
+  display: none;
+}
+
+.term__word {
+  font-weight: 600;
+}
+
+.term__example {
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+.term--editing .term-form {
+  margin: 0;
+}
+
+@media (min-width: 640px) {
+  .term {
+    grid-template-columns: 1fr 1fr 1.5fr auto;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .term--header {
+    display: grid;
+    color: var(--color-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .term--editing {
+    grid-template-columns: 1fr;
+  }
+
+  .term-form {
+    grid-template-columns: 1fr 1fr 1.5fr;
+    align-items: start;
+  }
+
+  .term-form__actions,
+  .term-form > .field-error {
+    grid-column: 1 / -1;
+  }
 }

@@ -1,8 +1,26 @@
-export function App() {
+import { HashRouter, Route, Routes } from 'react-router'
+import type { Repository } from '../data/repository.ts'
+import { FolderPage } from '../features/files/FolderPage.tsx'
+import { HomePage } from '../features/folders/HomePage.tsx'
+import { FilePage } from '../features/terms/FilePage.tsx'
+import { NotFound } from '../shared/PageStatus.tsx'
+import { RepositoryContext } from '../shared/repositoryContext.ts'
+import { Layout } from './Layout.tsx'
+
+// HashRouter because GitHub Pages cannot rewrite unknown paths to index.html.
+export function App({ repository }: { repository: Repository }) {
   return (
-    <main className="page">
-      <h1>Vocab</h1>
-      <p>Your personal vocabulary trainer. Coming soon.</p>
-    </main>
+    <RepositoryContext value={repository}>
+      <HashRouter>
+        <Routes>
+          <Route element={<Layout />}>
+            <Route index element={<HomePage />} />
+            <Route path="folders/:folderId" element={<FolderPage />} />
+            <Route path="files/:fileId" element={<FilePage />} />
+            <Route path="*" element={<NotFound message="Page not found." />} />
+          </Route>
+        </Routes>
+      </HashRouter>
+    </RepositoryContext>
   )
 }
