@@ -15,6 +15,18 @@ Không đăng nhập thì dữ liệu nằm riêng trong trình duyệt của t�
 - `SupabaseRepository` cài đặt cùng interface với `DexieRepository` ([architecture.md](architecture.md#quy-tắc-repository)), interface đã toàn `async` nên UI và domain không đổi.
 - App cần mạng; học offline không nằm trong phạm vi.
 
+## SQL đã có (`supabase/`)
+- Migration đầu: `supabase/migrations/20261022121518_initial_schema.sql`. Test pgTAP: `supabase/tests/database/`, chạy `npx supabase start` rồi `npm run test:supabase`. Test giả lập người dùng bằng `set local role authenticated` + `request.jwt.claims`, không cần khóa nào.
+- **Khóa ngoại gồm `user_id`** (`(user_id, folder_id) → folders(user_id, id)`): Postgres kiểm tra khóa ngoại không qua RLS, khóa đơn sẽ cho gắn dòng vào folder của người khác.
+- Thu hồi rồi cấp quyền tường minh (bảng và `EXECUTE` của hàm), vì Supabase local mặc định cấp hết cho `anon`/`PUBLIC`. `authenticated` không có `TRUNCATE` (bỏ qua RLS). **Mỗi migration mới** tạo bảng/hàm cũng phải revoke/grant như vậy; test duyệt mọi object trong `public` sẽ đỏ nếu quên.
+- Tên constraint là hợp đồng với client: `folders_name_key_unique`, `files_name_key_unique` → `DuplicateNameError`.
+- CHECK chỉ là lưới an toàn (độ dài đếm theo ký tự, `box`, số ≥ 0, `part_of_speech`). Danh sách `part_of_speech` lặp lại `PARTS_OF_SPEECH`: đổi danh sách phải thêm migration SQL; bộ test hợp đồng (bước 4) tạo từ với mọi giá trị để bắt lệch.
+- `import_snapshot(payload)`: payload gồm đủ 5 mảng `folders, files, terms, progress, study_days`, mỗi phần tử là dòng snake_case có **đúng đủ** các cột (trống thì `null`), gồm `name_key`/`word_key` do client tính, không có `user_id`. Lỗi: `VC001` "Cloud already has data", `22023` thiếu mảng hoặc sai bộ key (`jsonb_populate_recordset` lặng lẽ bỏ key lạ, nên phải tự kiểm tra). Khóa advisory theo user để hai lần nhập đồng thời không cùng lọt.
+- `export_backup()`: một câu SQL (một snapshot), trả `{ folders, files, terms, progress, study_days }` gồm cả `user_id`, `name_key`, `null`; mapper bỏ đi, client tự thêm `schemaVersion`, `exportedAt`.
+- `app_config`: đúng một dòng, `min_client_version = 1`; chỉ `authenticated` đọc được, nên client kiểm tra version **sau khi đăng nhập** (chưa đăng nhập thì `anon` bị từ chối, không phải lỗi mạng).
+- Chưa có: RPC `record_answer` (giai đoạn 3, migration mới); bảng `meta` (`migratedAt` chỉ ở local; `lastBackupAt` tính ở giai đoạn 5).
+- `supabase/config.toml` (chỉ cho local): tắt đăng ký như cloud; tắt realtime, storage, edge functions, analytics cho nhẹ.
+
 ## Khác biệt so với Dexie (phải có trong test hợp đồng)
 PostgREST mỗi request là một transaction riêng, nên không "kiểm tra rồi ghi" trong cùng transaction được:
 - Lớp chặn chính là ràng buộc DB. Lỗi `23505` (unique) theo tên constraint → `DuplicateNameError`; `23503` (khóa ngoại) → `EntityNotFoundError`. Trên cloud đây là chuyện bình thường (hai máy cùng ghi), không phải bug như `ConstraintError` của Dexie.
@@ -22,6 +34,7 @@ PostgREST mỗi request là một transaction riêng, nên không "kiểm tra r�
 - Đọc cần một snapshot (`getFolderContents`, `findTermsByWord`, `exportBackup`) → một request embed hoặc một view/RPC, không ghép nhiều request; riêng `exportBackup` là một RPC đọc mọi bảng trong một transaction, để backup không trộn trạng thái trước và sau một lần ghi từ máy khác.
 - Thao tác nhiều bảng (`recordAnswer`, nhập snapshot) là hàm Postgres gọi qua RPC, `SECURITY INVOKER` để RLS vẫn áp dụng; `user_id` lấy từ `auth.uid()` trong hàm, không lấy từ payload.
 - Lỗi mạng và phiên hết hạn (401) có lớp lỗi riêng; UI báo lỗi và giữ nguyên nội dung form đang gõ.
+- PostgREST cắt ngầm SELECT ở `max_rows` = 1000 dòng: đọc danh sách (`listTerms`, `findTermsByWord`) phải phân trang hoặc báo lỗi khi chạm giới hạn, có test hợp đồng. `export_backup` không bị vì trả một giá trị jsonb.
 
 ## Validate dữ liệu tải về (#35)
 Dữ liệu từ cloud là dữ liệu từ biên: **validate khi đọc**, ngoại lệ của #24. Không tin vào CHECK của Postgres. Mapper riêng (có test), theo thứ tự:
@@ -35,7 +48,7 @@ Một dòng hỏng → cả thao tác báo lỗi rõ ràng (fail fast), không b
 ## Chuyển dữ liệu local lên cloud (#33)
 Chỉ máy tính có dữ liệu (iPhone chưa dùng), nên chỉ chuyển một chiều, một lần, không gộp.
 1. Làm sớm phần lõi của giai đoạn 5: `exportBackup()` của repository đọc hết dữ liệu trong một transaction ra đúng định dạng backup `schemaVersion: 1`; `validateBackup()` ở `domain/backup.ts` (Zod, tham chiếu, trùng `toKey`); nút **Export JSON** ở Home.
-2. Màn chuyển dữ liệu: tải JSON về trước (bản sao an toàn độc lập với Supabase) → gọi RPC `import_snapshot(payload)`: một transaction, **từ chối nếu tài khoản đã có dữ liệu** ("Cloud already has data"), nên bấm hai lần không nhân đôi. RPC này sau dùng lại cho "Replace all" của giai đoạn 5.
+2. Màn chuyển dữ liệu: tải JSON về trước (bản sao an toàn độc lập với Supabase) → gọi RPC `import_snapshot(payload)`: một transaction, **từ chối nếu tài khoản đã có dữ liệu** ("Cloud already has data"), nên bấm hai lần không nhân đôi. "Replace all" của giai đoạn 5 cần RPC riêng xóa và nhập trong một transaction (#38). Chỉ chạy khi chưa dùng cloud ở máy khác: khóa advisory chặn hai lần nhập đồng thời, không chặn lệnh ghi thường.
 3. Bản cloud vẫn mở `VocabDb` ở **version 3** (giữ nguyên index) lúc khởi động, để tab cũ còn chạy bản local nhận `versionchange` và reload. Nếu không, tab đó vẫn ghi vào IndexedDB, báo "đã lưu" nhưng từ không bao giờ lên cloud.
 4. Không tự xóa IndexedDB; ghi `meta.migratedAt`, hiện "Local data was uploaded on …" kèm nút xóa thủ công sau khi người dùng đã kiểm tra trên cloud.
 
@@ -48,7 +61,7 @@ Cùng loại lỗi với #32. Không có `versionchange` cho Supabase, nên:
 
 ## Test (#37)
 - Test mapper và chuyển lỗi: unit test, chạy trong CI.
-- Bộ test hợp đồng (hiện ở test của `DexieRepository`) tách thành bộ dùng chung nhận factory. CI chạy trên Dexie; `npm run test:supabase` chạy tay trên Supabase CLI local (Docker) trước mỗi lần deploy có đổi SQL. Bộ này gồm cả test RLS (người dùng khác không đọc/ghi được) và `import_snapshot`.
+- Bộ test hợp đồng (hiện ở test của `DexieRepository`) tách thành bộ dùng chung nhận factory. CI chạy trên Dexie; `npm run test:supabase` chạy tay trên Supabase CLI local (Docker) trước mỗi lần deploy có đổi SQL. Test RLS, quyền, ràng buộc và RPC nằm ở pgTAP (`supabase/tests/database/`), cũng chạy bằng `npm run test:supabase`.
 
 ## Cấu hình & vận hành
 - Project: ref `rmbssnyoamugirqzdsef`, region `ap-southeast-1` (Singapore), gói Free. Đã tắt đăng ký mới và anonymous sign-in (kiểm tra qua `/auth/v1/settings`: `disable_signup: true`), có một user tạo từ dashboard.

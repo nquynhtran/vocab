@@ -41,6 +41,8 @@ src/
   shared/      # Component, hook dùng chung; RepositoryContext + useRepository
   app/         # Router, layout, khởi tạo (main.tsx tạo VocabDb + DexieRepository)
 ```
+`supabase/` (ngoài `src/`): `migrations/` (SQL, không sửa file đã đẩy lên), `tests/database/` (pgTAP), `config.toml` (chỉ cho Supabase local). Chi tiết: [cloud-sync.md](cloud-sync.md#sql-đã-có-supabase).
+
 **Phụ thuộc một chiều:** `app → features, shared` · `features → shared, domain, data` · `shared → domain, data` · `data → domain` · `domain` không phụ thuộc gì. `RepositoryContext` nằm ở `shared/` (không ở `app/`) để `features` không phải import ngược `app`. Test cạnh file: `foo.ts` ↔ `foo.test.ts`.
 
 ## Quy tắc `Repository`

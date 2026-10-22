@@ -18,6 +18,7 @@ npm install
 npm run dev      # start the dev server
 npm run check    # lint + format check + typecheck + tests
 npm run build    # production build into dist/
+npm run test:supabase  # SQL tests (pgTAP) against local Supabase; run `npx supabase start` first (needs Docker)
 ```
 
 Every push to `main` runs the checks in GitHub Actions and deploys to GitHub Pages.

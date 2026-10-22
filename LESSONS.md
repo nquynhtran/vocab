@@ -4,7 +4,8 @@
 
 ## Test
 - Viết test không thể đỏ: schema có `.transform` thì `parse` luôn qua, nên "parse được" không chứng minh gì → so `parse(x)` với chính `x`; với test quan trọng, phá code thử xem test có đỏ không.
-- Bỏ sót test cho lớp phòng thủ (unique index, kiểm tra cha khi đổi tên) vì lớp trước đã chặn → mỗi lớp chặn phải có test riêng đánh thẳng vào nó.
+- Bỏ sót test cho lớp phòng thủ (unique index, kiểm tra cha khi đổi tên; khóa ngoại kèm `user_id` mới test ở một bảng) vì lớp trước đã chặn → mỗi lớp chặn phải có test riêng đánh thẳng vào nó, ở mọi bảng. (lặp lại ×2)
+- Test quyền theo danh sách object cố định → object do migration sau thêm không được kiểm → duyệt mọi object trong schema.
 - Viết helper test rối (`Object.create` để ghi đè method) → thêm tham số cho helper.
 
 ## UI
@@ -12,6 +13,8 @@
 
 ## Thư viện
 - Đặt tên lỗi tự định nghĩa là `NotFoundError`: Dexie bọc lại lỗi có `name` trùng tên lỗi DOM của IndexedDB, nên `instanceof` hỏng → không dùng tên lỗi DOM (`NotFound`, `Constraint`, `Data`, `Abort`…) cho lỗi ném trong transaction.
+
+- `jsonb_populate_recordset` lặng lẽ bỏ key lạ và cho `null` key thiếu → hàm nhận JSON phải tự kiểm tra đúng bộ key.
 
 ## Nhất quán
 - Lưu kết quả của một hàm vào DB (`toKey` → `nameKey`) mà không ghi rằng đổi hàm thì phải migration tính lại → mỗi dữ liệu dẫn xuất được lưu phải ghi rõ nguồn và điều kiện tính lại.

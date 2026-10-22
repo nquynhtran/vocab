@@ -35,7 +35,8 @@ const ExampleSchema = z
 
 /**
  * Stored as these full names; abbreviations ("v.") are display only (features/terms).
- * Removing or renaming a value needs a migration of stored terms and backups.
+ * Removing or renaming a value needs a migration of stored terms and backups. Any change also
+ * needs a SQL migration of the `part_of_speech` CHECK in supabase/migrations.
  */
 export const PARTS_OF_SPEECH = [
   'noun',
