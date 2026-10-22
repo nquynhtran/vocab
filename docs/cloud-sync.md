@@ -19,7 +19,7 @@ Không đăng nhập thì dữ liệu nằm riêng trong trình duyệt của t�
 PostgREST mỗi request là một transaction riêng, nên không "kiểm tra rồi ghi" trong cùng transaction được:
 - Lớp chặn chính là ràng buộc DB. Lỗi `23505` (unique) theo tên constraint → `DuplicateNameError`; `23503` (khóa ngoại) → `EntityNotFoundError`. Trên cloud đây là chuyện bình thường (hai máy cùng ghi), không phải bug như `ConstraintError` của Dexie.
 - Update/delete luôn kèm `.select()` để đếm số dòng: update 0 dòng → `EntityNotFoundError`; delete 0 dòng → no-op như Dexie.
-- Đọc cần một snapshot (`getFolderContents`, `findTermsByWord`) → một request embed hoặc một view/RPC, không ghép nhiều request.
+- Đọc cần một snapshot (`getFolderContents`, `findTermsByWord`, `exportBackup`) → một request embed hoặc một view/RPC, không ghép nhiều request; riêng `exportBackup` là một RPC đọc mọi bảng trong một transaction, để backup không trộn trạng thái trước và sau một lần ghi từ máy khác.
 - Thao tác nhiều bảng (`recordAnswer`, nhập snapshot) là hàm Postgres gọi qua RPC, `SECURITY INVOKER` để RLS vẫn áp dụng; `user_id` lấy từ `auth.uid()` trong hàm, không lấy từ payload.
 - Lỗi mạng và phiên hết hạn (401) có lớp lỗi riêng; UI báo lỗi và giữ nguyên nội dung form đang gõ.
 

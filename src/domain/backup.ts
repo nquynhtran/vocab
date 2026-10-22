@@ -28,7 +28,8 @@ export type Backup = z.output<typeof BackupSchema>
 /**
  * Validates an untrusted backup (a file, or a snapshot about to be uploaded) in full before
  * anything is written: shape, references between tables, and duplicates under `toKey`, which
- * the per-record schemas cannot see. Throws `ValidationError` listing every problem found.
+ * the per-record schemas cannot see. Checks run in stages and stop at the first failing stage:
+ * schema errors and integrity problems are all listed, a changed value only the first one.
  * Data that the schemas would change (unnormalized text, unknown fields) is rejected, so the
  * returned value always equals the input apart from absent vs `undefined` fields.
  */
