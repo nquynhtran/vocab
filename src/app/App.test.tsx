@@ -177,10 +177,13 @@ describe('terms', () => {
     const { repository, unit2 } = await renderFile()
     await addTerm('walk', 'đi bộ')
 
+    const [walk] = await repository.listTerms(unit2.id)
+    const lookup = vi.spyOn(repository, 'findTermsByWord')
     const editRow = startEditing('walk')
     fireEvent.change(editRow.getByLabelText('Meaning'), { target: { value: 'đi dạo' } })
-    // Wait past the debounce: no warning should appear for the term itself.
-    await new Promise((resolve) => setTimeout(resolve, 400))
+    // Wait for the edit form's own lookup to finish rather than a fixed delay.
+    await waitFor(() => expect(lookup).toHaveBeenCalledWith('walk', walk?.id))
+    expect(await lookup.mock.results.at(-1)?.value).toEqual([])
     for (const region of screen.getAllByRole('status')) expect(region).toHaveTextContent(/^$/)
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
@@ -231,11 +234,17 @@ describe('terms', () => {
   it('reads a word aloud in British English', async () => {
     const speak = vi.fn()
     const cancel = vi.fn()
-    vi.stubGlobal('speechSynthesis', { speak, cancel, getVoices: () => [] })
+    const british = { lang: 'en_GB' } // Android's spelling
+    vi.stubGlobal('speechSynthesis', {
+      speak,
+      cancel,
+      getVoices: () => [{ lang: 'en-US' }, british],
+    })
     vi.stubGlobal(
       'SpeechSynthesisUtterance',
       class {
         lang = ''
+        voice: unknown = null
         readonly text: string
         constructor(text: string) {
           this.text = text
@@ -247,7 +256,9 @@ describe('terms', () => {
       await addTerm('walk', 'đi bộ')
       fireEvent.click(screen.getByRole('button', { name: 'Listen to "walk"' }))
       expect(cancel).toHaveBeenCalled()
-      expect(speak).toHaveBeenCalledWith(expect.objectContaining({ text: 'walk', lang: 'en-GB' }))
+      expect(speak).toHaveBeenCalledWith(
+        expect.objectContaining({ text: 'walk', lang: 'en-GB', voice: british }),
+      )
     } finally {
       vi.unstubAllGlobals()
     }
