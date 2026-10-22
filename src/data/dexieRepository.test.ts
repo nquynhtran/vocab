@@ -280,7 +280,7 @@ describe('terms', () => {
     }
     await db.terms.add(oldRow)
     const { wordKey: _, ...expected } = oldRow
-    expect((await repo.listTerms(file.id)).find((t) => t.id === oldRow.id)).toEqual(expected)
+    expect((await repo.listTerms(file.id)).find((t) => t.id === oldRow.id)).toStrictEqual(expected)
     expect(TermSchema.parse(expected)).toEqual(expected)
   })
 
@@ -423,14 +423,75 @@ describe('stored data', () => {
   })
 })
 
+/** Copied, not imported: this is what the released v1 code declared. */
+const V1_STORES = {
+  folders: 'id, &nameKey',
+  files: 'id, folderId, &[folderId+nameKey]',
+  terms: 'id, fileId, wordKey',
+  progress: 'termId',
+  studyDays: 'date',
+  meta: 'key',
+}
+
+describe('version 2', () => {
+  it('opens a v1 database without changing its data', async () => {
+    const indexedDB = new IDBFactory()
+    const v1 = new Dexie(DB_NAME, { indexedDB, IDBKeyRange })
+    v1.version(1).stores(V1_STORES)
+    const folder = { id: '00000000-0000-4000-8000-000000000001', name: 'IELTS', nameKey: 'ielts' }
+    const term = {
+      id: '00000000-0000-4000-8000-000000000003',
+      fileId: '00000000-0000-4000-8000-000000000002',
+      word: 'run',
+      wordKey: 'run',
+      meaning: 'chạy',
+      createdAt: '2026-10-22T07:00:00.000Z',
+      updatedAt: '2026-10-22T07:00:00.000Z',
+    }
+    await v1
+      .table('folders')
+      .add({ ...folder, createdAt: term.createdAt, updatedAt: term.createdAt })
+    await v1.table('terms').add(term)
+    v1.close()
+
+    const db = new VocabDb({ indexedDB, IDBKeyRange })
+    await db.open()
+
+    expect(db.verno).toBe(2)
+    expect(await db.folders.toArray()).toMatchObject([folder])
+    expect(await db.terms.toArray()).toStrictEqual([term])
+    db.close()
+  })
+
+  it('makes a tab still on v1 reload, so its old code cannot overwrite new fields', async () => {
+    const indexedDB = new IDBFactory()
+    const onOldTabVersionChange = vi.fn()
+    const oldTab = new Dexie(DB_NAME, { indexedDB, IDBKeyRange })
+    // The full v1 schema: a partial one would itself make Dexie bump the version.
+    oldTab.version(1).stores(V1_STORES)
+    oldTab.on('versionchange', () => {
+      onOldTabVersionChange()
+      oldTab.close({ disableAutoOpen: true })
+      return false
+    })
+    await oldTab.open()
+
+    const db = new VocabDb({ indexedDB, IDBKeyRange })
+    await db.open()
+
+    expect(onOldTabVersionChange).toHaveBeenCalledOnce()
+    db.close()
+  })
+})
+
 describe('schema upgrade from another tab', () => {
   it('closes this connection for good instead of reopening it with the old schema', async () => {
     const onVersionChange = vi.fn()
-    const { repo, indexedDB } = setup({ onVersionChange })
+    const { repo, db, indexedDB } = setup({ onVersionChange })
     await repo.createFolder({ name: 'IELTS' })
 
     const newer = new Dexie(DB_NAME, { indexedDB, IDBKeyRange })
-    newer.version(2).stores({
+    newer.version(db.verno + 1).stores({
       folders: 'id, &nameKey',
       files: 'id, folderId, &[folderId+nameKey]',
       terms: 'id, fileId, wordKey',

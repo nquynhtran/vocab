@@ -18,6 +18,9 @@
 - Code ngược mục tiêu chính mình ghi trong tài liệu (`localeCompare(undefined)` trong khi cam kết "mọi thiết bị cùng thứ tự") → đọc lại lý do đã ghi trước khi chọn tham số.
 - Viết tài liệu mô tả tính năng chưa làm như đã có (README nói có xuất JSON) → chỉ mô tả cái đã có, cái chưa có thì ghi "planned".
 
+- Thêm trường mà không tăng version Dexie vì "dữ liệu cũ vẫn đọc được" → chỉ xét chiều đọc, quên code cũ ở tab khác ghi đè cả bản ghi làm mất trường mới → đổi cấu trúc là tăng version, xét cả chiều đọc lẫn chiều ghi.
+- Test "tab cũ nhận versionchange" khai báo schema v1 thiếu bảng → Dexie tự nâng version nên test xanh cả khi thiếu code → bản giả của phiên bản cũ phải đúng y bản đã phát hành; phá code thử để chắc test đỏ được.
+
 ## Công cụ
 - Vòng chờ CI lọc `head_sha` bằng SHA rút gọn → API không khớp, vòng lặp không bao giờ dừng → dùng SHA đầy đủ (`git rev-parse HEAD`) và cho vòng chờ thoát cả khi không tìm thấy kết quả hoặc quá thời gian.
 - Phá code thử để kiểm tra test trên file chưa commit rồi khôi phục bằng `git checkout` → không có tác dụng với file chưa track → chép file ra scratchpad trước khi phá, hoặc commit trước.

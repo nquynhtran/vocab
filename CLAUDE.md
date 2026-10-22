@@ -42,7 +42,7 @@ Tự quyết định dùng gì, dựa trên lợi ích so với chi phí; không
 - Ghi nhiều bảng → **một transaction**, đóng gói trong một phương thức repository.
 - Validate mọi đầu vào ở biên: form, file JSON nhập vào, dữ liệu DB version cũ. **Fail fast**, báo lỗi rõ ràng.
 - **Immutability**: không mutate state hay tham số; trả về object mới.
-- Đổi cấu trúc dữ liệu → thêm version Dexie + migration có test (và tăng `schemaVersion` của file backup). Không phá dữ liệu và backup cũ.
+- Đổi cấu trúc dữ liệu → thêm version Dexie + migration có test (và tăng `schemaVersion` của file backup). Không phá dữ liệu và backup cũ. **Không có ngoại lệ**, kể cả chỉ thêm trường không bắt buộc: tab còn chạy code cũ ghi đè cả bản ghi sẽ xóa trường mới.
 
 ### 4. Bảo trì
 - Tên rõ nghĩa. Comment giải thích **tại sao**, không phải cái gì.

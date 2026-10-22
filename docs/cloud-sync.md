@@ -13,7 +13,8 @@ Không đăng nhập thì dữ liệu nằm riêng trong trình duyệt của t�
 - Thao tác nhiều bảng (`recordAnswer`, nhập backup) là hàm Postgres gọi qua RPC, chạy trong một transaction.
 - `SupabaseRepository` cài đặt cùng interface với `DexieRepository` ([architecture.md](architecture.md#quy-tắc-repository)). UI và domain không đổi.
 - Chuyển dữ liệu: kế hoạch cũ là xuất JSON từ bản local → nhập vào bản cloud, nhưng sao lưu (giai đoạn 5) giờ làm **sau** cloud. **Cần chốt khi làm:** cách đưa dữ liệu đang có trong IndexedDB của máy tính lên cloud (ví dụ làm sớm phần xuất/nhập, hoặc nút "Upload local data" một lần).
-- Bảng `terms` có cột `part_of_speech` nullable, `CHECK` thuộc `PARTS_OF_SPEECH` (#29).
+- Bảng `terms` có cột `part_of_speech` nullable, `CHECK` thuộc `PARTS_OF_SPEECH` (#29). Dữ liệu tải về từ cloud là dữ liệu từ biên: validate bằng `TermSchema` trước khi dùng, không tin vào CHECK của Postgres.
+- Client cũ (tab hoặc PWA còn cache bản cũ) ghi đè cả dòng sẽ xóa cột mới, giống lỗi ở #32. Cần cách buộc client cũ cập nhật (ví dụ ghi version schema vào DB và từ chối ghi khi client cũ hơn), hoặc chỉ `update` các cột client biết.
 - App cần mạng; học offline không nằm trong phạm vi.
 - **Cần kiểm tra lại khi làm:** gói miễn phí của Supabase (tính đến 2025) tự tạm dừng project không có truy cập trong 7 ngày. Dữ liệu không mất, nhưng phải vào trang quản trị bấm khôi phục. Nếu vẫn còn quy định này, cân nhắc một GitHub Actions chạy định kỳ gọi API để giữ project hoạt động.
 - Dữ liệu trên cloud nên quy tắc xóa 7 ngày của Safari không còn ảnh hưởng.

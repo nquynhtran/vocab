@@ -17,7 +17,7 @@ Kiểu và validate định nghĩa bằng Zod ở `src/domain/schemas.ts`; chu�
 - Phiên bản schema là version của Dexie (`db.verno`), không lưu riêng.
 - Tên DB: `vocab-app` (hằng số trong `src/data/db.ts`). Không đổi tên: IndexedDB tính theo origin `nquynhtran.github.io`, dùng chung với mọi repo Pages khác của tài khoản, nên tên phải riêng biệt.
 
-Index Dexie (version 1, đã tạo sẵn đủ bảng cho các giai đoạn sau):
+Index Dexie (version 1 tạo sẵn đủ bảng cho các giai đoạn sau; version 2 giữ nguyên index, chỉ để báo tab cũ khi thêm `partOfSpeech`, xem #32):
 ```
 folders:   id, &nameKey
 files:     id, folderId, &[folderId+nameKey]
@@ -52,6 +52,7 @@ Nhập: kiểm tra kích thước ≤ 5 MB → parse → validate bằng Zod (k�
 
 ## Migration
 - Đổi cấu trúc → thêm `db.version(n).upgrade(...)` của Dexie, tăng `schemaVersion` của file backup và thêm hàm migrate cho file JSON cũ.
+- **Kể cả khi chỉ thêm trường không bắt buộc, không đổi index**: vẫn tăng version (có thể không cần `upgrade`). Phải xét hai chiều: *đọc* (dữ liệu cũ với code mới) và *ghi* (code cũ với dữ liệu mới). Tab còn chạy code cũ ghi đè cả bản ghi (`updateTerm` dựng lại toàn bộ rồi `put`), nên sẽ xóa trường mới mà không báo; tăng version thì tab đó nhận `versionchange` và reload.
 - Mỗi migration có test: dữ liệu version cũ → đúng dữ liệu version mới.
 - Đổi `toKey` (hoặc `normalizeText`) cũng là đổi dữ liệu: key đã lưu sẽ lệch, cảnh báo trùng sót và unique index chặn sai. Phải thêm version Dexie có migration tính lại mọi `nameKey`/`wordKey`, và xử lý trường hợp hai bản ghi cũ thành trùng key.
 - Không bao giờ sửa migration đã phát hành; chỉ thêm migration mới.

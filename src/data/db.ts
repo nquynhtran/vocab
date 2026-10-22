@@ -41,6 +41,17 @@ export class VocabDb extends Dexie {
       studyDays: 'date',
       meta: 'key',
     })
+    // Same indexes as v1. Bumped when terms gained `partOfSpeech` (decision #32) so tabs still
+    // running older code get `versionchange` and reload: their updateTerm rebuilds the whole
+    // row and would silently drop the new field. Any change to stored shape needs a bump.
+    this.version(2).stores({
+      folders: 'id, &nameKey',
+      files: 'id, folderId, &[folderId+nameKey]',
+      terms: 'id, fileId, wordKey',
+      progress: 'termId',
+      studyDays: 'date',
+      meta: 'key',
+    })
 
     // Dexie's default handler closes but allows auto-reopening, which would let this tab's old
     // code write rows in the old shape into the upgraded database. Returning false skips it.
