@@ -1,8 +1,19 @@
--- Local only: `supabase start` / `supabase db reset` run this file; `supabase db push` never
--- does (unless --include-seed, which must not be used). Sign-up is disabled, so the Vitest
+-- Local only: `supabase start` / `supabase db reset` run this file. Never run it on the cloud
+-- project (`db push --include-seed`, `db reset --linked` without --no-seed): the password below
+-- is public, so the account would let anyone sign in. Sign-up is disabled, so the Vitest
 -- contract suite (src/data/supabaseRepository.test.ts) signs in as this user.
--- The password is a public test value: this account exists only in the local Docker database.
---
+
+-- Guard against the commands above: only the local CLI database uses the CLI's public demo JWT
+-- secret; a real project never does.
+do $$
+begin
+  if current_setting('app.settings.jwt_secret', true) is distinct from
+     'super-secret-jwt-token-with-at-least-32-characters-long' then
+    raise exception 'seed.sql is for the local Supabase CLI database only';
+  end if;
+end;
+$$;
+
 -- GoTrue reads the token columns as non-null strings; leaving them null makes every sign-in
 -- fail with "Database error querying schema", hence the explicit ''.
 insert into auth.users (

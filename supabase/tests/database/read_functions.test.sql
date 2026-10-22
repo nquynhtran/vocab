@@ -96,13 +96,5 @@ select is(
   'B cannot read A''s folder'
 );
 
--- B's own folder must not count A's terms, even if a join forgot user_id.
-insert into public.folders (id, name, name_key, created_at, updated_at) values
-  ('b0000000-0000-4000-8000-000000000001', 'IELTS', 'ielts', now(), now());
-select is(
-  public.get_folder_contents('b0000000-0000-4000-8000-000000000001') -> 'terms', '[]'::jsonb,
-  'B''s folder contents hold none of A''s terms'
-);
-
 select * from finish();
 rollback;

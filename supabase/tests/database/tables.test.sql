@@ -38,6 +38,11 @@ select is_empty($$
   select p.oid::regprocedure from pg_proc p
   where p.pronamespace = 'public'::regnamespace and has_function_privilege('anon', p.oid, 'EXECUTE')
 $$, 'anon cannot call any function');
+select is_empty($$
+  select p.oid::regprocedure from pg_proc p
+  where p.pronamespace = 'public'::regnamespace
+    and (p.prosecdef or not coalesce('search_path=""' = any(p.proconfig), false))
+$$, 'every function is SECURITY INVOKER (RLS applies) with an empty search_path');
 
 -- ---- User A creates data ----
 
