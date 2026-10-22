@@ -17,7 +17,7 @@ Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn 
   - [x] `HashRouter`, `RepositoryContext` (ở `shared/`), `VocabDb` + `onVersionChange` → reload
   - [x] Home / Folder / File; đổi tên tại chỗ; xóa bằng `window.confirm` kèm số lượng; `getFolderContents`
   - [x] Cảnh báo trùng khi gõ (#27); ghi xong luôn tải lại (bị xóa ở tab khác → "no longer exists")
-  - [x] Theo feedback: loại từ (#29), nút 🔊 en-GB (#30)
+  - [x] Theo feedback: loại từ (#29, Dexie v2 theo #32), nút 🔊 en-GB (#30)
 - [ ] **7. Cloud & iPhone** — dùng chung dữ liệu máy tính ↔ iPhone ([cloud-sync.md](docs/cloud-sync.md))
 - [ ] **3. Learn** — học một file đến khi thuộc hết ([learn-algorithm.md](docs/learn-algorithm.md))
 - [ ] **4. Streak** — đủ các test trong [streak.md](docs/streak.md)
@@ -25,8 +25,8 @@ Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn 
 - [ ] **6. Hoàn thiện** — phím tắt, dark mode, README; dùng thử 1 tuần
 
 ## Nhật ký (5 mục gần nhất, mới nhất trên cùng)
+- 2026-10-22 — Rà soát lại giai đoạn 2: gom code lặp, đọc màn Folder trong một transaction, Dexie v2 (#32) chặn tab cũ xóa loại từ, sửa giọng đọc; 86 test.
 - 2026-10-22 — Feedback giai đoạn 2: thêm loại từ, phát âm en-GB; chốt làm cloud trước Learn (#29–31).
 - 2026-10-22 — Xong giai đoạn 2: UI folder/file/từ, 84 test, qua `reviewer` (6 điểm, đã sửa hết).
 - 2026-10-22 — Xong giai đoạn 1: domain + DexieRepository, qua `challenger` và `reviewer`; README tiếng Anh; thêm `LESSONS.md`.
 - 2026-10-22 — Xong giai đoạn 0: Node 24, Vite 8 + React 19 + TS, CI/CD lên GitHub Pages chạy xanh.
-- 2026-10-22 — Thêm agent `reviewer`, `challenger`; mở rộng `/save-progress` (rà soát + dọn dẹp + tóm tắt chuyển phiên).
