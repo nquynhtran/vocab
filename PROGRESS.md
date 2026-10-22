@@ -5,7 +5,7 @@
 ## Đang ở đâu
 - **Giai đoạn:** 2 xong và đã deploy. Tiếp theo là **giai đoạn 7 (cloud)**, làm trước Learn (quyết định #31).
 - **Việc tiếp theo:** chờ người dùng tạo project Supabase (gửi Project URL + publishable key) và cài Docker; rồi bước 3 trong "Thứ tự làm" của `docs/cloud-sync.md` (thêm gói `supabase` CLI vào devDependencies, viết SQL).
-- **Đang vướng:** không. Người dùng chưa thử bản có loại từ + nút 🔊.
+- **Đang vướng:** chờ người dùng tạo project Supabase và cài Docker. Loại từ + nút 🔊: người dùng đã thử, OK.
 - **Câu hỏi mở (để giai đoạn 3):** có hiện loại từ làm gợi ý trong câu hỏi Learn không.
 
 ## Kế hoạch
