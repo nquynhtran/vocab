@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { firstDifference } from './difference.ts'
 import { parseOrThrow, ValidationError } from './errors.ts'
 import {
   FolderSchema,
@@ -44,7 +45,7 @@ export function validateBackup(value: unknown): Backup {
   // The schemas normalize text and drop blank fields. A backup is written only by this app,
   // so any change means a bug or a hand edit: reject it instead of silently fixing the data
   // (decision #35), otherwise stored text and its `toKey` columns could disagree.
-  const changed = firstDifference(value, backup, '')
+  const changed = firstDifference(value, backup)
   if (changed !== undefined) {
     throw new ValidationError({ [changed || '_']: ['Unexpected or non-normalized value'] })
   }
@@ -130,38 +131,4 @@ function integrityProblems({ folders, files, terms, progress, studyDays }: Backu
     if (!termIds.has(entry.termId)) report(`progress.${index}`, `Unknown term ${entry.termId}`)
   })
   return problems
-}
-
-/**
- * Path of the first place where the parsed value differs from the input, or undefined when they
- * match. Absent and `undefined` fields count as equal, since JSON cannot tell them apart.
- */
-function firstDifference(input: unknown, parsed: unknown, path: string): string | undefined {
-  if (Array.isArray(input) || Array.isArray(parsed)) {
-    if (!Array.isArray(input) || !Array.isArray(parsed) || input.length !== parsed.length) {
-      return path
-    }
-    for (const [index, item] of input.entries()) {
-      const found = firstDifference(item, parsed[index], join(path, String(index)))
-      if (found !== undefined) return found
-    }
-    return undefined
-  }
-  if (isRecord(input) || isRecord(parsed)) {
-    if (!isRecord(input) || !isRecord(parsed)) return path
-    for (const key of new Set([...Object.keys(input), ...Object.keys(parsed)])) {
-      const found = firstDifference(input[key], parsed[key], join(path, key))
-      if (found !== undefined) return found
-    }
-    return undefined
-  }
-  return Object.is(input, parsed) ? undefined : path
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-
-function join(path: string, key: string): string {
-  return path ? `${path}.${key}` : key
 }
