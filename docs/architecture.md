@@ -37,12 +37,12 @@ src/
   domain/      # Kiểu, Zod schema, logic thuần. Không import React/Dexie
     learn/     #   thuật toán học
     streak/    #   tính chuỗi ngày
-  data/        # Repository interface, DexieRepository, migration, export/import
+  data/        # Repository interface, DexieRepository, SupabaseRepository + mapper, bộ test hợp đồng
   features/    # UI theo tính năng: folders/ files/ terms/ learn/ streak/ backup/
   shared/      # Component, hook dùng chung; RepositoryContext + useRepository
   app/         # Router, layout, khởi tạo (main.tsx tạo VocabDb + DexieRepository)
 ```
-`supabase/` (ngoài `src/`): `migrations/` (SQL, không sửa file đã đẩy lên), `tests/database/` (pgTAP), `config.toml` (chỉ cho Supabase local). Chi tiết: [cloud-sync.md](cloud-sync.md#sql-đã-có-supabase).
+`supabase/` (ngoài `src/`): `migrations/` (SQL, không sửa file đã đẩy lên), `tests/database/` (pgTAP), `config.toml` và `seed.sql` (chỉ cho Supabase local). Chi tiết: [cloud-sync.md](cloud-sync.md#sql-đã-có-supabase).
 
 **Phụ thuộc một chiều:** `app → features, shared` · `features → shared, domain, data` · `shared → domain, data` · `data → domain` · `domain` không phụ thuộc gì. `RepositoryContext` nằm ở `shared/` (không ở `app/`) để `features` không phải import ngược `app`. Test cạnh file: `foo.ts` ↔ `foo.test.ts`.
 
