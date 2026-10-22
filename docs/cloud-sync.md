@@ -16,7 +16,7 @@ Không đăng nhập thì dữ liệu nằm riêng trong trình duyệt của t�
 - App cần mạng; học offline không nằm trong phạm vi.
 
 ## SQL đã có (`supabase/`)
-- Migration đầu: `supabase/migrations/20261022121518_initial_schema.sql`. Test pgTAP: `supabase/tests/database/`, chạy `npx supabase start` rồi `npm run test:supabase`. Test giả lập người dùng bằng `set local role authenticated` + `request.jwt.claims`, không cần khóa nào.
+- Migration: `20261022121518_initial_schema.sql` (bảng, RLS, `import_snapshot`, `export_backup`), `20261022124114_read_functions.sql` (`list_terms`, `get_folder_contents`, #39). Test pgTAP: `supabase/tests/database/`, chạy `npx supabase start` rồi `npm run test:supabase`. Test giả lập người dùng bằng `set local role authenticated` + `request.jwt.claims`, không cần khóa nào.
 - **Khóa ngoại gồm `user_id`** (`(user_id, folder_id) → folders(user_id, id)`): Postgres kiểm tra khóa ngoại không qua RLS, khóa đơn sẽ cho gắn dòng vào folder của người khác.
 - Thu hồi rồi cấp quyền tường minh (bảng và `EXECUTE` của hàm), vì Supabase local mặc định cấp hết cho `anon`/`PUBLIC`. `authenticated` không có `TRUNCATE` (bỏ qua RLS). **Mỗi migration mới** tạo bảng/hàm cũng phải revoke/grant như vậy; test duyệt mọi object trong `public` sẽ đỏ nếu quên.
 - Tên constraint là hợp đồng với client: `folders_name_key_unique`, `files_name_key_unique` → `DuplicateNameError`.
@@ -27,17 +27,20 @@ Không đăng nhập thì dữ liệu nằm riêng trong trình duyệt của t�
 - `user_id` trỏ `auth.users` với `on delete cascade`: xóa tài khoản trên dashboard là xóa hết dữ liệu. Export JSON trước nếu cần.
 - `app_config`: đúng một dòng, `min_client_version = 1`; chỉ `authenticated` đọc được, nên client kiểm tra version **sau khi đăng nhập** (chưa đăng nhập thì `anon` bị từ chối, không phải lỗi mạng).
 - Chưa có: RPC `record_answer` (giai đoạn 3, migration mới); bảng `meta` (`migratedAt` chỉ ở local; `lastBackupAt` tính ở giai đoạn 5).
-- `supabase/config.toml` (chỉ cho local): tắt đăng ký như cloud; tắt realtime, storage, edge functions, analytics cho nhẹ.
+- `list_terms(p_file_id)`, `get_folder_contents(p_folder_id)`: trả `jsonb` (không bị cắt ở `max_rows`, một snapshot). `get_folder_contents` trả `{ folder, files, terms: [{ file_id, box }] }` hoặc `null`; "đã thuộc" do client tính bằng `isMastered`, không lặp lại trong SQL.
+- `supabase/config.toml` (chỉ cho local): tắt đăng ký bằng `[auth] enable_signup = false` như cloud. `[auth.email] enable_signup` phải để `true`: ở local nó bật/tắt cả nhà cung cấp email, `false` thì không đăng nhập được. Tắt realtime, storage, edge functions, analytics cho nhẹ.
+- `supabase/seed.sql`: người dùng test `contract@test.local` cho bộ hợp đồng Vitest (đăng ký đã tắt). Chỉ chạy ở local (`start`, `db reset`); **không** dùng `db push --include-seed` hay `db reset --linked` (thiếu `--no-seed`), vì mật khẩu nằm công khai trong repo. File tự báo lỗi nếu JWT secret không phải secret demo của CLI local.
 
 ## Khác biệt so với Dexie (phải có trong test hợp đồng)
 PostgREST mỗi request là một transaction riêng, nên không "kiểm tra rồi ghi" trong cùng transaction được:
 - Lớp chặn chính là ràng buộc DB. Lỗi `23505` (unique) theo tên constraint → `DuplicateNameError`; `23503` (khóa ngoại) → `EntityNotFoundError`. Trên cloud đây là chuyện bình thường (hai máy cùng ghi), không phải bug như `ConstraintError` của Dexie.
-- Update/delete luôn kèm `.select()` để đếm số dòng: update 0 dòng → `EntityNotFoundError`; delete 0 dòng → no-op như Dexie.
+- Update luôn kèm `.select()` để đếm số dòng: 0 dòng → `EntityNotFoundError`. Delete không cần đếm: 0 dòng là no-op như Dexie.
 - Đọc cần một snapshot (`getFolderContents`, `findTermsByWord`, `exportBackup`) → một request embed hoặc một view/RPC, không ghép nhiều request; riêng `exportBackup` là một RPC đọc mọi bảng trong một transaction, để backup không trộn trạng thái trước và sau một lần ghi từ máy khác.
 - Thao tác nhiều bảng (`recordAnswer`, nhập snapshot) là hàm Postgres gọi qua RPC, `SECURITY INVOKER` để RLS vẫn áp dụng; `user_id` lấy từ `auth.uid()` trong hàm, không lấy từ payload.
-- Lỗi mạng và phiên hết hạn (401) có lớp lỗi riêng; UI báo lỗi và giữ nguyên nội dung form đang gõ.
-- PostgREST cắt ngầm SELECT ở `max_rows` = 1000 dòng: đọc danh sách (`listTerms`, `findTermsByWord`) phải phân trang hoặc báo lỗi khi chạm giới hạn, có test hợp đồng. `export_backup` không bị vì trả một giá trị jsonb.
-- Chuỗi Zod nhận nhưng Postgres từ chối: ký tự `\u0000` (lỗi `22P05`) và surrogate UTF-16 lẻ (JSON không hợp lệ). Bước 4 quyết định: chặn ở schema domain hay chuyển lỗi thành thông báo rõ.
+- Lỗi mạng (`status` 0) → `ConnectionError`; HTTP 401 (chưa đăng nhập, phiên hết hạn) → `SessionExpiredError`; lỗi khác → `Error` kèm mã Postgres. UI báo lỗi và giữ nguyên nội dung form đang gõ (bước 5). supabase-js tự thử lại **GET** 3 lần (chờ 1 + 2 + 4 s) khi mất mạng hoặc gặp 503/520, nên offline thì thao tác đọc mất ~7 s mới báo lỗi; POST (ghi, RPC) không thử lại.
+- Id không phải UUID: Postgres báo lỗi `22P02`, còn Dexie chỉ "không thấy". `SupabaseRepository` không gửi request: đọc trả `undefined`/`[]`, ghi báo `EntityNotFoundError`, xóa là no-op.
+- PostgREST cắt ngầm SELECT ở `max_rows` = 1000 dòng, **kể cả embed lồng nhau** (đã thử). `listTerms`, `getFolderContents`, `exportBackup` đi qua RPC trả `jsonb`; `listFolders`, `listFiles`, `findTermsByWord` là select thường, nhận đủ 1000 dòng thì báo lỗi thay vì hiện thiếu (#39). Bộ hợp đồng có test 1001 từ.
+- Chuỗi Zod nhận nhưng Postgres từ chối (`\u0000` → `22P05`, surrogate lẻ → `PGRST102`): schema domain chặn trước (#40).
 
 ## Validate dữ liệu tải về (#35)
 Dữ liệu từ cloud là dữ liệu từ biên: **validate khi đọc**, ngoại lệ của #24. Không tin vào CHECK của Postgres. Mapper riêng (có test), theo thứ tự:
@@ -46,7 +49,7 @@ Dữ liệu từ cloud là dữ liệu từ biên: **validate khi đọc**, ngo�
 3. thời gian: `new Date(x).toISOString()`. PostgREST trả `+00:00` và số chữ số thập phân thay đổi, còn `z.iso.datetime()` chỉ nhận `Z`; không nới schema vì sắp xếp `newestFirst` so chuỗi;
 4. parse bằng schema domain (`TermSchema`...) và so kết quả với đầu vào: khác nhau (ví dụ dòng sửa tay chưa chuẩn hóa) là lỗi, không lặng lẽ sửa.
 
-Một dòng hỏng → cả thao tác báo lỗi rõ ràng (fail fast), không bỏ qua dòng.
+Một dòng hỏng → cả thao tác báo `InvalidStoredDataError` kèm vị trí (fail fast), không bỏ qua dòng. Mapper ở `src/data/supabaseRows.ts`: danh sách cột lấy từ shape của schema domain, nên khi đọc chỉ giữ cột domain biết, khi ghi luôn gửi đủ mọi cột (thiếu thì `null`, #34). Ngoại lệ: `exportBackup` chỉ làm bước 1–3, không validate (#41).
 
 ## Chuyển dữ liệu local lên cloud (#33)
 Chỉ máy tính có dữ liệu (iPhone chưa dùng), nên chỉ chuyển một chiều, một lần, không gộp.
@@ -64,7 +67,9 @@ Cùng loại lỗi với #32. Không có `versionchange` cho Supabase, nên:
 
 ## Test (#37)
 - Test mapper và chuyển lỗi: unit test, chạy trong CI.
-- Bộ test hợp đồng (hiện ở test của `DexieRepository`) tách thành bộ dùng chung nhận factory. CI chạy trên Dexie; `npm run test:supabase` chạy tay trên Supabase CLI local (Docker) trước mỗi lần deploy có đổi SQL. Test RLS, quyền, ràng buộc và RPC nằm ở pgTAP (`supabase/tests/database/`), cũng chạy bằng `npm run test:supabase`.
+- Bộ test hợp đồng `src/data/repositoryContract.ts`: CI chạy trên Dexie; `npm run test:supabase` chạy pgTAP rồi chạy bộ này trên Supabase local (`VOCAB_SUPABASE_TESTS=1`, đăng nhập bằng người dùng của `seed.sql`, mỗi test xóa sạch dữ liệu của người đó). Chạy tay trước mỗi lần deploy có đổi SQL hoặc `SupabaseRepository`. Không có Supabase thì phần này bị skip.
+- Dịch lỗi (`ConnectionError`, 401, dòng hỏng, chạm `max_rows`) test bằng `fetch` giả, chạy trong CI.
+- Test RLS, quyền, ràng buộc và RPC nằm ở pgTAP (`supabase/tests/database/`).
 
 ## Cấu hình & vận hành
 - Project: ref `rmbssnyoamugirqzdsef`, region `ap-southeast-1` (Singapore), gói Free. Đã tắt đăng ký mới và anonymous sign-in (kiểm tra qua `/auth/v1/settings`: `disable_signup: true`), có một user tạo từ dashboard.

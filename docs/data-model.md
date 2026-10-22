@@ -33,6 +33,7 @@ Không có index `createdAt`: danh sách từ lọc theo `fileId` rồi sắp x�
 IndexedDB không có khóa ngoại nên kiểm tra ở `domain/` (Zod) và trong repository:
 - `id`: UUID.
 - `name`, `word`, `meaning`: bắt buộc, đã trim, 1–200 ký tự. `example`: tối đa 500 ký tự.
+- Mọi ô chữ từ chối `\u0000` và surrogate UTF-16 lẻ (Postgres không lưu được, #40), để local và cloud nhận cùng một input.
 - `partOfSpeech`: một giá trị trong `PARTS_OF_SPEECH` (`src/domain/schemas.ts`) hoặc không có. Ô để trống → không lưu trường. Giá trị lưu là tên đầy đủ (`"verb"`), chữ viết tắt (`v.`) chỉ để hiển thị, nên đổi cách hiển thị không cần migration. Bỏ một giá trị khỏi danh sách thì phải migration. Thêm hay bớt giá trị đều phải sửa CHECK `part_of_speech` trên cloud bằng migration SQL.
 - Tên folder không trùng. Tên file không trùng trong cùng folder. So sánh qua `nameKey`: repository tra index trong cùng transaction ghi để báo lỗi `DuplicateNameError` kèm tên, và **unique index của DB là lớp chặn cuối**. IndexedDB chạy tuần tự các transaction rw trên cùng bảng (kể cả giữa các tab), nên khi đã kiểm tra trước thì `ConstraintError` chỉ xảy ra khi có bug; lỗi này **không** bị đổi thành `DuplicateNameError` để khỏi che bug. Không bắt lỗi bên trong callback của transaction: bắt mà không ném lại thì Dexie không hủy transaction.
 - Tạo mới dùng `add` (trùng `id` thì báo lỗi), không dùng `put` (ghi đè im lặng).

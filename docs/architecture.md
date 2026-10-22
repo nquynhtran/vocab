@@ -25,6 +25,7 @@ Web tĩnh, **không có backend** (giai đoạn 0–6).
 | CSDL | Dexie | Transaction, index, migration theo version |
 | Validate | Zod | Một schema cho form, file nhập và kiểu TS |
 | Test | Vitest + Testing Library + fake-indexeddb | Unit test domain, test repository |
+| Cloud | `@supabase/supabase-js` | Client chính thức: PostgREST, Auth, RPC ([cloud-sync.md](cloud-sync.md)) |
 | Chất lượng | oxlint + Prettier | oxlint là mặc định của template Vite, nhanh, không cần cấu hình; chạy trong CI |
 | CI/CD | GitHub Actions → GitHub Pages | Tự động hoàn toàn |
 
@@ -53,4 +54,4 @@ src/
 - `id` do client sinh (`crypto.randomUUID()`).
 - UI lấy repository qua React Context (Dependency Injection), test truyền bản giả vào.
 - Interface tách theo thực thể (`FolderRepository`, `FileRepository`, `TermRepository`…), `Repository` ghép tất cả lại. Component chỉ khai báo phần nó dùng; bản giả trong test chỉ cần cài phần đó.
-- **Test hợp đồng (LSP):** giai đoạn 7 phải chạy cùng bộ test hành vi cho `SupabaseRepository` (lỗi, thứ tự, xóa dây chuyền, xóa không tồn tại là no-op). Khi làm thì tách phần test không đụng `db` trực tiếp thành bộ test dùng chung, nhận vào một factory tạo repository.
+- **Test hợp đồng (LSP):** `src/data/repositoryContract.ts` là bộ test hành vi dùng chung (lỗi, thứ tự, xóa dây chuyền, xóa không tồn tại là no-op, >1000 dòng), nhận factory tạo repository trên kho trống. Chỉ đi qua repository (kiểm tra bảng bằng `exportBackup()`); test riêng của từng kho để ở file test của nó. Thứ tự sắp xếp (`data/ordering.ts`) và `RepositoryDeps` (`data/deps.ts`) dùng chung để hai bản cài đặt không lệch nhau.
