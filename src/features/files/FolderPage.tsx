@@ -35,7 +35,7 @@ export function FolderPage() {
   return (
     <section>
       <nav className="breadcrumb" aria-label="Breadcrumb">
-        <Link to="/">Folders</Link>
+        <Link to="/">Home</Link>
       </nav>
       <h1>{folder.name}</h1>
       <NameForm

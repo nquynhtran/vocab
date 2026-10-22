@@ -37,7 +37,7 @@ export function FilePage() {
   return (
     <section>
       <nav className="breadcrumb" aria-label="Breadcrumb">
-        <Link to="/">Folders</Link>
+        <Link to="/">Home</Link>
         <span aria-hidden="true"> / </span>
         <Link to={`/folders/${folder.id}`}>{folder.name}</Link>
       </nav>
