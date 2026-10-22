@@ -14,19 +14,11 @@ import {
   type TermProgress,
   type VocabFile,
 } from '../domain/schemas.ts'
-import { compareNames, toKey } from '../domain/text.ts'
+import { toKey } from '../domain/text.ts'
 import type { FileRow, FolderRow, TermRow, VocabDb } from './db.ts'
+import { defaultDeps, type RepositoryDeps } from './deps.ts'
+import { byLocation, byName, newestFirst } from './ordering.ts'
 import type { FolderContents, Repository, TermLocation } from './repository.ts'
-
-export interface RepositoryDeps {
-  now: () => Date
-  newId: () => string
-}
-
-const defaultDeps: RepositoryDeps = {
-  now: () => new Date(),
-  newId: () => crypto.randomUUID(),
-}
 
 /**
  * Every write is one transaction that also covers the parent table: the parent check and the
@@ -257,10 +249,7 @@ export class DexieRepository implements Repository {
             { termId: term.id, fileId: file.id, folderName: folder.name, fileName: file.name },
           ]
         })
-        .toSorted(
-          (a, b) =>
-            compareNames(a.folderName, b.folderName) || compareNames(a.fileName, b.fileName),
-        )
+        .toSorted(byLocation)
     })
   }
 
@@ -380,18 +369,4 @@ function toTermRow(meta: TermMeta, { word, partOfSpeech, meaning, example }: Ter
     meaning,
     ...(example !== undefined && { example }),
   }
-}
-
-// Ties break on id so the order is stable across reloads.
-function byName(a: { id: string; name: string }, b: { id: string; name: string }): number {
-  return compareNames(a.name, b.name) || compareCodeUnits(a.id, b.id)
-}
-
-function newestFirst(a: Term, b: Term): number {
-  return compareCodeUnits(b.createdAt, a.createdAt) || compareCodeUnits(a.id, b.id)
-}
-
-/** Plain ordinal order: ISO timestamps and UUIDs need no locale rules. */
-function compareCodeUnits(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0
 }
