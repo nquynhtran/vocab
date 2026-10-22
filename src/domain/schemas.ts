@@ -63,7 +63,7 @@ const PartOfSpeechSchema = z
   .transform((value) => value || undefined)
   .pipe(z.enum(PARTS_OF_SPEECH).optional())
 
-const IdSchema = z.uuid()
+export const IdSchema = z.uuid()
 export const TimestampSchema = z.iso.datetime()
 const CountSchema = z.int().min(0)
 

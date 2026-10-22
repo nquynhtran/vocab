@@ -73,7 +73,10 @@ export interface TermRepository {
   updateTerm(id: string, input: TermInput): Promise<Term>
   /** Also deletes its progress. */
   deleteTerm(id: string): Promise<void>
-  /** Terms whose word matches `word` (compared with `toKey`), in any file including the same one. */
+  /**
+   * Terms whose word matches `word` (compared with `toKey`), in any file including the same one.
+   * Sorted by folder name, then file name (`compareNames`), then term id.
+   */
   findTermsByWord(word: string, excludeTermId?: string): Promise<TermLocation[]>
 }
 

@@ -458,6 +458,22 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
       ])
     })
 
+    it('breaks ties between matches in the same file by term id', async () => {
+      // Ids decrease, so insertion order and id order disagree.
+      const ids = [testId(1), testId(2), testId(0xc3), testId(0xc2), testId(0xc1)]
+      const { repo } = await setup({ newId: () => ids.shift() ?? MISSING_ID })
+      const folder = await repo.createFolder({ name: 'IELTS' })
+      const file = await repo.createFile(folder.id, { name: 'Unit 1' })
+      for (const meaning of ['chạy', 'điều hành', 'vận hành']) {
+        await repo.createTerm(file.id, { word: 'run', meaning })
+      }
+      expect((await repo.findTermsByWord('run')).map((t) => t.termId)).toEqual([
+        testId(0xc1),
+        testId(0xc2),
+        testId(0xc3),
+      ])
+    })
+
     it('also finds the same word in the same file (decision #25)', async () => {
       const { repo } = await setup()
       const { file, term } = await seedTerm(repo)

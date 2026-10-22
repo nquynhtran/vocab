@@ -17,9 +17,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check": "npm run lint && npm run format:check && npm run typecheck && npm run test",
-    "test:supabase": "supabase test db"
+    "test:supabase": "supabase test db && VOCAB_SUPABASE_TESTS=1 vitest run src/data/supabaseRepository.test.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
     "dexie": "^4.4.6",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",

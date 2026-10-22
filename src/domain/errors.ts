@@ -49,6 +49,41 @@ export class EntityNotFoundError extends Error {
   }
 }
 
+/** The cloud could not be reached, so nothing was read or saved. */
+export class ConnectionError extends Error {
+  constructor() {
+    super('Cannot reach the server. Check your connection and try again.')
+    this.name = 'ConnectionError'
+  }
+}
+
+/** The cloud refused the request because nobody is signed in any more (HTTP 401). */
+export class SessionExpiredError extends Error {
+  constructor() {
+    super('Your session has expired. Please sign in again.')
+    this.name = 'SessionExpiredError'
+  }
+}
+
+/**
+ * A row read from the cloud is not what this app writes, e.g. after a hand edit in the dashboard.
+ * Thrown for the whole read instead of skipping the row (decision #35), so nothing silently
+ * disappears from a list.
+ */
+export class InvalidStoredDataError extends Error {
+  /** Where the bad value is, e.g. `terms 0b5c…: word`. */
+  readonly location: string
+
+  constructor(location: string, problem: string) {
+    super(
+      `Data in the cloud is invalid (${location}: ${problem}). ` +
+        'Fix it in the Supabase dashboard or restore a backup.',
+    )
+    this.name = 'InvalidStoredDataError'
+    this.location = location
+  }
+}
+
 /** Fail fast at the boundary: invalid input never reaches storage. */
 export function parseOrThrow<T extends z.ZodType>(schema: T, value: unknown): z.output<T> {
   const result = schema.safeParse(value)
