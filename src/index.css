@@ -328,3 +328,35 @@ label {
   margin: 0;
   font-size: 1.125rem;
 }
+
+/* ---- Sign-in ---- */
+
+.app-header__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+}
+
+.sign-in-form {
+  display: grid;
+  gap: 12px;
+  max-width: 24rem;
+}
+
+/* Opaque on purpose: after an unexpected sign-out, nothing of the account stays visible. */
+.overlay {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  background: var(--color-bg);
+}
+
+.overlay__dialog {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: var(--space);
+}

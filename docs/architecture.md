@@ -37,10 +37,10 @@ src/
   domain/      # Kiểu, Zod schema, logic thuần. Không import React/Dexie
     learn/     #   thuật toán học
     streak/    #   tính chuỗi ngày
-  data/        # Repository interface, DexieRepository, SupabaseRepository + mapper, bộ test hợp đồng
-  features/    # UI theo tính năng: folders/ files/ terms/ learn/ streak/ backup/
-  shared/      # Component, hook dùng chung; RepositoryContext + useRepository
-  app/         # Router, layout, khởi tạo (main.tsx tạo VocabDb + DexieRepository)
+  data/        # Repository interface, DexieRepository, SupabaseRepository + mapper, bộ test hợp đồng; Auth, CLIENT_VERSION
+  features/    # UI theo tính năng: auth/ folders/ files/ terms/ learn/ streak/ backup/
+  shared/      # Component, hook dùng chung; RepositoryContext + useRepository, SignOutContext
+  app/         # Router, layout, AuthGate, khởi tạo (main.tsx tạo client Supabase + SupabaseRepository, mở VocabDb v3)
 ```
 `supabase/` (ngoài `src/`): `migrations/` (SQL, không sửa file đã đẩy lên), `tests/database/` (pgTAP), `config.toml` và `seed.sql` (chỉ cho Supabase local). Chi tiết: [cloud-sync.md](cloud-sync.md#sql-đã-có-supabase).
 

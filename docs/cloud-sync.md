@@ -53,6 +53,16 @@ Dữ liệu từ cloud là dữ liệu từ biên: **validate khi đọc**, ngo�
 
 Một dòng hỏng → cả thao tác báo `InvalidStoredDataError` kèm vị trí (fail fast), không bỏ qua dòng. Mapper ở `src/data/supabaseRows.ts`: danh sách cột lấy từ shape của schema domain, nên khi đọc chỉ giữ cột domain biết, khi ghi luôn gửi đủ mọi cột (thiếu thì `null`, #34). Ngoại lệ: `exportBackup` chỉ làm bước 1–3, không validate (#41).
 
+## Đăng nhập & phiên (bước 5, #43–#45)
+- `main.tsx` chỉ chạy bản cloud: `data/supabaseClient.ts` đọc `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` (thiếu thì báo lỗi ngay). `npm run dev` dùng `.env.development` (Supabase local, khóa demo công khai của CLI); bản build lấy biến của GitHub Actions (bước 6). Phiên lưu ở `localStorage` khóa `vocab-auth` (origin dùng chung với mọi repo Pages của tài khoản, như IndexedDB); `detectSessionInUrl: false` vì không dùng link đăng nhập và hash là của `HashRouter`.
+- UI chỉ biết interface `Auth` (`data/auth.ts`: `subscribe`, `signIn`, `signOut`, `expireSession`), bản cài đặt `SupabaseAuth`; test dùng bản giả. Sai email/mật khẩu, quá nhiều lần thử, mất mạng khi đăng nhập → `SignInError` có câu báo riêng.
+- `AuthGate` (`app/`): chưa biết phiên → "Loading…"; chưa đăng nhập → màn đăng nhập; **mỗi lần** đăng nhập (kể cả đăng nhập lại cùng tài khoản) → kiểm tra `min_client_version` **rồi mới** hiện hoặc mở lại app, để code cũ không kịp ghi. Kiểm tra lỗi → báo lỗi kèm nút Retry; phiên đổi thì lỗi cũ bị xóa.
+- **Mất phiên khi đang dùng (401):** app **không bị gỡ** khỏi trang, chỉ bị `inert` và phủ hộp đăng nhập lên trên, nên chữ đang gõ trong form vẫn còn; form hiện "Your session has expired…". Đăng nhập lại cùng tài khoản thì bấm lưu lại là xong. Tài khoản khác → app dựng lại từ đầu (`key` là user id) ở `#/`, không hiện dữ liệu hay trang của người trước. Giữ được form là nhờ `useAsync`: lần tải lại sau một lần ghi hỏng cũng hỏng (401, mất mạng), nên tải lại thất bại thì **giữ dữ liệu cũ** và hiện "This page could not be refreshed…" thay vì thay cả trang bằng lỗi. Request bị 401 trong khi supabase-js vẫn tưởng còn phiên (phiên bị thu hồi trên server) → `expireSession()` xóa phiên ở máy để hộp đăng nhập hiện ra.
+- Ghi lỗi mạng (`ConnectionError`): **không** có nút thử lại (#44). Form giữ nguyên nội dung, trang tải lại danh sách như mọi lần ghi, câu báo nói rõ có thể đã lưu. Nếu sau này thêm thử lại thì phải dùng lại đúng id cũ (xem mục trên).
+- `CLIENT_VERSION` ở `data/clientVersion.ts`, đọc `app_config` lúc đăng nhập và mỗi khi `visibilitychange` sang visible (lỗi lúc này bỏ qua: thao tác kế tiếp sẽ báo). Thấp hơn → thay cả app bằng "A new version is available. Reloading…" rồi reload. Đã tự reload vì lý do này trong 5 phút gần nhất (`sessionStorage`) thì không tự reload nữa mà hiện nút Reload, tránh vòng lặp khi đặt `min_client_version` trước lúc bản mới lên Pages.
+- Nút **Sign out** ở header (`scope: 'local'`: chỉ máy này): gỡ app ngay và về `#/`, cả khi không báo được cho server (supabase-js vẫn xóa phiên ở máy; refresh token còn hiệu lực trên server đến khi hết hạn).
+- Dexie: `VocabDb` version 3 (giữ index) và `main.tsx` gọi `db.open()` ngay, để tab cũ còn chạy bản local nhận `versionchange` và reload sang bản cloud. Vì vậy v3 chỉ được phát hành cùng lúc với bản cloud: bước 5 **chưa push**, push cùng bước 6 (#45).
+
 ## Chuyển dữ liệu local lên cloud (#33)
 Chỉ máy tính có dữ liệu (iPhone chưa dùng), nên chỉ chuyển một chiều, một lần, không gộp.
 1. Làm sớm phần lõi của giai đoạn 5: `exportBackup()` của repository đọc hết dữ liệu trong một transaction ra đúng định dạng backup `schemaVersion: 1`; `validateBackup()` ở `domain/backup.ts` (Zod, tham chiếu, trùng `toKey`); nút **Export JSON** ở Home.
@@ -91,6 +101,6 @@ Cùng loại lỗi với #32. Không có `versionchange` cho Supabase, nên:
 2. Người dùng tạo tài khoản + project Supabase; cài Docker + Supabase CLI.
 3. SQL: bảng, ràng buộc, RLS, `app_config`, `import_snapshot`.
 4. Mapper + `SupabaseRepository` + bộ test hợp đồng dùng chung.
-5. Đăng nhập, kiểm tra `min_client_version`, Dexie v3.
+5. Đăng nhập, kiểm tra `min_client_version`, Dexie v3 (commit ở máy, chưa push, #45).
 6. Màn chuyển dữ liệu (lỗi validate hiện vài lỗi đầu kèm đường dẫn trong `fieldErrors`, không nối hết thành một câu dài); CSP, biến build, deploy; chuyển dữ liệu thật.
 7. Manifest, thử trên iPhone; quyết định giữ project hoạt động.

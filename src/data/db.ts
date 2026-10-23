@@ -52,6 +52,17 @@ export class VocabDb extends Dexie {
       studyDays: 'date',
       meta: 'key',
     })
+    // Same indexes again. Opened by the cloud build at startup (decision #33), so tabs still
+    // running the local-only build get `versionchange` and reload into the cloud build instead
+    // of saving words to IndexedDB that never reach the cloud.
+    this.version(3).stores({
+      folders: 'id, &nameKey',
+      files: 'id, folderId, &[folderId+nameKey]',
+      terms: 'id, fileId, wordKey',
+      progress: 'termId',
+      studyDays: 'date',
+      meta: 'key',
+    })
 
     // Dexie's default handler closes but allows auto-reopening, which would let this tab's old
     // code write rows in the old shape into the upgraded database. Returning false skips it.

@@ -2,9 +2,15 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import { App } from './app/App.tsx'
+import { AuthGate } from './app/AuthGate.tsx'
 import { ReloadNotice } from './app/ReloadNotice.tsx'
+import { lastOutdatedReload, rememberOutdatedReload, shouldAutoReload } from './app/reload.ts'
+import { SupabaseAuth } from './data/auth.ts'
+import { isClientOutdated } from './data/clientVersion.ts'
 import { VocabDb } from './data/db.ts'
-import { DexieRepository } from './data/dexieRepository.ts'
+import { defaultDeps } from './data/deps.ts'
+import { createSupabaseClient } from './data/supabaseClient.ts'
+import { SupabaseRepository } from './data/supabaseRepository.ts'
 
 /** Long enough to read the notice before the page reloads. */
 const RELOAD_DELAY_MS = 1500
@@ -15,16 +21,36 @@ if (!rootElement) {
 }
 const root = createRoot(rootElement)
 
-// Another tab opened a newer schema; the db has already closed itself (see VocabDb).
-const db = new VocabDb({
-  onVersionChange: () => {
-    root.render(<ReloadNotice />)
-    setTimeout(() => window.location.reload(), RELOAD_DELAY_MS)
-  },
-})
+let replaced = false
+function replaceAppAndReload(automatic = true) {
+  if (replaced) return
+  replaced = true
+  root.render(<ReloadNotice automatic={automatic} />)
+  if (automatic) setTimeout(() => window.location.reload(), RELOAD_DELAY_MS)
+}
+
+// Opened right away although the cloud build stores nothing in it yet: a tab still running the
+// local-only build then gets versionchange and reloads (decision #33). The db closes itself.
+const db = new VocabDb({ onVersionChange: () => replaceAppAndReload() })
+db.open().catch((error: unknown) => console.error('Could not open IndexedDB', error))
+
+const client = createSupabaseClient()
+const auth = new SupabaseAuth(client)
+const expireSession = () => void auth.expireSession()
+const repository = new SupabaseRepository(client, defaultDeps, expireSession)
+const isOutdated = () => isClientOutdated(client, expireSession)
+
+function handleOutdated() {
+  const now = Date.now()
+  const automatic = shouldAutoReload(lastOutdatedReload(), now)
+  if (automatic) rememberOutdatedReload(now)
+  replaceAppAndReload(automatic)
+}
 
 root.render(
   <StrictMode>
-    <App repository={new DexieRepository(db)} />
+    <AuthGate auth={auth} isOutdated={isOutdated} onOutdated={handleOutdated}>
+      <App repository={repository} />
+    </AuthGate>
   </StrictMode>,
 )

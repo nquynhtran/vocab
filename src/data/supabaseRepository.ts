@@ -57,10 +57,17 @@ const TermBoxSchema = TermSchema.pick({ fileId: true }).extend({
 export class SupabaseRepository implements Repository {
   private readonly client: SupabaseClient
   private readonly deps: RepositoryDeps
+  private readonly onSessionExpired: (() => void) | undefined
 
-  constructor(client: SupabaseClient, deps: RepositoryDeps = defaultDeps) {
+  /** `onSessionExpired` hears about every 401, so the app can ask for a new sign-in. */
+  constructor(
+    client: SupabaseClient,
+    deps: RepositoryDeps = defaultDeps,
+    onSessionExpired?: () => void,
+  ) {
     this.client = client
     this.deps = deps
+    this.onSessionExpired = onSessionExpired
   }
 
   // ---- Folders ----
@@ -284,7 +291,7 @@ export class SupabaseRepository implements Repository {
 
   /** Awaits a request and translates its error; see runRequest. */
   private run(request: PromiseLike<SupabaseResponse>, onConstraint?: ConstraintHandler) {
-    return runRequest(request, { onConstraint })
+    return runRequest(request, { onConstraint, onSessionExpired: this.onSessionExpired })
   }
 
   private async folderConstraintError(constraint: string, name: string, selfId: string) {

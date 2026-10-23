@@ -9,6 +9,7 @@ Giai đoạn 0–6 ưu tiên máy tính, nhưng CSS **responsive ngay từ đầ
 - `<html lang="en">`.
 
 ## Màn hình
+0. **Sign in** (bản cloud): Email, Password, nút "Sign in". Mất phiên khi đang dùng → hộp "Sign in" phủ kín trang, app vẫn giữ nguyên bên dưới, kèm câu "You were signed out…" ([cloud-sync.md](cloud-sync.md#đăng-nhập--phiên-bước-5-4345)). Header có nút **Sign out**.
 1. **Home**: danh sách folder, nút "New folder", ô streak (🔥 N-day streak, "Today: 4/10 answers") và lịch nhỏ; cuối trang là mục Backup với nút "Export JSON" (tải file `vocab-backup-YYYY-MM-DD.json`, ngày theo giờ máy).
 2. **Folder**: danh sách file (tên, số từ, % mastered), nút "New file".
 3. **File**: bảng từ (Term (loại từ) 🔊 · Meaning · Example), từ mới nhất trên cùng, form thêm từ ở đầu bảng, nút **Learn** (ẩn khi file trống, thay bằng "Add some terms to start learning").
@@ -23,7 +24,7 @@ Giai đoạn 0–6 ưu tiên máy tính, nhưng CSS **responsive ngay từ đầ
 - Đổi tên folder/file và sửa từ: sửa ngay tại dòng (form thay chỗ dòng đó), `Escape` hoặc "Cancel" để hủy.
 - Thêm từ: thêm xong thì xóa form và đưa con trỏ về ô Term để nhập liên tục.
 - Cảnh báo từ trùng hiện **ngay khi gõ** ô Term (chờ ~300 ms sau lần gõ cuối, bỏ qua kết quả cũ về muộn), cả khi thêm và khi sửa (khi sửa không so với chính nó). Không chặn nút Add.
-- Lỗi nhập (`ValidationError`, `DuplicateNameError`) hiện cạnh ô nhập. Sau mỗi lần ghi (kể cả lỗi) trang tải lại, nên thứ đang mở đã bị xóa ở tab khác (`EntityNotFoundError`) → trang "no longer exists" kèm link về Home. Lỗi không lường trước → "Something went wrong. Please try again.".
+- Lỗi nhập (`ValidationError`, `DuplicateNameError`) hiện cạnh ô nhập. Sau mỗi lần ghi (kể cả lỗi) trang tải lại, nên thứ đang mở đã bị xóa ở tab khác (`EntityNotFoundError`) → trang "no longer exists" kèm link về Home. Lỗi cloud (`ConnectionError`, `SessionExpiredError`, `InvalidStoredDataError`) có câu báo riêng, hiện như lỗi nhập và form giữ nguyên chữ; nếu lần tải lại sau đó cũng hỏng thì trang giữ dữ liệu cũ kèm dòng "This page could not be refreshed…". Lỗi không lường trước → "Something went wrong. Please try again.".
 - Ô **Part of speech** là `<select>` đặt sau ô Term, mặc định trống. Danh sách hiện loại từ dạng viết tắt sau từ, ví dụ `run (v.)`.
 - Nút 🔊 (`Listen to "run"`) đọc từ bằng `speechSynthesis`, `lang = en-GB`. Trình duyệt không hỗ trợ thì ẩn nút. Bấm lần nữa khi đang đọc thì đọc lại từ đầu.
 - Nút **Learn** chỉ xuất hiện sau khi làm xong Learn.

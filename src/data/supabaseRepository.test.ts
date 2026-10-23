@@ -8,6 +8,8 @@ import {
   SessionExpiredError,
 } from '../domain/errors.ts'
 import { StudyDaySchema, TermProgressSchema } from '../domain/schemas.ts'
+import { AuthenticationError, SupabaseAuth } from './auth.ts'
+import { isClientOutdated } from './clientVersion.ts'
 import { describeRepositoryContract, testDeps, testId } from './repositoryContract.ts'
 import { MAX_ROWS, SupabaseRepository } from './supabaseRepository.ts'
 import { entityToRow } from './supabaseRows.ts'
@@ -16,14 +18,17 @@ const NO_SESSION = { persistSession: false, autoRefreshToken: false }
 
 // ---- Error translation, against a fake server (runs in CI) ----
 
-function fakeRepository(respond: (url: string) => Response | Promise<Response>) {
+function fakeRepository(
+  respond: (url: string) => Response | Promise<Response>,
+  onSessionExpired?: () => void,
+) {
   const client = createClient('http://fake.test', 'fake-key', {
     auth: NO_SESSION,
     global: {
       fetch: async (input) => respond(String(input instanceof Request ? input.url : input)),
     },
   })
-  return new SupabaseRepository(client, testDeps())
+  return new SupabaseRepository(client, testDeps(), onSessionExpired)
 }
 
 const json = (body: unknown, status = 200) =>
@@ -59,11 +64,15 @@ describe('SupabaseRepository errors', () => {
     }
   })
 
-  it('reports HTTP 401 as SessionExpiredError', async () => {
-    const repo = fakeRepository(() =>
-      json({ code: '42501', message: 'permission denied for table folders' }, 401),
+  it('reports HTTP 401 as SessionExpiredError, and to onSessionExpired', async () => {
+    const onSessionExpired = vi.fn()
+    const repo = fakeRepository(
+      () => json({ code: '42501', message: 'permission denied for table folders' }, 401),
+      onSessionExpired,
     )
     await expect(repo.listFolders()).rejects.toBeInstanceOf(SessionExpiredError)
+    await expect(repo.createFolder({ name: 'IELTS' })).rejects.toBeInstanceOf(SessionExpiredError)
+    expect(onSessionExpired).toHaveBeenCalledTimes(2)
   })
 
   it('keeps the code of any other failure in the message', async () => {
@@ -179,6 +188,31 @@ describe.runIf(import.meta.env.VOCAB_SUPABASE_TESTS === '1')('on local Supabase'
       await insert(client, 'folders', [{ ...handEdited, name_key: 'toeic' }])
       await expect(repo.listFolders()).rejects.toBeInstanceOf(InvalidStoredDataError)
       expect(await repo.getFolder(folder.id)).toEqual(folder)
+    })
+
+    it('signs in with SupabaseAuth and tells wrong credentials apart', async () => {
+      const own = createClient(LOCAL_URL, LOCAL_PUBLISHABLE_KEY, { auth: NO_SESSION })
+      const auth = new SupabaseAuth(own)
+      await expect(auth.signIn({ ...TEST_USER, password: 'wrong' })).rejects.toThrow(
+        new AuthenticationError('Wrong email or password.'),
+      )
+      const users: (string | null)[] = []
+      const unsubscribe = auth.subscribe((userId) => users.push(userId))
+      await auth.signIn(TEST_USER)
+      await vi.waitFor(() => expect(users.at(-1)).toEqual(expect.any(String)))
+      await auth.signOut()
+      expect(users.at(-1)).toBeNull()
+      unsubscribe()
+    })
+
+    it('reads app_config only when signed in', async () => {
+      expect(await isClientOutdated(client)).toBe(false)
+      const signedOut = createClient(LOCAL_URL, LOCAL_PUBLISHABLE_KEY, { auth: NO_SESSION })
+      const onSessionExpired = vi.fn()
+      await expect(isClientOutdated(signedOut, onSessionExpired)).rejects.toBeInstanceOf(
+        SessionExpiredError,
+      )
+      expect(onSessionExpired).toHaveBeenCalledOnce()
     })
 
     it('reports SessionExpiredError when nobody is signed in', async () => {
