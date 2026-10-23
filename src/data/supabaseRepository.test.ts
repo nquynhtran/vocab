@@ -2,14 +2,15 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import {
+  AuthenticationError,
   ConnectionError,
   EntityNotFoundError,
   InvalidStoredDataError,
   SessionExpiredError,
 } from '../domain/errors.ts'
 import { StudyDaySchema, TermProgressSchema } from '../domain/schemas.ts'
-import { AuthenticationError, SupabaseAuth } from './auth.ts'
 import { isClientOutdated } from './clientVersion.ts'
+import { SupabaseAuth } from './supabaseAuth.ts'
 import { describeRepositoryContract, testDeps, testId } from './repositoryContract.ts'
 import { MAX_ROWS, SupabaseRepository } from './supabaseRepository.ts'
 import { entityToRow } from './supabaseRows.ts'

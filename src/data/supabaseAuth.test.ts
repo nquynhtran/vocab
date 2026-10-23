@@ -1,8 +1,8 @@
 // @vitest-environment node
 import { createClient } from '@supabase/supabase-js'
 import { describe, expect, it, vi } from 'vitest'
-import { ValidationError } from '../domain/errors.ts'
-import { AuthenticationError, SupabaseAuth } from './auth.ts'
+import { AuthenticationError, ValidationError } from '../domain/errors.ts'
+import { SupabaseAuth } from './supabaseAuth.ts'
 
 function fakeAuth(respond: () => Response | Promise<Response>) {
   const fetch = vi.fn(async () => respond())

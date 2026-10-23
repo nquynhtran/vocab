@@ -2,7 +2,14 @@ import { z } from 'zod'
 
 /** Every repository throws these, so the UI can tell them apart without knowing the storage. */
 
-export class ValidationError extends Error {
+/**
+ * An error whose message is written for the user, so the UI shows it as is; anything else is a
+ * bug and gets a generic message. New user-facing errors extend this instead of being added to
+ * a list in the UI, which is how cloud errors once went unrecognized.
+ */
+export class UserFacingError extends Error {}
+
+export class ValidationError extends UserFacingError {
   /** Messages per input field, ready to show next to the form field. */
   readonly fieldErrors: Readonly<Record<string, readonly string[]>>
 
@@ -16,7 +23,7 @@ export class ValidationError extends Error {
 export type NamedEntityKind = 'folder' | 'file'
 export type EntityKind = NamedEntityKind | 'term'
 
-export class DuplicateNameError extends Error {
+export class DuplicateNameError extends UserFacingError {
   readonly kind: NamedEntityKind
   readonly existingName: string
 
@@ -37,7 +44,7 @@ export class DuplicateNameError extends Error {
  * error ("NotFoundError", "ConstraintError", "DataError"...) into its own class, so an error
  * thrown inside a transaction under such a name would lose its type. Avoid those names.
  */
-export class EntityNotFoundError extends Error {
+export class EntityNotFoundError extends UserFacingError {
   readonly kind: EntityKind
   readonly id: string
 
@@ -53,7 +60,7 @@ export class EntityNotFoundError extends Error {
  * No answer from the cloud. For a write this does not mean nothing was saved: the request may
  * have been applied and only the answer lost, so retrying blindly could add a term twice.
  */
-export class ConnectionError extends Error {
+export class ConnectionError extends UserFacingError {
   constructor() {
     super(
       'Cannot reach the server. Check your connection and reload: ' +
@@ -64,7 +71,7 @@ export class ConnectionError extends Error {
 }
 
 /** The cloud refused the request because nobody is signed in any more (HTTP 401). */
-export class SessionExpiredError extends Error {
+export class SessionExpiredError extends UserFacingError {
   constructor() {
     super('Your session has expired. Please sign in again.')
     this.name = 'SessionExpiredError'
@@ -76,7 +83,7 @@ export class SessionExpiredError extends Error {
  * Thrown for the whole read instead of skipping the row (decision #35), so nothing silently
  * disappears from a list.
  */
-export class InvalidStoredDataError extends Error {
+export class InvalidStoredDataError extends UserFacingError {
   /** Where the bad value is, e.g. `terms 0b5c…: word`. */
   readonly location: string
 
@@ -87,6 +94,14 @@ export class InvalidStoredDataError extends Error {
     )
     this.name = 'InvalidStoredDataError'
     this.location = location
+  }
+}
+
+/** A sign-in or sign-out failure, e.g. wrong credentials. */
+export class AuthenticationError extends UserFacingError {
+  constructor(message: string) {
+    super(message)
+    this.name = 'AuthenticationError'
   }
 }
 

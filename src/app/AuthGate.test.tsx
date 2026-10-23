@@ -1,13 +1,8 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useEffect, useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import {
-  AuthenticationError,
-  type Auth,
-  type AuthListener,
-  type SignInInput,
-} from '../data/auth.ts'
-import { ConnectionError } from '../domain/errors.ts'
+import type { Auth, AuthListener, SignInInput } from '../data/auth.ts'
+import { AuthenticationError, ConnectionError } from '../domain/errors.ts'
 import { SignOutButton } from '../features/auth/SignOutButton.tsx'
 import { useSignOut } from '../shared/signOutContext.ts'
 import { AuthGate } from './AuthGate.tsx'

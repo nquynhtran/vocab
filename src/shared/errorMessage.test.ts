@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { AuthenticationError } from '../data/auth.ts'
 import {
+  AuthenticationError,
   ConnectionError,
   DuplicateNameError,
   EntityNotFoundError,
