@@ -4,8 +4,8 @@
 
 ## Đang ở đâu
 - **Giai đoạn:** 7 (cloud), bước 5 xong và đã commit ở máy, **chưa push** (#45: push là deploy, phải push cùng bước 6). Bản trên Pages vẫn là bản local.
-- **Việc tiếp theo:** người dùng thử `npm run dev` (cần `npx supabase start`; đăng nhập `contract@test.local` / `contract-test-password`). Sau đó làm bước 6 của `docs/cloud-sync.md`: màn chuyển dữ liệu (Dexie → `import_snapshot`, `meta.migratedAt`), CSP `connect-src`, biến build `VITE_SUPABASE_*` trên GitHub Actions (build phải báo lỗi nếu thiếu), `supabase link` + `db push` (kiểm `max_rows` = 1000), rồi mới push.
-- **Đang vướng:** không. Build có cảnh báo chunk > 500 kB (supabase-js), chưa xử lý.
+- **Việc tiếp theo:** bước 6 của `docs/cloud-sync.md`: màn chuyển dữ liệu (Dexie → `import_snapshot`, `meta.migratedAt`), CSP `connect-src`, biến build `VITE_SUPABASE_*` trên GitHub Actions (build phải báo lỗi nếu thiếu), `supabase link` + `db push` (kiểm `max_rows` = 1000), rồi mới push. Người dùng đã thử bản dev (đăng nhập, CRUD, mất phiên giữ chữ, 🔊 trên Firefox): OK. Thử tay: `npm run dev` + `contract@test.local` / `contract-test-password` (test cloud xóa dữ liệu tài khoản này).
+- **Đang vướng:** không. Build có cảnh báo chunk > 500 kB (supabase-js), chưa xử lý. 🔊 không kêu trong Simple Browser của VS Code (giới hạn của webview, không phải lỗi app).
 - **Câu hỏi mở (để giai đoạn 3):** có hiện loại từ làm gợi ý trong câu hỏi Learn không.
 
 ## Kế hoạch
