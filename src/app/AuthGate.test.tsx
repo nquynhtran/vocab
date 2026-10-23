@@ -212,10 +212,20 @@ describe('AuthGate', () => {
     log.mockRestore()
   })
 
+  /**
+   * The app is on screen and its effects have run. Seeing it is not enough: findBy resolves as
+   * soon as the DOM changes, before useEffect adds the visibilitychange listener, so an event
+   * dispatched right away was sometimes lost on a slow CI run.
+   */
+  async function appListening() {
+    await screen.findByLabelText('Note')
+    await act(async () => {})
+  }
+
   it('checks the version again when the tab becomes visible', async () => {
     const isOutdated = vi.fn<() => Promise<boolean>>().mockResolvedValueOnce(false)
     const { onOutdated } = renderGate({ auth: new FakeAuth('me'), isOutdated })
-    await screen.findByLabelText('Note')
+    await appListening()
 
     isOutdated.mockResolvedValueOnce(true)
     document.dispatchEvent(new Event('visibilitychange'))
@@ -226,7 +236,7 @@ describe('AuthGate', () => {
   it('ignores a failed check when the tab becomes visible', async () => {
     const isOutdated = vi.fn<() => Promise<boolean>>().mockResolvedValueOnce(false)
     const { onOutdated } = renderGate({ auth: new FakeAuth('me'), isOutdated })
-    await screen.findByLabelText('Note')
+    await appListening()
 
     isOutdated.mockRejectedValueOnce(new ConnectionError())
     document.dispatchEvent(new Event('visibilitychange'))
