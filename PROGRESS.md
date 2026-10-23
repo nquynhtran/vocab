@@ -32,8 +32,8 @@ Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn 
 - [ ] **6. Hoàn thiện** — phím tắt, dark mode, README; dùng thử 1 tuần
 
 ## Nhật ký (5 mục gần nhất, mới nhất trên cùng)
+- 2026-10-23 — Tự rà soát bước 4: `summarizeFiles` dùng chung (DRY), mapper giữ cột khóa (`nameColumns`), `ConnectionError` không còn hứa "chưa lưu" (thử lại phải dùng lại id, bước 5), #42 last-write-wins, ghi việc kiểm `max_rows` khi link; 151 test; CI xanh.
 - 2026-10-22 — Giai đoạn 7 bước 4: `SupabaseRepository` + mapper (validate cả key), bộ hợp đồng dùng chung (Dexie trong CI, Supabase qua `npm run test:supabase`), RPC `list_terms`/`get_folder_contents` vì `max_rows` cắt cả embed; #39–41; sửa `config.toml` chặn đăng nhập email, seed tự kiểm tra môi trường; `reviewer` 8 điểm, đã sửa hết; 149 test + 79 pgTAP + 50 test cloud; CI xanh.
 - 2026-10-22 — Giai đoạn 7 bước 3: Supabase CLI + config local, migration đầu (khóa ngoại kèm `user_id`, RLS, quyền tường minh, `import_snapshot` kiểm tra đúng bộ key, `export_backup` một snapshot), 66 test pgTAP qua `reviewer`; #38; CI xanh. Chưa `supabase link`.
 - 2026-10-22 — Giai đoạn 7: `challenger` soát kế hoạch, chốt #33–37; Export JSON + `validateBackup` qua `reviewer` (114 test, đã deploy); tạo project Supabase, tắt đăng ký; cài Docker.
 - 2026-10-22 — Rà soát lại giai đoạn 2: gom code lặp, đọc màn Folder trong một transaction, Dexie v2 (#32) chặn tab cũ xóa loại từ, sửa giọng đọc; 86 test.
-- 2026-10-22 — Feedback giai đoạn 2: thêm loại từ, phát âm en-GB; chốt làm cloud trước Learn (#29–31).

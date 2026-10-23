@@ -34,6 +34,7 @@ Không đăng nhập thì dữ liệu nằm riêng trong trình duyệt của t�
 ## Khác biệt so với Dexie (phải có trong test hợp đồng)
 PostgREST mỗi request là một transaction riêng, nên không "kiểm tra rồi ghi" trong cùng transaction được:
 - Lớp chặn chính là ràng buộc DB. Lỗi `23505` (unique) theo tên constraint → `DuplicateNameError`; `23503` (khóa ngoại) → `EntityNotFoundError`. Trên cloud đây là chuyện bình thường (hai máy cùng ghi), không phải bug như `ConstraintError` của Dexie.
+- Hai máy cùng sửa một bản ghi: bản ghi sau thắng (#42).
 - Update luôn kèm `.select()` để đếm số dòng: 0 dòng → `EntityNotFoundError`. Delete không cần đếm: 0 dòng là no-op như Dexie.
 - Đọc cần một snapshot (`getFolderContents`, `findTermsByWord`, `exportBackup`) → một request embed hoặc một view/RPC, không ghép nhiều request; riêng `exportBackup` là một RPC đọc mọi bảng trong một transaction, để backup không trộn trạng thái trước và sau một lần ghi từ máy khác.
 - Thao tác nhiều bảng (`recordAnswer`, nhập snapshot) là hàm Postgres gọi qua RPC, `SECURITY INVOKER` để RLS vẫn áp dụng; `user_id` lấy từ `auth.uid()` trong hàm, không lấy từ payload.
@@ -77,6 +78,7 @@ Cùng loại lỗi với #32. Không có `versionchange` cho Supabase, nên:
 - Lúc tạo project đã **bỏ** "Automatically expose new tables" và **bật** "automatic RLS": migration phải `GRANT` quyền tường minh cho `authenticated` (không cấp cho `anon`) và vẫn tự `enable row level security` cho từng bảng, vì Supabase CLI local không có hai cấu hình này của dashboard.
 - CSP: thêm `https://<ref>.supabase.co` vào `connect-src`; không thêm `wss:` vì không dùng realtime.
 - URL và khóa publishable đưa vào build qua biến của GitHub Actions (không phải secret, nhưng để ngoài code cho dễ đổi).
+- Khi `supabase link`: kiểm tra `max_rows` của project cloud (Settings → API) đúng bằng `MAX_ROWS = 1000` trong `supabaseRepository.ts`. Thấp hơn thì lớp chặn "chạm giới hạn thì báo lỗi" không còn tác dụng mà không báo gì.
 - **Cần kiểm tra lại khi làm:** gói miễn phí có còn tự tạm dừng project không truy cập 7 ngày không, và có cho tải backup về không. Nếu dùng GitHub Actions chạy định kỳ để giữ project: repo public không có commit 60 ngày thì GitHub tắt workflow theo lịch, và workflow phải query thật vào DB. Phương án dự phòng: khôi phục thủ công trên dashboard, ghi trong README.
 - Xóa dây chuyền trên cloud không hoàn tác được; giai đoạn 5 vẫn cần Export JSON định kỳ.
 

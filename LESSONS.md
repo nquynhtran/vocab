@@ -17,6 +17,7 @@
 - `jsonb_populate_recordset` lặng lẽ bỏ key lạ và cho `null` key thiếu → hàm nhận JSON phải tự kiểm tra đúng bộ key.
 
 ## Nhất quán
+- Ghi `ConnectionError` là "không đọc hay lưu được gì" → sai với thao tác ghi: request có thể đã áp dụng, chỉ mất phản hồi, thử lại sẽ tạo bản trùng → với lỗi mạng của thao tác ghi, luôn xét trường hợp "đã ghi nhưng mất phản hồi".
 - Lưu kết quả của một hàm vào DB (`toKey` → `nameKey`) mà không ghi rằng đổi hàm thì phải migration tính lại → mỗi dữ liệu dẫn xuất được lưu phải ghi rõ nguồn và điều kiện tính lại.
 - Code ngược mục tiêu chính mình ghi trong tài liệu (`localeCompare(undefined)` trong khi cam kết "mọi thiết bị cùng thứ tự"; `validateBackup` lặng lẽ chuẩn hóa ngay sau khi ghi #35 "khác là lỗi") → đọc lại lý do đã ghi trước khi chọn tham số. (lặp lại ×3: mapper ghi lý do "key có thể lệch chữ" nhưng bỏ cột key mà không kiểm)
 - Viết tài liệu mô tả tính năng chưa làm như đã có (README nói có xuất JSON) → chỉ mô tả cái đã có, cái chưa có thì ghi "planned".
