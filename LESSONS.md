@@ -12,6 +12,8 @@
 ## UI
 - Giữ kết quả tra cứu theo input (`{ key, locations }`) rồi dùng lại khi gõ lại đúng input đó → hiện dữ liệu cũ, thiếu bản ghi vừa thêm → bỏ kết quả mỗi khi input đổi; kết quả chỉ hợp lệ cho lần tra sau lần đổi cuối.
 
+- Xóa `value` của ô chọn file sau khi đọc (để chọn lại cùng file vẫn nhận) → ô hiện "No file chosen" cạnh nút Import của file đó → xóa lúc mở hộp chọn (`onClick`), không phải sau khi đọc; sửa góp ý xong thì tự hình dung lại màn hình.
+
 ## Thư viện
 - Đặt tên lỗi tự định nghĩa là `NotFoundError`: Dexie bọc lại lỗi có `name` trùng tên lỗi DOM của IndexedDB, nên `instanceof` hỏng → không dùng tên lỗi DOM (`NotFound`, `Constraint`, `Data`, `Abort`…) cho lỗi ném trong transaction.
 
@@ -27,6 +29,7 @@
 - Test "tab cũ nhận versionchange" khai báo schema v1 thiếu bảng → Dexie tự nâng version nên test xanh cả khi thiếu code → bản giả của phiên bản cũ phải đúng y bản đã phát hành; phá code thử để chắc test đỏ được.
 
 ## Công cụ
+- Thêm `/// <reference types="node" />` vào một file test trong `src/` → mở kiểu Node cho cả project app (`tsconfig.app.json` cố ý chỉ có `vite/client`) → trước khi thêm kiểu hay cấu hình, xem nó áp dụng cho phạm vi nào; test cần Node thì để ngoài project app.
 - Đưa mật khẩu test công khai vào `seed.sql` và chỉ cấm một lệnh (`db push --include-seed`), sót `db reset --linked` → với file nguy hiểm nếu chạy nhầm chỗ, cho chính file tự kiểm tra môi trường thay vì chỉ dựa vào tài liệu.
 - Ghi `config.toml` của Supabase local theo tên tùy chọn mà không chạy thử luồng thật: `[auth.email] enable_signup = false` tắt luôn đăng nhập email, khác cloud → sau khi đổi cấu hình, thử đúng luồng sẽ dùng (đăng nhập thật, `/auth/v1/settings`).
 - Vòng chờ CI lọc `head_sha` bằng SHA rút gọn → API không khớp, vòng lặp không bao giờ dừng → dùng SHA đầy đủ (`git rev-parse HEAD`) và cho vòng chờ thoát cả khi không tìm thấy kết quả hoặc quá thời gian.
