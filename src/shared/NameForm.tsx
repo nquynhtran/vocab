@@ -1,5 +1,6 @@
 import { useId, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { errorMessage } from './errorMessage.ts'
+import { FieldError } from './FieldError.tsx'
 
 interface NameFormProps {
   label: string
@@ -67,11 +68,7 @@ export function NameForm({
           </button>
         )}
       </div>
-      {error && (
-        <p id={errorId} className="field-error" role="alert">
-          {error}
-        </p>
-      )}
+      <FieldError id={errorId} message={error} />
     </form>
   )
 }

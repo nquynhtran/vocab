@@ -2,6 +2,7 @@ import { useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'rea
 import { ValidationError } from '../../domain/errors.ts'
 import { PARTS_OF_SPEECH, type PartOfSpeech, type TermInput } from '../../domain/schemas.ts'
 import { errorMessage } from '../../shared/errorMessage.ts'
+import { FieldError } from '../../shared/FieldError.tsx'
 import { PART_OF_SPEECH_ABBREVIATIONS } from './partOfSpeech.ts'
 import { formatLocations, useDuplicateWarning } from './useDuplicateWarning.ts'
 
@@ -168,15 +169,6 @@ export function TermForm({
         </p>
       )}
     </form>
-  )
-}
-
-function FieldError({ id, message }: { id: string; message: string | undefined }) {
-  if (!message) return null
-  return (
-    <p id={id} className="field-error" role="alert">
-      {message}
-    </p>
   )
 }
 

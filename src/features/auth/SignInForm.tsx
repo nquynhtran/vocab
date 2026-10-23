@@ -2,6 +2,7 @@ import { useId, useState, type FormEvent } from 'react'
 import type { SignInInput } from '../../data/auth.ts'
 import { ValidationError } from '../../domain/errors.ts'
 import { errorMessage } from '../../shared/errorMessage.ts'
+import { FieldError } from '../../shared/FieldError.tsx'
 
 type FieldErrors = Readonly<Record<string, readonly string[]>>
 
@@ -58,11 +59,7 @@ export function SignInForm({ onSubmit, notice }: SignInFormProps) {
           aria-invalid={emailError !== undefined}
           aria-describedby={emailError ? `${ids.email}-error` : undefined}
         />
-        {emailError && (
-          <p id={`${ids.email}-error`} className="field-error" role="alert">
-            {emailError}
-          </p>
-        )}
+        <FieldError id={`${ids.email}-error`} message={emailError} />
       </div>
       <div className="field">
         <label htmlFor={ids.password}>Password</label>
@@ -75,11 +72,7 @@ export function SignInForm({ onSubmit, notice }: SignInFormProps) {
           aria-invalid={passwordError !== undefined}
           aria-describedby={passwordError ? `${ids.password}-error` : undefined}
         />
-        {passwordError && (
-          <p id={`${ids.password}-error`} className="field-error" role="alert">
-            {passwordError}
-          </p>
-        )}
+        <FieldError id={`${ids.password}-error`} message={passwordError} />
       </div>
       <button type="submit" className="button button--primary" disabled={pending}>
         Sign in
