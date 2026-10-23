@@ -87,8 +87,8 @@ Cùng loại lỗi với #32. Không có `versionchange` cho Supabase, nên:
 ## Cấu hình & vận hành
 - Project: ref `rmbssnyoamugirqzdsef`, region `ap-southeast-1` (Singapore), gói Free. Đã tắt đăng ký mới và anonymous sign-in (kiểm tra qua `/auth/v1/settings`: `disable_signup: true`), có một user tạo từ dashboard.
 - Lúc tạo project đã **bỏ** "Automatically expose new tables" và **bật** "automatic RLS": migration phải `GRANT` quyền tường minh cho `authenticated` (không cấp cho `anon`) và vẫn tự `enable row level security` cho từng bảng, vì Supabase CLI local không có hai cấu hình này của dashboard.
-- CSP: thêm `https://<ref>.supabase.co` vào `connect-src`; không thêm `wss:` vì không dùng realtime.
-- URL và khóa publishable đưa vào build qua biến của GitHub Actions (không phải secret, nhưng để ngoài code cho dễ đổi).
+- CSP: `vite.config.ts` lấy origin của `VITE_SUPABASE_URL` đưa vào `connect-src`; không thêm `wss:` vì không dùng realtime.
+- URL và khóa publishable đưa vào build qua **repository variables** của GitHub Actions (`vars.VITE_SUPABASE_*`, không phải secret, nhưng để ngoài code cho dễ đổi). `vite build` báo lỗi nếu thiếu biến, URL không phải `https:`, hoặc khóa không bắt đầu bằng `sb_publishable_` (chặn lỡ dán khóa bí mật vào bản phát hành). `npm run build` ở máy cũng cần hai biến này.
 - Khi `supabase link`: kiểm tra `max_rows` của project cloud (Settings → API) đúng bằng `MAX_ROWS = 1000` trong `supabaseRepository.ts`. Thấp hơn thì lớp chặn "chạm giới hạn thì báo lỗi" không còn tác dụng mà không báo gì.
 - **Cần kiểm tra lại khi làm:** gói miễn phí có còn tự tạm dừng project không truy cập 7 ngày không, và có cho tải backup về không. Nếu dùng GitHub Actions chạy định kỳ để giữ project: repo public không có commit 60 ngày thì GitHub tắt workflow theo lịch, và workflow phải query thật vào DB. Phương án dự phòng: khôi phục thủ công trên dashboard, ghi trong README.
 - Xóa dây chuyền trên cloud không hoàn tác được; giai đoạn 5 vẫn cần Export JSON định kỳ.

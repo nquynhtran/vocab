@@ -30,6 +30,11 @@ jobs:
       # Only runtime dependencies can block a deploy; dev tooling never ships to users.
       - run: npm audit --omit=dev --audit-level=high
       - run: npm run build
+        # Public values (RLS decides access), kept as repository variables, not secrets, so they
+        # are easy to change. The build fails if either is missing.
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
 
       - uses: actions/upload-pages-artifact@v4
         if: github.ref == 'refs/heads/main'
