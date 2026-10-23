@@ -1,6 +1,5 @@
 import { useId, useRef, useState, type ChangeEvent } from 'react'
 import { MAX_BACKUP_FILE_BYTES, parseBackupFile, type Backup } from '../../domain/backup.ts'
-import { ValidationError } from '../../domain/errors.ts'
 import { plural } from '../../shared/deleteMessages.ts'
 import { importProblems, type ImportProblems } from './importErrors.ts'
 
@@ -26,16 +25,16 @@ export function ImportBackup({ onImport }: ImportBackupProps) {
   async function handleFile(event: ChangeEvent<HTMLInputElement>) {
     setBackup(undefined)
     setProblems(undefined)
-    const file = event.target.files?.[0]
-    // Cleared so that picking the same file again, once fixed, fires `change` again.
-    event.target.value = ''
-    if (!file) return
-    // A large file read earlier may finish after a later pick; only the latest pick counts.
+    // A large file read earlier may finish after a later pick (or a cancelled one); only the
+    // latest pick counts.
     const pick = ++latestPick.current
+    const file = event.target.files?.[0]
+    if (!file) return
+    if (file.size > MAX_BACKUP_FILE_BYTES) {
+      setProblems({ shown: ['This file is larger than 5 MB, too big to be a backup'], hidden: 0 })
+      return
+    }
     try {
-      if (file.size > MAX_BACKUP_FILE_BYTES) {
-        throw new ValidationError({ _: ['This file is larger than 5 MB, too big to be a backup'] })
-      }
       const parsed = parseBackupFile(await file.text())
       if (pick === latestPick.current) setBackup(parsed)
     } catch (error) {
@@ -65,6 +64,11 @@ export function ImportBackup({ onImport }: ImportBackupProps) {
         type="file"
         accept=".json,application/json"
         disabled={busy}
+        // Cleared when the picker opens, not after reading, so the chosen name stays visible
+        // while picking the same file again (fixed after an error) still fires `change`.
+        onClick={(event) => {
+          event.currentTarget.value = ''
+        }}
         onChange={(event) => void handleFile(event)}
       />
       {backup && (

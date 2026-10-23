@@ -1,5 +1,4 @@
 // @vitest-environment node
-/// <reference types="node" />
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import {
@@ -10,8 +9,7 @@ import {
   InvalidStoredDataError,
   SessionExpiredError,
 } from '../domain/errors.ts'
-import { readFile } from 'node:fs/promises'
-import { parseBackupFile, type Backup } from '../domain/backup.ts'
+import type { Backup } from '../domain/backup.ts'
 import { StudyDaySchema, TermProgressSchema } from '../domain/schemas.ts'
 import { isClientOutdated } from './clientVersion.ts'
 import { SupabaseAuth } from './supabaseAuth.ts'
@@ -237,23 +235,6 @@ describe.runIf(import.meta.env.VOCAB_SUPABASE_TESTS === '1')('on local Supabase'
       expect(onSessionExpired).toHaveBeenCalledOnce()
     })
 
-    // A rehearsal with the user's real export before moving it to the cloud; the file is never
-    // committed. VOCAB_BACKUP_FILE=<path> on top of the usual VOCAB_SUPABASE_TESTS=1.
-    it.runIf(Boolean(import.meta.env.VOCAB_BACKUP_FILE))(
-      'imports a real backup file and exports it unchanged',
-      async () => {
-        await clearAccount(client)
-        const repo = new SupabaseRepository(client, testDeps())
-        const text = await readFile(String(import.meta.env.VOCAB_BACKUP_FILE), 'utf8')
-        const backup = parseBackupFile(text)
-
-        await repo.importIntoEmpty(backup)
-
-        // export_backup orders by id, the local export by IndexedDB key: same rows, other order.
-        expect(comparable(await repo.exportBackup())).toStrictEqual(comparable(backup))
-      },
-    )
-
     it('reports SessionExpiredError when nobody is signed in', async () => {
       const signedOut = createClient(LOCAL_URL, LOCAL_PUBLISHABLE_KEY, { auth: NO_SESSION })
       const repo = new SupabaseRepository(signedOut, testDeps())
@@ -262,22 +243,6 @@ describe.runIf(import.meta.env.VOCAB_SUPABASE_TESTS === '1')('on local Supabase'
     })
   })
 })
-
-/** A backup minus its export time, each table in a fixed order. */
-function comparable({ exportedAt: _exportedAt, ...backup }: Backup) {
-  const by =
-    <T>(key: (row: T) => string) =>
-    (a: T, b: T) =>
-      key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0
-  return {
-    ...backup,
-    folders: backup.folders.toSorted(by((f) => f.id)),
-    files: backup.files.toSorted(by((f) => f.id)),
-    terms: backup.terms.toSorted(by((t) => t.id)),
-    progress: backup.progress.toSorted(by((p) => p.termId)),
-    studyDays: backup.studyDays.toSorted(by((d) => d.date)),
-  }
-}
 
 /** Deleting folders cascades to files, terms and progress; study days hang off nothing. */
 async function clearAccount(client: SupabaseClient) {

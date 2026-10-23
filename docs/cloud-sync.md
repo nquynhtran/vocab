@@ -66,13 +66,14 @@ Một dòng hỏng → cả thao tác báo `InvalidStoredDataError` kèm vị tr
 
 ## Chuyển dữ liệu local lên cloud (#33, #46)
 Chỉ máy tính có dữ liệu (iPhone chưa dùng), nên chỉ chuyển một chiều, một lần, không gộp.
-1. Trên bản local (trước khi deploy): **Export JSON**. File này vừa là bản sao an toàn vừa là thứ được nhập.
+1. Trên bản local (trước khi deploy): **Export JSON**. File này vừa là bản sao an toàn vừa là thứ được nhập. (Lần này không cần: dữ liệu local chỉ để thử, xem mục Triển khai.)
 2. Bản cloud, Home **trống** → mục "Import a backup": chọn file (> 5 MB thì từ chối trước khi đọc) → `parseBackupFile` (JSON + `validateBackup`) → nút "Import N folders, N files, N terms" → `Repository.importIntoEmpty(backup)`. Lỗi file hiện tối đa 5 dòng `đường dẫn: lỗi` + "…and N more" (`importProblems`). Lỗi lúc nhập hiện ở ô lỗi chung của trang (nhập xong trang có folder nên mục này biến mất, lỗi để trong mục sẽ mất theo).
 3. `importIntoEmpty`: validate lại, ghi một transaction (Dexie) hoặc RPC `import_snapshot` (Supabase); kho đã có folder hay study day → `DataAlreadyExistsError` (`VC001`), nên bấm lại sau `ConnectionError` không nhân đôi. Giữ nguyên id và thời gian (id là khóa chính toàn project: nhập cùng file vào tài khoản thứ hai sẽ lỗi `*_pkey`, hiện "Something went wrong"; chấp nhận vì chỉ có một tài khoản); `name_key`/`word_key` tính lại bằng `toKey` hiện tại. Bộ hợp đồng kiểm tra nhập rồi xuất ra đúng bằng bản gốc. "Replace all" của giai đoạn 5 cần RPC riêng (#38).
 4. Bản cloud vẫn mở `VocabDb` ở **version 3** lúc khởi động để tab cũ còn chạy bản local nhận `versionchange` và reload (nếu không, tab đó vẫn ghi vào IndexedDB mà không lên cloud). Không đọc, không xóa IndexedDB: nó còn đó làm bản sao thứ hai.
 
 ## Triển khai và quay lại
-- Trước khi push: chạy thử file Export thật trên Supabase local (`VOCAB_SUPABASE_TESTS=1 VOCAB_BACKUP_FILE=<đường dẫn> npx vitest run src/data/supabaseRepository.test.ts -t "real backup"`: parse, nhập, xuất ra so với file; không commit file); build bằng biến cloud rồi `vite preview`, đăng nhập thử để chắc CSP không chặn; `supabase db push` lên cloud; đóng mọi tab Vocab (tab cũ sẽ tự reload, mất chữ đang gõ dở).
+- Dữ liệu trên bản local chỉ là dữ liệu thử (người dùng xác nhận 2026-10-23): **không chuyển**, bỏ bước Export và chạy thử file thật. Mục Import vẫn giữ cho việc khôi phục backup vào tài khoản trống (nền cho giai đoạn 5).
+- Trước khi push: `supabase db push` lên cloud; build bằng biến cloud rồi `vite preview`, đăng nhập thử để chắc CSP không chặn; đóng mọi tab Vocab (tab cũ sẽ tự reload, mất chữ đang gõ dở).
 - **Quay lại bản local nếu bản cloud hỏng:** trình duyệt đã mở IndexedDB ở v3, bản local cũ (v2) sẽ không mở được (`VersionError`). Revert nhưng **giữ `db.ts` ở v3** (v3 cùng index, bản local chạy bình thường), và giữ `main.tsx` bản local. Không xóa IndexedDB.
 
 ## Client cũ ghi đè cột mới (#34)
