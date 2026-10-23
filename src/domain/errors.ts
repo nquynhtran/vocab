@@ -49,10 +49,16 @@ export class EntityNotFoundError extends Error {
   }
 }
 
-/** The cloud could not be reached, so nothing was read or saved. */
+/**
+ * No answer from the cloud. For a write this does not mean nothing was saved: the request may
+ * have been applied and only the answer lost, so retrying blindly could add a term twice.
+ */
 export class ConnectionError extends Error {
   constructor() {
-    super('Cannot reach the server. Check your connection and try again.')
+    super(
+      'Cannot reach the server. Check your connection and reload: ' +
+        'a change you just made may or may not have been saved.',
+    )
     this.name = 'ConnectionError'
   }
 }
