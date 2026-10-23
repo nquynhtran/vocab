@@ -1,4 +1,6 @@
 dist
 package-lock.json
+# Written by `supabase link`, git-ignored (supabase/.gitignore).
+supabase/.temp
 # Docs are hand-formatted (Vietnamese tables); keep diffs readable.
 *.md
