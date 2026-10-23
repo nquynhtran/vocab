@@ -30,6 +30,8 @@
 - Test "tab cũ nhận versionchange" khai báo schema v1 thiếu bảng → Dexie tự nâng version nên test xanh cả khi thiếu code → bản giả của phiên bản cũ phải đúng y bản đã phát hành; phá code thử để chắc test đỏ được.
 
 ## Công cụ
+- `a && b; git commit && git push`: `a` hỏng (sed sai dấu phân cách) thì `&&` chỉ bỏ qua tới `;`, commit/push vẫn chạy với nội dung thiếu → lệnh ghi ra ngoài (commit, push, deploy) chạy riêng, sau khi đã thấy bước trước thành công.
+- `pkill -f "<lệnh>"` khớp luôn dòng lệnh của chính shell đang chạy nó (exit 144), các lệnh sau trong cùng shell không chạy → dừng tiến trình nền bằng ID/PID, hoặc chạy `pkill` một mình.
 - Thêm `/// <reference types="node" />` vào một file test trong `src/` → mở kiểu Node cho cả project app (`tsconfig.app.json` cố ý chỉ có `vite/client`) → trước khi thêm kiểu hay cấu hình, xem nó áp dụng cho phạm vi nào; test cần Node thì để ngoài project app.
 - Đưa mật khẩu test công khai vào `seed.sql` và chỉ cấm một lệnh (`db push --include-seed`), sót `db reset --linked` → với file nguy hiểm nếu chạy nhầm chỗ, cho chính file tự kiểm tra môi trường thay vì chỉ dựa vào tài liệu.
 - Ghi `config.toml` của Supabase local theo tên tùy chọn mà không chạy thử luồng thật: `[auth.email] enable_signup = false` tắt luôn đăng nhập email, khác cloud → sau khi đổi cấu hình, thử đúng luồng sẽ dùng (đăng nhập thật, `/auth/v1/settings`).
