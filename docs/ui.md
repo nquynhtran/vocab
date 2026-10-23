@@ -10,7 +10,7 @@ Giai đoạn 0–6 ưu tiên máy tính, nhưng CSS **responsive ngay từ đầ
 
 ## Màn hình
 0. **Sign in** (bản cloud): Email, Password, nút "Sign in". Mất phiên khi đang dùng → hộp "Sign in" phủ kín trang, app vẫn giữ nguyên bên dưới, kèm câu "You were signed out…" ([cloud-sync.md](cloud-sync.md#đăng-nhập--phiên-bước-5-4345)). Header có nút **Sign out**.
-1. **Home**: danh sách folder, nút "New folder", ô streak (🔥 N-day streak, "Today: 4/10 answers") và lịch nhỏ; cuối trang là mục Backup với nút "Export JSON" (tải file `vocab-backup-YYYY-MM-DD.json`, ngày theo giờ máy).
+1. **Home**: danh sách folder, nút "New folder", ô streak (🔥 N-day streak, "Today: 4/10 answers") và lịch nhỏ; cuối trang là mục Backup với nút "Export JSON" (tải file `vocab-backup-YYYY-MM-DD.json`, ngày theo giờ máy). Khi chưa có folder nào: thêm mục "Import a backup" (chọn file → nút "Import 1 folder, 2 files, 30 terms"; lỗi file hiện tối đa 5 dòng kèm vị trí), xem [cloud-sync.md](cloud-sync.md#chuyển-dữ-liệu-local-lên-cloud-33-46).
 2. **Folder**: danh sách file (tên, số từ, % mastered), nút "New file".
 3. **File**: bảng từ (Term (loại từ) 🔊 · Meaning · Example), từ mới nhất trên cùng, form thêm từ ở đầu bảng, nút **Learn** (ẩn khi file trống, thay bằng "Add some terms to start learning").
 4. **Learn**: một câu hỏi mỗi lần, thanh tiến độ (số từ đã đạt mức 2 / tổng), nút "Stop". Phản hồi đúng/sai ngay; câu sai và câu viết có màn phản hồi với nút **Continue** (và **"I was right"** nếu câu viết bị chấm sai).

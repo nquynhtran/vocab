@@ -16,12 +16,14 @@ export interface RequestOptions {
   onConstraint?: ConstraintHandler
   /** Told about every 401, so the app can ask the user to sign in again. */
   onSessionExpired?: () => void
+  /** Maps an error our own SQL raises on purpose, by its errcode (e.g. `VC001`). */
+  onErrorCode?: (code: string) => Error | undefined
 }
 
 /** Awaits a Supabase request and translates its error into a domain error. */
 export async function runRequest(
   request: PromiseLike<SupabaseResponse>,
-  { onConstraint, onSessionExpired }: RequestOptions = {},
+  { onConstraint, onSessionExpired, onErrorCode }: RequestOptions = {},
 ): Promise<unknown> {
   const { data, error, status } = await request
   if (!error) return data
@@ -36,5 +38,7 @@ export async function runRequest(
     const mapped = constraint === undefined ? undefined : await onConstraint?.(constraint)
     if (mapped) throw mapped
   }
+  const mapped = onErrorCode?.(error.code)
+  if (mapped) throw mapped
   throw new Error(`Cloud request failed (${error.code}): ${error.message}`, { cause: error })
 }

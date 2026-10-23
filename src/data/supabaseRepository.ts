@@ -1,6 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { BACKUP_SCHEMA_VERSION, type Backup } from '../domain/backup.ts'
-import { DuplicateNameError, EntityNotFoundError, parseOrThrow } from '../domain/errors.ts'
+import { BACKUP_SCHEMA_VERSION, validateBackup, type Backup } from '../domain/backup.ts'
+import {
+  DataAlreadyExistsError,
+  DuplicateNameError,
+  EntityNotFoundError,
+  parseOrThrow,
+} from '../domain/errors.ts'
 import {
   FileInputSchema,
   FolderInputSchema,
@@ -27,6 +32,7 @@ import { runRequest, type ConstraintHandler, type SupabaseResponse } from './sup
 import {
   arrayField,
   convertRow,
+  entityToRow,
   fileToRow,
   folderToRow,
   nameColumns,
@@ -281,6 +287,22 @@ export class SupabaseRepository implements Repository {
       progress: rows(TermProgressSchema, 'progress'),
       studyDays: rows(StudyDaySchema, 'study_days'),
     }
+  }
+
+  async importIntoEmpty(backup: Backup): Promise<void> {
+    const valid = validateBackup(backup)
+    const payload = {
+      folders: valid.folders.map(folderToRow),
+      files: valid.files.map(fileToRow),
+      terms: valid.terms.map(termToRow),
+      progress: valid.progress.map((p) => entityToRow(TermProgressSchema, p)),
+      study_days: valid.studyDays.map((d) => entityToRow(StudyDaySchema, d)),
+    }
+    await runRequest(this.client.rpc('import_snapshot', { payload }), {
+      onSessionExpired: this.onSessionExpired,
+      // Raised when the account has any folder or study day (supabase/migrations).
+      onErrorCode: (code) => (code === 'VC001' ? new DataAlreadyExistsError() : undefined),
+    })
   }
 
   // ---- Helpers ----

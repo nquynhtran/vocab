@@ -329,6 +329,12 @@ label {
   font-size: 1.125rem;
 }
 
+.import-problems {
+  margin: 0;
+  padding-left: 1.25rem;
+  overflow-wrap: anywhere;
+}
+
 /* ---- Sign-in ---- */
 
 .app-header__inner {

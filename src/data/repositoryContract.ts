@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { validateBackup } from '../domain/backup.ts'
-import { DuplicateNameError, EntityNotFoundError, ValidationError } from '../domain/errors.ts'
+import { validateBackup, type Backup } from '../domain/backup.ts'
+import {
+  DataAlreadyExistsError,
+  DuplicateNameError,
+  EntityNotFoundError,
+  ValidationError,
+} from '../domain/errors.ts'
 import {
   PARTS_OF_SPEECH,
   type StudyDay,
@@ -532,6 +537,117 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
         progress: [],
         studyDays: [],
       })
+    })
+  })
+
+  describe('importIntoEmpty', () => {
+    /** Every table, optional fields both set and absent, timestamps with milliseconds. */
+    function sampleBackup(): Backup {
+      const at = '2026-10-01T07:30:00.250Z'
+      return {
+        schemaVersion: 1,
+        exportedAt: '2026-10-20T00:00:00.000Z',
+        folders: [{ id: testId(101), name: 'IELTS', createdAt: at, updatedAt: at }],
+        files: [
+          { id: testId(201), folderId: testId(101), name: 'Unit 1', createdAt: at, updatedAt: at },
+        ],
+        terms: [
+          {
+            id: testId(301),
+            fileId: testId(201),
+            word: 'Run',
+            partOfSpeech: PARTS_OF_SPEECH[0],
+            meaning: 'chạy',
+            example: 'I run.',
+            createdAt: at,
+            updatedAt: '2026-10-02T08:00:00.000Z',
+          },
+          {
+            id: testId(302),
+            fileId: testId(201),
+            word: 'walk',
+            meaning: 'đi bộ',
+            createdAt: at,
+            updatedAt: at,
+          },
+        ],
+        progress: [
+          {
+            termId: testId(301),
+            box: 3,
+            correctCount: 4,
+            wrongCount: 1,
+            lastWrongAt: at,
+            lastStudiedAt: at,
+          },
+          { termId: testId(302), box: 1, correctCount: 0, wrongCount: 0 },
+        ],
+        studyDays: [{ date: '2026-10-01', answeredCount: 12 }],
+      }
+    }
+
+    const withoutExportTime = (backup: Backup): Omit<Backup, 'exportedAt'> => {
+      const { exportedAt: _exportedAt, ...rest } = backup
+      return rest
+    }
+
+    it('stores the backup exactly, keeping ids and timestamps', async () => {
+      const { repo } = await setup()
+      const backup = sampleBackup()
+
+      await repo.importIntoEmpty(backup)
+
+      expect(withoutExportTime(await repo.exportBackup())).toStrictEqual(withoutExportTime(backup))
+    })
+
+    it('stores comparison keys, so imported names and words are still matched by toKey', async () => {
+      const { repo } = await setup()
+      await repo.importIntoEmpty(sampleBackup())
+
+      await expect(repo.createFolder({ name: 'ielts' })).rejects.toThrow(DuplicateNameError)
+      await expect(repo.createFile(testId(101), { name: 'UNIT 1' })).rejects.toThrow(
+        DuplicateNameError,
+      )
+      expect(await repo.findTermsByWord('run')).toStrictEqual([
+        { termId: testId(301), fileId: testId(201), folderName: 'IELTS', fileName: 'Unit 1' },
+      ])
+    })
+
+    it('refuses when a folder is already stored, and changes nothing', async () => {
+      const { repo } = await setup()
+      const { folder } = await seedTerm(repo, 'Existing')
+      const before = withoutExportTime(await repo.exportBackup())
+
+      await expect(repo.importIntoEmpty(sampleBackup())).rejects.toThrow(DataAlreadyExistsError)
+
+      expect(withoutExportTime(await repo.exportBackup())).toStrictEqual(before)
+      expect(before.folders).toEqual([folder])
+    })
+
+    it('refuses a second import, so retrying never duplicates anything', async () => {
+      const { repo } = await setup()
+      await repo.importIntoEmpty(sampleBackup())
+
+      await expect(repo.importIntoEmpty(sampleBackup())).rejects.toThrow(DataAlreadyExistsError)
+    })
+
+    it('refuses when only study days are stored', async () => {
+      const { repo, addStudyDays } = await setup()
+      await addStudyDays([{ date: '2026-09-30', answeredCount: 1 }])
+
+      await expect(repo.importIntoEmpty(sampleBackup())).rejects.toThrow(DataAlreadyExistsError)
+      expect((await repo.exportBackup()).folders).toEqual([])
+    })
+
+    it('rejects an invalid backup before writing anything', async () => {
+      const { repo } = await setup()
+      const backup = sampleBackup()
+      const orphan = { ...backup.terms[0], id: testId(303), word: 'swim', fileId: MISSING_ID }
+      // The cast stands in for an untrusted file: the type cannot express a dangling reference.
+      const broken = { ...backup, terms: [...backup.terms, orphan] } as Backup
+
+      await expect(repo.importIntoEmpty(broken)).rejects.toThrow(ValidationError)
+      expect(withoutExportTime(await repo.exportBackup())).toMatchObject({ folders: [], terms: [] })
     })
   })
 }

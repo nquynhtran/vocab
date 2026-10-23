@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { validateBackup, type Backup } from './backup.ts'
+import { parseBackupFile, validateBackup, type Backup } from './backup.ts'
 import { ValidationError } from './errors.ts'
 
 const NOW = '2026-10-22T08:00:00.000Z'
@@ -151,5 +151,24 @@ describe('validateBackup', () => {
       'terms.0': [`Unknown file ${id(91)}`],
       'progress.0': [`Unknown term ${id(92)}`],
     })
+  })
+})
+
+describe('parseBackupFile', () => {
+  it('reads what Export JSON writes', () => {
+    const backup = validBackup()
+    expect(parseBackupFile(JSON.stringify(backup, null, 2))).toStrictEqual(backup)
+  })
+
+  it('reports a file that is not JSON as a validation problem', () => {
+    expect(() => parseBackupFile('not json')).toThrow(
+      expect.objectContaining({ fieldErrors: { _: ['This file is not a JSON backup'] } }),
+    )
+  })
+
+  it('validates what it read', () => {
+    expect(() => parseBackupFile(JSON.stringify({ ...validBackup(), folders: 'x' }))).toThrow(
+      ValidationError,
+    )
   })
 })

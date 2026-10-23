@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import type { Folder } from '../../domain/schemas.ts'
 import { ExportButton } from '../backup/ExportButton.tsx'
+import { ImportBackup } from '../backup/ImportBackup.tsx'
 import { deleteFolderMessage } from '../../shared/deleteMessages.ts'
 import { NamedItemRow } from '../../shared/NamedItemRow.tsx'
 import { NameForm } from '../../shared/NameForm.tsx'
@@ -39,7 +40,12 @@ export function HomePage() {
       {state.status === 'ready' && <RefreshError error={state.refreshError} />}
       {state.status === 'ready' &&
         (state.data.length === 0 ? (
-          <p className="muted">No folders yet. Create one to start adding terms.</p>
+          <>
+            <p className="muted">No folders yet. Create one to start adding terms.</p>
+            <ImportBackup
+              onImport={(backup) => run(() => write(() => repository.importIntoEmpty(backup)))}
+            />
+          </>
         ) : (
           <ul className="item-list" aria-label="Folders">
             {state.data.map((folder) => (

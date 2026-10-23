@@ -26,7 +26,7 @@ Không đăng nhập thì dữ liệu nằm riêng trong trình duyệt của t�
 - Thêm cột về sau: sửa cả danh sách cột trong `import_snapshot` (thiếu thì payload có cột mới bị từ chối, lỗi rõ chứ không mất dữ liệu).
 - `user_id` trỏ `auth.users` với `on delete cascade`: xóa tài khoản trên dashboard là xóa hết dữ liệu. Export JSON trước nếu cần.
 - `app_config`: đúng một dòng, `min_client_version = 1`; chỉ `authenticated` đọc được, nên client kiểm tra version **sau khi đăng nhập** (chưa đăng nhập thì `anon` bị từ chối, không phải lỗi mạng).
-- Chưa có: RPC `record_answer` (giai đoạn 3, migration mới); bảng `meta` (`migratedAt` chỉ ở local; `lastBackupAt` tính ở giai đoạn 5).
+- Chưa có: RPC `record_answer` (giai đoạn 3, migration mới); bảng `meta` (`lastBackupAt` tính ở giai đoạn 5).
 - `list_terms(p_file_id)`, `get_folder_contents(p_folder_id)`: trả `jsonb` (không bị cắt ở `max_rows`, một snapshot). `get_folder_contents` trả `{ folder, files, terms: [{ file_id, box }] }` hoặc `null`; "đã thuộc" do client tính bằng `isMastered`, không lặp lại trong SQL.
 - `supabase/config.toml` (chỉ cho local): tắt đăng ký bằng `[auth] enable_signup = false` như cloud. `[auth.email] enable_signup` phải để `true`: ở local nó bật/tắt cả nhà cung cấp email, `false` thì không đăng nhập được. Tắt realtime, storage, edge functions, analytics cho nhẹ.
 - `supabase/seed.sql`: người dùng test `contract@test.local` cho bộ hợp đồng Vitest (đăng ký đã tắt). Chỉ chạy ở local (`start`, `db reset`); **không** dùng `db push --include-seed` hay `db reset --linked` (thiếu `--no-seed`), vì mật khẩu nằm công khai trong repo. File tự báo lỗi nếu JWT secret không phải secret demo của CLI local.
@@ -64,12 +64,16 @@ Một dòng hỏng → cả thao tác báo `InvalidStoredDataError` kèm vị tr
 - Nút **Sign out** ở header (`scope: 'local'`: chỉ máy này): gỡ app ngay và về `#/`, cả khi không báo được cho server (supabase-js vẫn xóa phiên ở máy; refresh token còn hiệu lực trên server đến khi hết hạn).
 - Dexie: `VocabDb` version 3 (giữ index) và `main.tsx` gọi `db.open()` ngay, để tab cũ còn chạy bản local nhận `versionchange` và reload sang bản cloud. Vì vậy v3 chỉ được phát hành cùng lúc với bản cloud: bước 5 **chưa push**, push cùng bước 6 (#45).
 
-## Chuyển dữ liệu local lên cloud (#33)
+## Chuyển dữ liệu local lên cloud (#33, #46)
 Chỉ máy tính có dữ liệu (iPhone chưa dùng), nên chỉ chuyển một chiều, một lần, không gộp.
-1. Làm sớm phần lõi của giai đoạn 5: `exportBackup()` của repository đọc hết dữ liệu trong một transaction ra đúng định dạng backup `schemaVersion: 1`; `validateBackup()` ở `domain/backup.ts` (Zod, tham chiếu, trùng `toKey`); nút **Export JSON** ở Home.
-2. Màn chuyển dữ liệu: tải JSON về trước (bản sao an toàn độc lập với Supabase) → gọi RPC `import_snapshot(payload)`: một transaction, **từ chối nếu tài khoản đã có dữ liệu** ("Cloud already has data"), nên bấm hai lần không nhân đôi. "Replace all" của giai đoạn 5 cần RPC riêng xóa và nhập trong một transaction (#38). Chỉ chạy khi chưa dùng cloud ở máy khác: khóa advisory chặn hai lần nhập đồng thời, không chặn lệnh ghi thường.
-3. Bản cloud vẫn mở `VocabDb` ở **version 3** (giữ nguyên index) lúc khởi động, để tab cũ còn chạy bản local nhận `versionchange` và reload. Nếu không, tab đó vẫn ghi vào IndexedDB, báo "đã lưu" nhưng từ không bao giờ lên cloud.
-4. Không tự xóa IndexedDB; ghi `meta.migratedAt`, hiện "Local data was uploaded on …" kèm nút xóa thủ công sau khi người dùng đã kiểm tra trên cloud.
+1. Trên bản local (trước khi deploy): **Export JSON**. File này vừa là bản sao an toàn vừa là thứ được nhập.
+2. Bản cloud, Home **trống** → mục "Import a backup": chọn file (> 5 MB thì từ chối trước khi đọc) → `parseBackupFile` (JSON + `validateBackup`) → nút "Import N folders, N files, N terms" → `Repository.importIntoEmpty(backup)`. Lỗi file hiện tối đa 5 dòng `đường dẫn: lỗi` + "…and N more" (`importProblems`). Lỗi lúc nhập hiện ở ô lỗi chung của trang (nhập xong trang có folder nên mục này biến mất, lỗi để trong mục sẽ mất theo).
+3. `importIntoEmpty`: validate lại, ghi một transaction (Dexie) hoặc RPC `import_snapshot` (Supabase); kho đã có folder hay study day → `DataAlreadyExistsError` (`VC001`), nên bấm lại sau `ConnectionError` không nhân đôi. Giữ nguyên id và thời gian (id là khóa chính toàn project: nhập cùng file vào tài khoản thứ hai sẽ lỗi `*_pkey`, hiện "Something went wrong"; chấp nhận vì chỉ có một tài khoản); `name_key`/`word_key` tính lại bằng `toKey` hiện tại. Bộ hợp đồng kiểm tra nhập rồi xuất ra đúng bằng bản gốc. "Replace all" của giai đoạn 5 cần RPC riêng (#38).
+4. Bản cloud vẫn mở `VocabDb` ở **version 3** lúc khởi động để tab cũ còn chạy bản local nhận `versionchange` và reload (nếu không, tab đó vẫn ghi vào IndexedDB mà không lên cloud). Không đọc, không xóa IndexedDB: nó còn đó làm bản sao thứ hai.
+
+## Triển khai và quay lại
+- Trước khi push: chạy thử file Export thật trên Supabase local (`VOCAB_SUPABASE_TESTS=1 VOCAB_BACKUP_FILE=<đường dẫn> npx vitest run src/data/supabaseRepository.test.ts -t "real backup"`: parse, nhập, xuất ra so với file; không commit file); build bằng biến cloud rồi `vite preview`, đăng nhập thử để chắc CSP không chặn; `supabase db push` lên cloud; đóng mọi tab Vocab (tab cũ sẽ tự reload, mất chữ đang gõ dở).
+- **Quay lại bản local nếu bản cloud hỏng:** trình duyệt đã mở IndexedDB ở v3, bản local cũ (v2) sẽ không mở được (`VersionError`). Revert nhưng **giữ `db.ts` ở v3** (v3 cùng index, bản local chạy bình thường), và giữ `main.tsx` bản local. Không xóa IndexedDB.
 
 ## Client cũ ghi đè cột mới (#34)
 Cùng loại lỗi với #32. Không có `versionchange` cho Supabase, nên:
@@ -103,5 +107,5 @@ Cùng loại lỗi với #32. Không có `versionchange` cho Supabase, nên:
 3. SQL: bảng, ràng buộc, RLS, `app_config`, `import_snapshot`.
 4. Mapper + `SupabaseRepository` + bộ test hợp đồng dùng chung.
 5. Đăng nhập, kiểm tra `min_client_version`, Dexie v3 (commit ở máy, chưa push, #45).
-6. Màn chuyển dữ liệu (lỗi validate hiện vài lỗi đầu kèm đường dẫn trong `fieldErrors`, không nối hết thành một câu dài); CSP, biến build, deploy; chuyển dữ liệu thật.
+6. Nhập file backup vào cloud trống (#46); CSP, biến build, deploy; chuyển dữ liệu thật.
 7. Manifest, thử trên iPhone; quyết định giữ project hoạt động.

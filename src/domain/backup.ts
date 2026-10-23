@@ -54,6 +54,20 @@ export function validateBackup(value: unknown): Backup {
   return backup
 }
 
+/** Checked before reading a chosen file, so a wrong pick cannot freeze the page (data-model.md). */
+export const MAX_BACKUP_FILE_BYTES = 5 * 1024 * 1024
+
+/** Reads a backup file's text: not JSON at all is reported like any other invalid backup. */
+export function parseBackupFile(text: string): Backup {
+  let value: unknown
+  try {
+    value = JSON.parse(text)
+  } catch {
+    throw new ValidationError({ _: ['This file is not a JSON backup'] })
+  }
+  return validateBackup(value)
+}
+
 function integrityProblems({ folders, files, terms, progress, studyDays }: Backup) {
   const problems: Record<string, string[]> = {}
   const report = (path: string, message: string) => {

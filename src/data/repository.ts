@@ -86,4 +86,11 @@ export interface BackupRepository {
    * a safety copy must still download when some stored record is off; import validates it.
    */
   exportBackup(): Promise<Backup>
+  /**
+   * Writes a whole backup into empty storage, all or nothing, keeping its ids and timestamps
+   * (moving local data to the cloud, decision #33). Validates it again (`validateBackup`).
+   * Throws `DataAlreadyExistsError` when any folder or study day is already stored, so a second
+   * attempt never duplicates anything. Replacing existing data is a different operation (#38).
+   */
+  importIntoEmpty(backup: Backup): Promise<void>
 }

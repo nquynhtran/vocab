@@ -97,6 +97,22 @@ export class InvalidStoredDataError extends UserFacingError {
   }
 }
 
+/**
+ * A backup can only be imported into empty storage, so importing twice (or after a lost answer)
+ * never duplicates anything. Not called "...ExistsError" after a DOM error name, see above.
+ */
+export class DataAlreadyExistsError extends UserFacingError {
+  constructor() {
+    super(
+      // Also what a retry sees when the first import went through but its answer was lost.
+      'Your account already has data, so this file was not imported again. ' +
+        'Check your folders: an earlier import may have succeeded. ' +
+        'A backup can only be imported into an empty account.',
+    )
+    this.name = 'DataAlreadyExistsError'
+  }
+}
+
 /** A sign-in or sign-out failure, e.g. wrong credentials. */
 export class AuthenticationError extends UserFacingError {
   constructor(message: string) {

@@ -1,5 +1,10 @@
-import { BACKUP_SCHEMA_VERSION, type Backup } from '../domain/backup.ts'
-import { DuplicateNameError, EntityNotFoundError, parseOrThrow } from '../domain/errors.ts'
+import { BACKUP_SCHEMA_VERSION, validateBackup, type Backup } from '../domain/backup.ts'
+import {
+  DataAlreadyExistsError,
+  DuplicateNameError,
+  EntityNotFoundError,
+  parseOrThrow,
+} from '../domain/errors.ts'
 import {
   FileInputSchema,
   FolderInputSchema,
@@ -260,6 +265,30 @@ export class DexieRepository implements Repository {
     }))
   }
 
+  async importIntoEmpty(backup: Backup): Promise<void> {
+    const valid = validateBackup(backup)
+    const { folders, files, terms, progress, studyDays } = this.db
+    await this.db.transaction('rw', [folders, files, terms, progress, studyDays], async () => {
+      // Every row hangs off a folder except study days, so these two cover all tables (the same
+      // check as import_snapshot in SQL).
+      if ((await folders.count()) > 0 || (await studyDays.count()) > 0) {
+        throw new DataAlreadyExistsError()
+      }
+      await folders.bulkAdd(valid.folders.map((f) => ({ ...toFolder(f), nameKey: toKey(f.name) })))
+      await files.bulkAdd(valid.files.map((f) => ({ ...toFile(f), nameKey: toKey(f.name) })))
+      await terms.bulkAdd(
+        valid.terms.map((t) =>
+          toTermRow(
+            { id: t.id, fileId: t.fileId, createdAt: t.createdAt, updatedAt: t.updatedAt },
+            t,
+          ),
+        ),
+      )
+      await progress.bulkAdd(valid.progress.map(toProgress))
+      await studyDays.bulkAdd(valid.studyDays.map(toStudyDay))
+    })
+  }
+
   // ---- Helpers (must run inside the caller's transaction) ----
 
   private timestamp(): string {
@@ -295,11 +324,11 @@ export class DexieRepository implements Repository {
 
 // Mappers pick fields explicitly so storage-only keys never leak to callers.
 
-function toFolder({ id, name, createdAt, updatedAt }: FolderRow): Folder {
+function toFolder({ id, name, createdAt, updatedAt }: Folder): Folder {
   return { id, name, createdAt, updatedAt }
 }
 
-function toFile({ id, folderId, name, createdAt, updatedAt }: FileRow): VocabFile {
+function toFile({ id, folderId, name, createdAt, updatedAt }: VocabFile): VocabFile {
   return { id, folderId, name, createdAt, updatedAt }
 }
 

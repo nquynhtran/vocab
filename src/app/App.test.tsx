@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { IDBFactory, IDBKeyRange } from 'fake-indexeddb'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { VocabDb } from '../data/db.ts'
+import { MAX_BACKUP_FILE_BYTES } from '../domain/backup.ts'
 import { ConnectionError, SessionExpiredError } from '../domain/errors.ts'
 import { DexieRepository } from '../data/dexieRepository.ts'
 import { App } from './App.tsx'
@@ -431,5 +432,74 @@ describe('backup', () => {
       files: [{ name: 'Unit 1' }],
       terms: [{ word: 'run', meaning: 'chạy' }],
     })
+  })
+})
+
+describe('import a backup', () => {
+  /** What Export JSON downloads, made through another browser's repository. */
+  async function exportedFile() {
+    const source = openRepository(new IDBFactory())
+    const folder = await source.createFolder({ name: 'IELTS' })
+    const file = await source.createFile(folder.id, { name: 'Unit 1' })
+    await source.createTerm(file.id, { word: 'run', meaning: 'chạy' })
+    const backup = await source.exportBackup()
+    return new File([JSON.stringify(backup, null, 2)], 'vocab-backup.json')
+  }
+
+  function chooseFile(file: File) {
+    fireEvent.change(screen.getByLabelText('Backup file'), { target: { files: [file] } })
+  }
+
+  it('imports a file made with Export JSON into an empty account', async () => {
+    renderApp()
+    await screen.findByText(/No folders yet/)
+
+    chooseFile(await exportedFile())
+    fireEvent.click(await screen.findByRole('button', { name: 'Import 1 folder, 1 file, 1 term' }))
+
+    fireEvent.click(await screen.findByRole('link', { name: 'IELTS' }))
+    expect(await screen.findByText('1 term · 0% mastered')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('link', { name: /Unit 1/ }))
+    expect(await screen.findByText('chạy')).toBeInTheDocument()
+  })
+
+  it('lists the first problems of an invalid file with where they are', async () => {
+    renderApp()
+    await screen.findByText(/No folders yet/)
+    const backup = JSON.parse(await (await exportedFile()).text()) as { terms: object[] }
+    const broken = { ...backup, terms: backup.terms.map((t) => ({ ...t, word: '' })) }
+
+    chooseFile(new File([JSON.stringify(broken)], 'broken.json'))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/^terms\.0\.word: /)
+    expect(screen.queryByRole('button', { name: /^Import/ })).not.toBeInTheDocument()
+  })
+
+  it('refuses a file too big to be a backup without reading it', async () => {
+    renderApp()
+    await screen.findByText(/No folders yet/)
+    const file = await exportedFile()
+    Object.defineProperty(file, 'size', { value: MAX_BACKUP_FILE_BYTES + 1 })
+
+    chooseFile(file)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('larger than 5 MB')
+  })
+
+  it('keeps the error in view when the account got data in the meantime', async () => {
+    const { repository } = renderApp()
+    await screen.findByText(/No folders yet/)
+    chooseFile(await exportedFile())
+    const importButton = await screen.findByRole('button', { name: /^Import/ })
+    // Another device writes first; this page has not reloaded yet.
+    await repository.createFolder({ name: 'Elsewhere' })
+
+    fireEvent.click(importButton)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Your account already has data, so this file was not imported again.',
+    )
+    expect(await screen.findByRole('link', { name: 'Elsewhere' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'IELTS' })).not.toBeInTheDocument()
   })
 })
