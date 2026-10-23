@@ -17,7 +17,7 @@ Kiểu và validate định nghĩa bằng Zod ở `src/domain/schemas.ts`; chu�
 - Phiên bản schema là version của Dexie (`db.verno`), không lưu riêng.
 - Tên DB: `vocab-app` (hằng số trong `src/data/db.ts`). Không đổi tên: IndexedDB tính theo origin `nquynhtran.github.io`, dùng chung với mọi repo Pages khác của tài khoản, nên tên phải riêng biệt.
 
-Index Dexie (version 1 tạo sẵn đủ bảng cho các giai đoạn sau; version 2 giữ nguyên index, chỉ để báo tab cũ khi thêm `partOfSpeech`, xem #32):
+Index Dexie (version 1 tạo sẵn đủ bảng cho các giai đoạn sau; version 2 giữ nguyên index, chỉ để báo tab cũ khi thêm `partOfSpeech`, xem #32; version 3 cũng giữ nguyên index, để tab bản local reload sang bản cloud, xem #33/#45):
 ```
 folders:   id, &nameKey
 files:     id, folderId, &[folderId+nameKey]
