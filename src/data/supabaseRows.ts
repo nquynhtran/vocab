@@ -137,12 +137,17 @@ export function entityToRow(schema: ObjectSchema, entity: object): Row {
 
 // Comparison keys are computed here, by the same `toKey` as local storage (decision #21).
 
+/** A folder or file name with its key, also what a rename writes. */
+export function nameColumns(name: string): Row {
+  return { name, name_key: toKey(name) }
+}
+
 export function folderToRow(folder: Folder): Row {
-  return { ...entityToRow(FolderSchema, folder), name_key: toKey(folder.name) }
+  return { ...entityToRow(FolderSchema, folder), ...nameColumns(folder.name) }
 }
 
 export function fileToRow(file: VocabFile): Row {
-  return { ...entityToRow(VocabFileSchema, file), name_key: toKey(file.name) }
+  return { ...entityToRow(VocabFileSchema, file), ...nameColumns(file.name) }
 }
 
 export function termToRow(term: Term): Row {

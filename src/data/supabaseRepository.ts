@@ -34,6 +34,7 @@ import {
   convertRow,
   fileToRow,
   folderToRow,
+  nameColumns,
   objectField,
   parseRow,
   termContentToRow,
@@ -123,7 +124,7 @@ export class SupabaseRepository implements Repository {
     const rows = await this.run(
       this.client
         .from('folders')
-        .update({ name, name_key: toKey(name), updated_at: this.timestamp() })
+        .update({ ...nameColumns(name), updated_at: this.timestamp() })
         .eq('id', id)
         .select(),
       (constraint) => this.folderConstraintError(constraint, name, id),
@@ -179,7 +180,7 @@ export class SupabaseRepository implements Repository {
     const rows = await this.run(
       this.client
         .from('files')
-        .update({ name, name_key: toKey(name), updated_at: this.timestamp() })
+        .update({ ...nameColumns(name), updated_at: this.timestamp() })
         .eq('id', id)
         .select(),
       (constraint) => this.fileConstraintError(constraint, name, id),
