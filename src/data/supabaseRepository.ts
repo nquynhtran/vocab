@@ -1,12 +1,6 @@
-import type { PostgrestError, SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { BACKUP_SCHEMA_VERSION, type Backup } from '../domain/backup.ts'
-import {
-  ConnectionError,
-  DuplicateNameError,
-  EntityNotFoundError,
-  parseOrThrow,
-  SessionExpiredError,
-} from '../domain/errors.ts'
+import { DuplicateNameError, EntityNotFoundError, parseOrThrow } from '../domain/errors.ts'
 import {
   FileInputSchema,
   FolderInputSchema,
@@ -29,6 +23,7 @@ import { defaultDeps, type RepositoryDeps } from './deps.ts'
 import { summarizeFiles } from './fileSummaries.ts'
 import { byLocation, byName, newestFirst } from './ordering.ts'
 import type { FolderContents, Repository, TermLocation } from './repository.ts'
+import { runRequest, type ConstraintHandler, type SupabaseResponse } from './supabaseRequest.ts'
 import {
   arrayField,
   convertRow,
@@ -52,14 +47,6 @@ export const MAX_ROWS = 1000
 const TermBoxSchema = TermSchema.pick({ fileId: true }).extend({
   box: TermProgressSchema.shape.box.optional(),
 })
-
-type ConstraintHandler = (constraint: string) => Error | undefined | Promise<Error | undefined>
-
-interface Response {
-  data: unknown
-  error: PostgrestError | null
-  status: number
-}
 
 /**
  * The same contract as DexieRepository, over Supabase (docs/cloud-sync.md). Every request is its
@@ -295,22 +282,9 @@ export class SupabaseRepository implements Repository {
     return this.deps.now().toISOString()
   }
 
-  /**
-   * Awaits a request and translates its error. `onConstraint` maps a unique or foreign key
-   * violation, by constraint name (part of the SQL contract), to a domain error.
-   */
-  private async run(request: PromiseLike<Response>, onConstraint?: ConstraintHandler) {
-    const { data, error, status } = await request
-    if (!error) return data
-    // supabase-js reports a failed fetch (offline, DNS, CORS) as status 0.
-    if (status === 0) throw new ConnectionError()
-    if (status === 401) throw new SessionExpiredError()
-    if (error.code === '23505' || error.code === '23503') {
-      const constraint = /constraint "([^"]+)"/.exec(error.message)?.[1]
-      const mapped = constraint === undefined ? undefined : await onConstraint?.(constraint)
-      if (mapped) throw mapped
-    }
-    throw new Error(`Cloud request failed (${error.code}): ${error.message}`, { cause: error })
+  /** Awaits a request and translates its error; see runRequest. */
+  private run(request: PromiseLike<SupabaseResponse>, onConstraint?: ConstraintHandler) {
+    return runRequest(request, { onConstraint })
   }
 
   private async folderConstraintError(constraint: string, name: string, selfId: string) {
