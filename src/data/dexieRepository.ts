@@ -1,6 +1,5 @@
 import { BACKUP_SCHEMA_VERSION, type Backup } from '../domain/backup.ts'
 import { DuplicateNameError, EntityNotFoundError, parseOrThrow } from '../domain/errors.ts'
-import { isMastered } from '../domain/mastery.ts'
 import {
   FileInputSchema,
   FolderInputSchema,
@@ -17,6 +16,7 @@ import {
 import { toKey } from '../domain/text.ts'
 import type { FileRow, FolderRow, TermRow, VocabDb } from './db.ts'
 import { defaultDeps, type RepositoryDeps } from './deps.ts'
+import { summarizeFiles } from './fileSummaries.ts'
 import { byLocation, byName, newestFirst } from './ordering.ts'
 import type { FolderContents, Repository, TermLocation } from './repository.ts'
 
@@ -59,20 +59,12 @@ export class DexieRepository implements Repository {
         .toArray()
       const progressRows = await progress.bulkGet(termRows.map((term) => term.id))
 
-      const counts = new Map<string, { termCount: number; masteredCount: number }>()
-      termRows.forEach((term, index) => {
-        const current = counts.get(term.fileId) ?? { termCount: 0, masteredCount: 0 }
-        counts.set(term.fileId, {
-          termCount: current.termCount + 1,
-          masteredCount: current.masteredCount + (isMastered(progressRows[index]) ? 1 : 0),
-        })
-      })
       return {
         folder: toFolder(folderRow),
-        files: fileRows.toSorted(byName).map((row) => ({
-          ...toFile(row),
-          ...(counts.get(row.id) ?? { termCount: 0, masteredCount: 0 }),
-        })),
+        files: summarizeFiles(
+          fileRows.map(toFile),
+          termRows.map((term, index) => ({ fileId: term.fileId, box: progressRows[index]?.box })),
+        ),
       }
     })
   }

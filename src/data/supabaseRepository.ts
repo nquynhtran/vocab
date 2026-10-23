@@ -7,7 +7,6 @@ import {
   parseOrThrow,
   SessionExpiredError,
 } from '../domain/errors.ts'
-import { isMastered } from '../domain/mastery.ts'
 import {
   FileInputSchema,
   FolderInputSchema,
@@ -27,6 +26,7 @@ import {
 } from '../domain/schemas.ts'
 import { toKey } from '../domain/text.ts'
 import { defaultDeps, type RepositoryDeps } from './deps.ts'
+import { summarizeFiles } from './fileSummaries.ts'
 import { byLocation, byName, newestFirst } from './ordering.ts'
 import type { FolderContents, Repository, TermLocation } from './repository.ts'
 import {
@@ -100,23 +100,10 @@ export class SupabaseRepository implements Repository {
     const files = arrayField(result, 'files', where).map((row, i) =>
       parseRow(VocabFileSchema, row, `${where}: files ${i}`),
     )
-    const counts = new Map<string, { termCount: number; masteredCount: number }>()
-    arrayField(result, 'terms', where).forEach((row, i) => {
-      const { fileId, box } = parseRow(TermBoxSchema, row, `${where}: terms ${i}`)
-      const current = counts.get(fileId) ?? { termCount: 0, masteredCount: 0 }
-      counts.set(fileId, {
-        termCount: current.termCount + 1,
-        masteredCount:
-          current.masteredCount + (isMastered(box === undefined ? undefined : { box }) ? 1 : 0),
-      })
-    })
-    return {
-      folder,
-      files: files.toSorted(byName).map((file) => ({
-        ...file,
-        ...(counts.get(file.id) ?? { termCount: 0, masteredCount: 0 }),
-      })),
-    }
+    const terms = arrayField(result, 'terms', where).map((row, i) =>
+      parseRow(TermBoxSchema, row, `${where}: terms ${i}`),
+    )
+    return { folder, files: summarizeFiles(files, terms) }
   }
 
   async createFolder(input: FolderInput): Promise<Folder> {
