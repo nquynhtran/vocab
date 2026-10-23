@@ -13,6 +13,16 @@ export function LoadError({ error }: { error: unknown }) {
   )
 }
 
+/** A reload failed: the page still shows what it loaded before. */
+export function RefreshError({ error }: { error: unknown }) {
+  if (error === undefined) return null
+  return (
+    <p className="field-error" role="alert">
+      This page could not be refreshed and may be out of date. {errorMessage(error)}
+    </p>
+  )
+}
+
 /** The error of an action without a form, e.g. a failed delete. */
 export function ActionError({ message }: { message: string | undefined }) {
   if (!message) return null

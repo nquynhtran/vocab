@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { IDBFactory, IDBKeyRange } from 'fake-indexeddb'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { VocabDb } from '../data/db.ts'
+import { ConnectionError, SessionExpiredError } from '../domain/errors.ts'
 import { DexieRepository } from '../data/dexieRepository.ts'
 import { App } from './App.tsx'
 
@@ -344,6 +345,39 @@ describe('unexpected errors', () => {
       'Something went wrong. Please try again.',
     )
     expect(screen.queryByText(/disk on fire/)).not.toBeInTheDocument()
+  })
+})
+
+describe('cloud failures while writing', () => {
+  it.each([
+    ['the session expired', () => new SessionExpiredError()],
+    ['the server cannot be reached', () => new ConnectionError()],
+  ])('keeps the page and the typed term when %s', async (_, makeError) => {
+    const indexedDB = new IDBFactory()
+    const seed = openRepository(indexedDB)
+    const folder = await seed.createFolder({ name: 'IELTS' })
+    const file = await seed.createFile(folder.id, { name: 'Unit 1' })
+    await seed.createTerm(file.id, { word: 'run', meaning: 'chạy' })
+    const { repository } = renderApp(`/files/${file.id}`, indexedDB)
+    await screen.findByText('run', { selector: '.term__word' })
+
+    // The write fails, and so does the reload that follows it.
+    vi.spyOn(repository, 'createTerm').mockRejectedValueOnce(makeError())
+    vi.spyOn(repository, 'getFile').mockRejectedValueOnce(makeError())
+    typeInto('Term', 'walk')
+    typeInto('Meaning', 'đi bộ')
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+
+    expect(await screen.findByText(makeError().message, { selector: 'form *' })).toBeInTheDocument()
+    expect(await screen.findByText(/could not be refreshed/)).toBeInTheDocument()
+    expect(screen.getByLabelText('Term')).toHaveValue('walk')
+    expect(screen.getByLabelText('Meaning')).toHaveValue('đi bộ')
+    expect(screen.getByText('run', { selector: '.term__word' })).toBeInTheDocument()
+
+    // Back online / signed in again: the same click saves it, and the page refreshes.
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+    await screen.findByText('walk', { selector: '.term__word' })
+    expect(screen.queryByText(/could not be refreshed/)).not.toBeInTheDocument()
   })
 })
 

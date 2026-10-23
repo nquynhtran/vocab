@@ -4,7 +4,7 @@ import { ExportButton } from '../backup/ExportButton.tsx'
 import { deleteFolderMessage } from '../../shared/deleteMessages.ts'
 import { NamedItemRow } from '../../shared/NamedItemRow.tsx'
 import { NameForm } from '../../shared/NameForm.tsx'
-import { ActionError, LoadError, Loading } from '../../shared/PageStatus.tsx'
+import { ActionError, LoadError, Loading, RefreshError } from '../../shared/PageStatus.tsx'
 import { useRepository } from '../../shared/repositoryContext.ts'
 import { useAsync } from '../../shared/useAsync.ts'
 import { usePageWrites } from '../../shared/usePageWrites.ts'
@@ -36,6 +36,7 @@ export function HomePage() {
       <ActionError message={actionError} />
       {state.status === 'loading' && <Loading />}
       {state.status === 'error' && <LoadError error={state.error} />}
+      {state.status === 'ready' && <RefreshError error={state.refreshError} />}
       {state.status === 'ready' &&
         (state.data.length === 0 ? (
           <p className="muted">No folders yet. Create one to start adding terms.</p>

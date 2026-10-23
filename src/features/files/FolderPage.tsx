@@ -5,7 +5,13 @@ import type { VocabFile } from '../../domain/schemas.ts'
 import { deleteFileMessage, plural } from '../../shared/deleteMessages.ts'
 import { NamedItemRow } from '../../shared/NamedItemRow.tsx'
 import { NameForm } from '../../shared/NameForm.tsx'
-import { ActionError, LoadError, Loading, NotFound } from '../../shared/PageStatus.tsx'
+import {
+  ActionError,
+  LoadError,
+  Loading,
+  NotFound,
+  RefreshError,
+} from '../../shared/PageStatus.tsx'
 import { useRepository } from '../../shared/repositoryContext.ts'
 import { useAsync } from '../../shared/useAsync.ts'
 import { usePageWrites } from '../../shared/usePageWrites.ts'
@@ -44,6 +50,7 @@ export function FolderPage() {
         onSubmit={(name) => write(() => repository.createFile(folder.id, { name }))}
       />
       <ActionError message={actionError} />
+      <RefreshError error={state.refreshError} />
       {files.length === 0 ? (
         <p className="muted">No files yet. Create one, then add terms to it.</p>
       ) : (

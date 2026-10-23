@@ -27,6 +27,24 @@ describe('useAsync', () => {
     await waitFor(() => expect(result.current[0]).toEqual({ status: 'error', error }))
   })
 
+  it('keeps the data when a reload fails, so the page and its forms stay', async () => {
+    const error = new Error('offline')
+    let fail = false
+    const load = () => (fail ? Promise.reject(error) : Promise.resolve('data'))
+    const { result } = renderHook(() => useAsync(load))
+    await waitFor(() => expect(result.current[0]).toEqual({ status: 'ready', data: 'data' }))
+
+    fail = true
+    act(() => result.current[1]())
+    await waitFor(() =>
+      expect(result.current[0]).toEqual({ status: 'ready', data: 'data', refreshError: error }),
+    )
+
+    fail = false
+    act(() => result.current[1]())
+    await waitFor(() => expect(result.current[0]).toEqual({ status: 'ready', data: 'data' }))
+  })
+
   it('hides the previous page and drops its late result when load changes', async () => {
     const slowA = deferred<string>()
     const loadA = () => slowA.promise
