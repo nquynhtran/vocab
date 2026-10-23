@@ -5,6 +5,7 @@ import { SignInForm } from '../features/auth/SignInForm.tsx'
 import { errorMessage } from '../shared/errorMessage.ts'
 import { Loading } from '../shared/PageStatus.tsx'
 import { SignOutContext } from '../shared/signOutContext.ts'
+import { useVersionCheckOnVisible } from './useVersionCheckOnVisible.ts'
 
 const OFFLINE_AT_START = 'Cannot reach the server. Check your connection and try again.'
 
@@ -72,19 +73,7 @@ export function AuthGate({ auth, isOutdated, onOutdated, children }: AuthGatePro
     }
   }, [userId, checkedUserId, appUserId, signingOut, attempt, isOutdated, onOutdated])
 
-  useEffect(() => {
-    if (appUserId === undefined) return
-    function checkWhenVisible() {
-      if (document.visibilityState !== 'visible') return
-      // A failure here is not worth an alert: the user's next action reports it anyway.
-      isOutdated().then(
-        (outdated) => outdated && onOutdated(),
-        () => undefined,
-      )
-    }
-    document.addEventListener('visibilitychange', checkWhenVisible)
-    return () => document.removeEventListener('visibilitychange', checkWhenVisible)
-  }, [appUserId, isOutdated, onOutdated])
+  useVersionCheckOnVisible(appUserId !== undefined, isOutdated, onOutdated)
 
   const signOut = useCallback(async () => {
     setSigningOut(true)
