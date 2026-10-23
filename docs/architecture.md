@@ -6,7 +6,7 @@ Web tĩnh, **không có backend** (giai đoạn 0–6).
 - **Git:** làm việc trực tiếp trên `main` (trunk-based, phù hợp một người). CI đỏ thì không deploy.
 - **Node:** phiên bản ghi trong `.nvmrc`; CI đọc cùng file đó, để máy local và CI giống nhau.
 - **Repo public** (GitHub Pages miễn phí yêu cầu vậy). Chỉ code là public; từ vựng nằm trong trình duyệt, không bao giờ lên GitHub.
-- **Lưu trữ:** IndexedDB qua Dexie, riêng cho từng trình duyệt.
+- **Lưu trữ:** Supabase (Postgres + Auth) từ giai đoạn 7, xem [cloud-sync.md](cloud-sync.md). `DexieRepository` (IndexedDB) vẫn giữ: chạy bộ test hợp đồng và test UI trong CI; bản cloud chỉ mở DB ở v3 để tab cũ reload.
 
 ## Rủi ro
 | Rủi ro | Xử lý |

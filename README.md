@@ -2,12 +2,12 @@
 
 A personal English vocabulary trainer.
 
-- **Now:** folders → files → terms (term, part of speech, meaning, example), a warning when a word already exists, British pronunciation via the browser's speech synthesis, and a JSON export of all data.
-- **Planned:** sync between computer and phone, a Learn mode (multiple choice + typing the answer), a daily study streak, restoring from a JSON backup.
+- **Now:** sign-in, folders → files → terms (term, part of speech, meaning, example), a warning when a word already exists, British pronunciation via the browser's speech synthesis, a JSON export of all data, and importing such a file into an empty account.
+- **Planned:** installing on iPhone, a Learn mode (multiple choice + typing the answer), a daily study streak, replacing all data from a JSON backup.
 
 **Open the app:** https://nquynhtran.github.io/vocab/
 
-For now your vocabulary is stored only in the browser you typed it in (IndexedDB) and is never sent to a server, so another device shows none of it. Clearing browser data deletes it, and iPhone Safari clears it after 7 days without a visit.
+Your vocabulary is stored in Supabase (one account, sign-up disabled), so every device you sign in on shows the same data. The app needs a connection; there is no offline mode. Deleting the account in the Supabase dashboard deletes all its data, so export a JSON backup now and then.
 
 ## Run locally
 
@@ -17,7 +17,7 @@ Requires the Node.js version in `.nvmrc` (install it with `nvm install`).
 npm install
 npm run dev      # start the dev server
 npm run check    # lint + format check + typecheck + tests
-npm run build    # production build into dist/
+npm run build    # production build into dist/ (needs VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY)
 npm run test:supabase  # pgTAP + repository contract tests against local Supabase; run `npx supabase start` first (needs Docker)
 ```
 
@@ -25,7 +25,7 @@ Every push to `main` runs the checks in GitHub Actions and deploys to GitHub Pag
 
 ## Tech stack
 
-TypeScript (strict) · React · Vite · Dexie (IndexedDB) · Zod · Vitest · GitHub Pages
+TypeScript (strict) · React · Vite · Supabase (Postgres + Auth) · Zod · Vitest · GitHub Pages
 
 ## Documentation
 

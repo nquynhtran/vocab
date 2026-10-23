@@ -62,7 +62,7 @@ Một dòng hỏng → cả thao tác báo `InvalidStoredDataError` kèm vị tr
 - Ghi lỗi mạng (`ConnectionError`): **không** có nút thử lại (#44). Form giữ nguyên nội dung, trang tải lại danh sách như mọi lần ghi, câu báo nói rõ có thể đã lưu. Nếu sau này thêm thử lại thì phải dùng lại đúng id cũ (xem mục trên).
 - `CLIENT_VERSION` ở `data/clientVersion.ts`, đọc `app_config` lúc đăng nhập và mỗi khi `visibilitychange` sang visible (lỗi lúc này bỏ qua: thao tác kế tiếp sẽ báo). Thấp hơn → thay cả app bằng "A new version is available. Reloading…" rồi reload. Đã tự reload vì lý do này trong 5 phút gần nhất (`sessionStorage`) thì không tự reload nữa mà hiện nút Reload, tránh vòng lặp khi đặt `min_client_version` trước lúc bản mới lên Pages.
 - Nút **Sign out** ở header (`scope: 'local'`: chỉ máy này): gỡ app ngay và về `#/`, cả khi không báo được cho server (supabase-js vẫn xóa phiên ở máy; refresh token còn hiệu lực trên server đến khi hết hạn).
-- Dexie: `VocabDb` version 3 (giữ index) và `main.tsx` gọi `db.open()` ngay, để tab cũ còn chạy bản local nhận `versionchange` và reload sang bản cloud. Vì vậy v3 chỉ được phát hành cùng lúc với bản cloud: bước 5 **chưa push**, push cùng bước 6 (#45).
+- Dexie: `VocabDb` version 3 (giữ index) và `main.tsx` gọi `db.open()` ngay, để tab cũ còn chạy bản local nhận `versionchange` và reload sang bản cloud. Vì vậy v3 phát hành cùng lúc với bản cloud (#45, đã deploy 2026-10-23).
 
 ## Chuyển dữ liệu local lên cloud (#33, #46)
 Chỉ máy tính có dữ liệu (iPhone chưa dùng), nên chỉ chuyển một chiều, một lần, không gộp.
@@ -73,7 +73,7 @@ Chỉ máy tính có dữ liệu (iPhone chưa dùng), nên chỉ chuyển một
 
 ## Triển khai và quay lại
 - Dữ liệu trên bản local chỉ là dữ liệu thử (người dùng xác nhận 2026-10-23): **không chuyển**, bỏ bước Export và chạy thử file thật. Mục Import vẫn giữ cho việc khôi phục backup vào tài khoản trống (nền cho giai đoạn 5).
-- Trước khi push: `supabase db push` lên cloud; build bằng biến cloud rồi `vite preview`, đăng nhập thử để chắc CSP không chặn; đóng mọi tab Vocab (tab cũ sẽ tự reload, mất chữ đang gõ dở).
+- Đã làm trước lần push đầu: `supabase db push` lên cloud; build bằng biến cloud rồi `vite preview`, đăng nhập thử để chắc CSP không chặn; đóng mọi tab Vocab (tab cũ sẽ tự reload, mất chữ đang gõ dở).
 - **Quay lại bản local nếu bản cloud hỏng:** trình duyệt đã mở IndexedDB ở v3, bản local cũ (v2) sẽ không mở được (`VersionError`). Revert nhưng **giữ `db.ts` ở v3** (v3 cùng index, bản local chạy bình thường), và giữ `main.tsx` bản local. Không xóa IndexedDB.
 
 ## Client cũ ghi đè cột mới (#34)
@@ -94,7 +94,7 @@ Cùng loại lỗi với #32. Không có `versionchange` cho Supabase, nên:
 - Lúc tạo project đã **bỏ** "Automatically expose new tables" và **bật** "automatic RLS": migration phải `GRANT` quyền tường minh cho `authenticated` (không cấp cho `anon`) và vẫn tự `enable row level security` cho từng bảng, vì Supabase CLI local không có hai cấu hình này của dashboard.
 - CSP: `vite.config.ts` lấy origin của `VITE_SUPABASE_URL` đưa vào `connect-src`; không thêm `wss:` vì không dùng realtime.
 - URL và khóa publishable đưa vào build qua **repository variables** của GitHub Actions (`vars.VITE_SUPABASE_*`, không phải secret, nhưng để ngoài code cho dễ đổi). `vite build` báo lỗi nếu thiếu biến, URL không phải `https:`, hoặc khóa không bắt đầu bằng `sb_publishable_` (chặn lỡ dán khóa bí mật vào bản phát hành). `npm run build` ở máy cũng cần hai biến này.
-- Khi `supabase link`: kiểm tra `max_rows` của project cloud (Settings → API) đúng bằng `MAX_ROWS = 1000` trong `supabaseRepository.ts`. Thấp hơn thì lớp chặn "chạm giới hạn thì báo lỗi" không còn tác dụng mà không báo gì.
+- Đã `supabase link` + `db push` (2026-10-23; chỉ 2 migration, không seed). `max_rows` cloud (Settings → Data API) = 1000, khớp `MAX_ROWS = 1000` trong `supabaseRepository.ts`. Đổi số này trên dashboard thì phải đổi cả hằng số: thấp hơn thì lớp chặn "chạm giới hạn thì báo lỗi" mất tác dụng mà không báo gì. Migration mới: `npx supabase db push --dry-run` trước, rồi `db push`.
 - **Cần kiểm tra lại khi làm:** gói miễn phí có còn tự tạm dừng project không truy cập 7 ngày không, và có cho tải backup về không. Nếu dùng GitHub Actions chạy định kỳ để giữ project: repo public không có commit 60 ngày thì GitHub tắt workflow theo lịch, và workflow phải query thật vào DB. Phương án dự phòng: khôi phục thủ công trên dashboard, ghi trong README.
 - Xóa dây chuyền trên cloud không hoàn tác được; giai đoạn 5 vẫn cần Export JSON định kỳ.
 
@@ -107,6 +107,6 @@ Cùng loại lỗi với #32. Không có `versionchange` cho Supabase, nên:
 2. Người dùng tạo tài khoản + project Supabase; cài Docker + Supabase CLI.
 3. SQL: bảng, ràng buộc, RLS, `app_config`, `import_snapshot`.
 4. Mapper + `SupabaseRepository` + bộ test hợp đồng dùng chung.
-5. Đăng nhập, kiểm tra `min_client_version`, Dexie v3 (commit ở máy, chưa push, #45).
-6. Nhập file backup vào cloud trống (#46); CSP, biến build, deploy; chuyển dữ liệu thật.
+5. Đăng nhập, kiểm tra `min_client_version`, Dexie v3 (#45).
+6. Nhập file backup vào cloud trống (#46); CSP, biến build, deploy. Không chuyển dữ liệu (#47). **Xong.**
 7. Manifest, thử trên iPhone; quyết định giữ project hoạt động.
