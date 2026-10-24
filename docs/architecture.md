@@ -42,7 +42,7 @@ src/
   shared/      # Component, hook dùng chung; RepositoryContext + useRepository, SignOutContext
   app/         # Router, layout, AuthGate, khởi tạo (main.tsx tạo client Supabase + SupabaseRepository, mở VocabDb v3)
 ```
-`supabase/` (ngoài `src/`): `migrations/` (SQL, không sửa file đã đẩy lên), `tests/database/` (pgTAP), `config.toml` và `seed.sql` (chỉ cho Supabase local). Chi tiết: [cloud-sync.md](cloud-sync.md#sql-đã-có-supabase).
+`scripts/make-icons.mjs`: vẽ icon PNG trong `public/` (chạy tay, xem [cloud-sync.md](cloud-sync.md#iphone)). `supabase/` (ngoài `src/`): `migrations/` (SQL, không sửa file đã đẩy lên), `tests/database/` (pgTAP), `config.toml` và `seed.sql` (chỉ cho Supabase local). Chi tiết: [cloud-sync.md](cloud-sync.md#sql-đã-có-supabase).
 
 **Phụ thuộc một chiều:** `app → features, shared` · `features → shared, domain, data` · `shared → domain, data` · `data → domain` · `domain` không phụ thuộc gì. `RepositoryContext` nằm ở `shared/` (không ở `app/`) để `features` không phải import ngược `app`. Test cạnh file: `foo.ts` ↔ `foo.test.ts`.
 

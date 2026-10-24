@@ -9,6 +9,14 @@ A personal English vocabulary trainer.
 
 Your vocabulary is stored in Supabase (one account, sign-up disabled), so every device you sign in on shows the same data. The app needs a connection; there is no offline mode. Deleting the account in the Supabase dashboard deletes all its data, so export a JSON backup now and then.
 
+## If the app stops loading data
+
+Supabase's free plan pauses a project after about a week with almost no use (it emails a warning first). Your data is kept for a year. To turn it back on:
+
+1. Sign in at https://supabase.com/dashboard.
+2. Open the paused project.
+3. Click **Resume project** and confirm; it takes a few minutes.
+
 ## Run locally
 
 Requires the Node.js version in `.nvmrc` (install it with `nvm install`).
@@ -21,7 +29,7 @@ npm run build    # production build into dist/ (needs VITE_SUPABASE_URL and VITE
 npm run test:supabase  # pgTAP + repository contract tests against local Supabase; run `npx supabase start` first (needs Docker)
 ```
 
-Every push to `main` runs the checks in GitHub Actions and deploys to GitHub Pages.
+Every push to `main` runs the checks in GitHub Actions and deploys to GitHub Pages; deploys queue rather than cancel each other. To redraw the PNG icons after changing `public/favicon.svg`, edit `scripts/make-icons.mjs` to match and run `node scripts/make-icons.mjs`.
 
 ## Tech stack
 

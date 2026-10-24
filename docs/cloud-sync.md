@@ -95,11 +95,11 @@ Cùng loại lỗi với #32. Không có `versionchange` cho Supabase, nên:
 - CSP: `vite.config.ts` lấy origin của `VITE_SUPABASE_URL` đưa vào `connect-src`; không thêm `wss:` vì không dùng realtime.
 - URL và khóa publishable đưa vào build qua **repository variables** của GitHub Actions (`vars.VITE_SUPABASE_*`, không phải secret, nhưng để ngoài code cho dễ đổi). `vite build` báo lỗi nếu thiếu biến, URL không phải `https:`, hoặc khóa không bắt đầu bằng `sb_publishable_` (chặn lỡ dán khóa bí mật vào bản phát hành). `npm run build` ở máy cũng cần hai biến này.
 - Đã `supabase link` + `db push` (2026-10-23; chỉ 2 migration, không seed). `max_rows` cloud (Settings → Data API) = 1000, khớp `MAX_ROWS = 1000` trong `supabaseRepository.ts`. Đổi số này trên dashboard thì phải đổi cả hằng số: thấp hơn thì lớp chặn "chạm giới hạn thì báo lỗi" mất tác dụng mà không báo gì. Migration mới: `npx supabase db push --dry-run` trước, rồi `db push`.
-- **Cần kiểm tra lại khi làm:** gói miễn phí có còn tự tạm dừng project không truy cập 7 ngày không, và có cho tải backup về không. Nếu dùng GitHub Actions chạy định kỳ để giữ project: repo public không có commit 60 ngày thì GitHub tắt workflow theo lịch, và workflow phải query thật vào DB. Phương án dự phòng: khôi phục thủ công trên dashboard, ghi trong README.
+- **Tạm dừng do không dùng (#48, kiểm tra 2026-10-24):** gói Free tạm dừng project nếu 7 ngày gần như không có request vào DB ("vài request mỗi ngày" là đủ); email cảnh báo trước ~1 tuần. Dữ liệu giữ nguyên, bấm *Resume project* trên dashboard để chạy lại, trong vòng 1 năm. Giữ project bằng chính việc dùng app; không có workflow ping (bảng chỉ cho `authenticated`, ping phải giữ mật khẩu trong secret của GitHub). Cách Resume ghi ở README.
 - Xóa dây chuyền trên cloud không hoàn tác được; giai đoạn 5 vẫn cần Export JSON định kỳ.
 
 ## iPhone
-- Chỉ manifest + icon (không service worker, #36): cài qua Safari → Chia sẻ → *Thêm vào MH chính*. Cần thử trên máy thật. App trên màn hình chính có bộ nhớ riêng nên đăng nhập lại một lần.
+- Chỉ manifest + icon (không service worker, #36): `public/manifest.webmanifest` (đường dẫn tương đối vì app nằm dưới `/vocab/`), `apple-touch-icon.png` 180 px cho iOS, `icon-192/512.png` cho Android. PNG vẽ bằng `scripts/make-icons.mjs` (Node thuần, cùng hình với `favicon.svg`; đổi hình thì sửa cả hai rồi chạy lại). Ảnh vuông kín nền, không bo góc, không trong suốt: hệ điều hành tự bo. Cài qua Safari → Chia sẻ → *Thêm vào MH chính*. Cần thử trên máy thật. App trên màn hình chính có bộ nhớ riêng nên đăng nhập lại một lần.
 - Kiểm tra trên Safari iOS: bàn phím che ô nhập, safe area (tai thỏ), kích thước chạm.
 
 ## Thứ tự làm
@@ -109,4 +109,4 @@ Cùng loại lỗi với #32. Không có `versionchange` cho Supabase, nên:
 4. Mapper + `SupabaseRepository` + bộ test hợp đồng dùng chung.
 5. Đăng nhập, kiểm tra `min_client_version`, Dexie v3 (#45).
 6. Nhập file backup vào cloud trống (#46); CSP, biến build, deploy. Không chuyển dữ liệu (#47). **Xong.**
-7. Manifest, thử trên iPhone; quyết định giữ project hoạt động.
+7. Manifest, thử trên iPhone; quyết định giữ project hoạt động (#48).
