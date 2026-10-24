@@ -77,6 +77,16 @@ async function signIn(email = 'me@example.com', password = PASSWORD) {
   fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
 }
 
+/**
+ * The dialog is gone and the app's effects have run, so `mounts` is final. The DOM changes
+ * before useEffect runs, so counting right after the dialog disappeared missed a remount on a
+ * slow CI run, and could not catch an unwanted one.
+ */
+async function dialogClosed() {
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  await act(async () => {})
+}
+
 describe('AuthGate', () => {
   it('asks to sign in and shows nothing of the app before', async () => {
     renderGate()
@@ -135,7 +145,7 @@ describe('AuthGate', () => {
     expect(screen.getByLabelText('Note').closest('[inert]')).not.toBeNull()
 
     await signIn('me@example.com')
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    await dialogClosed()
     expect(screen.getByLabelText('Note')).toHaveValue('half typed')
     expect(screen.getByLabelText('Note').closest('[inert]')).toBeNull()
     expect(mounts).toBe(1)
@@ -176,7 +186,7 @@ describe('AuthGate', () => {
 
     auth.change(null)
     await signIn('someone@example.com')
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    await dialogClosed()
     expect(screen.getByLabelText('Note')).toHaveValue('')
     expect(window.location.hash).toBe('#/')
     expect(mounts).toBe(2)
