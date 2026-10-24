@@ -7,7 +7,7 @@
 - Bỏ sót test cho lớp phòng thủ (unique index, kiểm tra cha khi đổi tên; khóa ngoại kèm `user_id` mới test ở một bảng) vì lớp trước đã chặn → mỗi lớp chặn phải có test riêng đánh thẳng vào nó, ở mọi bảng. (lặp lại ×2)
 - Test quyền theo danh sách object cố định → object do migration sau thêm không được kiểm → duyệt mọi object trong schema.
 - Test lời hứa "giữ chữ trong form khi mất phiên" bằng `FakeApp` tự viết → bỏ sót trang thật thay cả trang bằng `LoadError` khi tải lại hỏng → lời hứa về hành vi của UI phải test trên trang thật (`App` + repository), không chỉ trên bản giả của nó.
-- Test chờ "thấy ô Note" rồi bắn `visibilitychange`, trong khi listener gắn trong `useEffect` chạy sau → CI chậm thì mất sự kiện, test lúc đỏ lúc xanh → chờ đúng điều kiện bước sau cần (`await act(async () => {})` để effect chạy xong), không chờ một dấu hiệu gần giống.
+- Test chờ "thấy ô Note" rồi bắn `visibilitychange`, trong khi listener gắn trong `useEffect` chạy sau → CI chậm thì mất sự kiện, test lúc đỏ lúc xanh → chờ đúng điều kiện bước sau cần (`await act(async () => {})` để effect chạy xong), không chờ một dấu hiệu gần giống. (lặp lại ×2: đếm `mounts` ngay khi hộp đăng nhập biến mất; khi sửa một test kiểu này, rà luôn mọi test cùng mẫu trong file)
 - Viết helper test rối (`Object.create` để ghi đè method) → thêm tham số cho helper.
 
 ## UI
