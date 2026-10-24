@@ -10,9 +10,11 @@ on:
 permissions:
   contents: read
 
+# Pull requests: a new push makes the old run pointless, so cancel it. main: queue instead, so a
+# deploy is never cut off halfway.
 concurrency:
   group: pages-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
