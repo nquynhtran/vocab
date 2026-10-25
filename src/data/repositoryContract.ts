@@ -657,6 +657,29 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
       expect(await stored(repo)).toStrictEqual(once)
     })
 
+    it('counts an answer once when it is sent twice at the same time', async () => {
+      const { repo, addProgress } = await setup()
+      const { file, term } = await seedTerm(repo)
+      const fresh = await repo.createTerm(file.id, { word: 'walk', meaning: 'đi bộ' })
+      await addProgress([{ termId: term.id, box: 2, correctCount: 0, wrongCount: 0 }])
+
+      // A stored row and a first answer: the second request waits on a row lock or on the
+      // unique key, then finds the answer already recorded.
+      await Promise.all([
+        repo.recordAnswer(answer(term.id, { promote: true })),
+        repo.recordAnswer(answer(term.id, { promote: true })),
+        repo.recordAnswer(answer(fresh.id)),
+        repo.recordAnswer(answer(fresh.id)),
+      ])
+
+      const { progress, studyDays } = await stored(repo)
+      expect(progress.toSorted((a, b) => (a.termId < b.termId ? -1 : 1))).toMatchObject([
+        { termId: term.id, box: 3, correctCount: 1 },
+        { termId: fresh.id, box: 1, correctCount: 1 },
+      ])
+      expect(studyDays).toStrictEqual([{ date: '2026-10-25', answeredCount: 2 }])
+    })
+
     it('adds study days up per day, across terms', async () => {
       const { repo } = await setup()
       const { file, term } = await seedTerm(repo)
