@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { localDay } from '../day.ts'
-import { DaySchema, IdSchema, TimestampSchema } from '../schemas.ts'
+import { DaySchema, IdSchema } from '../schemas.ts'
 
 /**
  * One answer as handed to `recordAnswer`. An intent, not new values: the repository applies it
@@ -13,7 +13,12 @@ export const AnswerRecordSchema = z
     correct: z.boolean(),
     /** Reached level 2 without a mistake this session; the repository allows one step a day. */
     promote: z.boolean(),
-    answeredAt: TimestampSchema,
+    /**
+     * Exactly milliseconds, as `toISOString()` writes: the retry check compares instants, and
+     * Postgres keeps microseconds where `Date.parse` drops them, so finer input would be a
+     * retry locally but a new answer in the cloud.
+     */
+    answeredAt: z.iso.datetime({ precision: 3 }),
     day: DaySchema,
   })
   .refine((answer) => answer.correct || !answer.promote, {

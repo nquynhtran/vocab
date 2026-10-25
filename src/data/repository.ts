@@ -1,10 +1,13 @@
 import type { Backup } from '../domain/backup.ts'
+import type { AnswerRecord } from '../domain/learn/answer.ts'
+import type { ChoiceSource } from '../domain/learn/choices.ts'
 import type {
   FileInput,
   Folder,
   FolderInput,
   Term,
   TermInput,
+  TermProgress,
   VocabFile,
 } from '../domain/schemas.ts'
 
@@ -41,7 +44,7 @@ export interface FolderContents {
  * Deleting something that no longer exists is a no-op.
  */
 export interface Repository
-  extends FolderRepository, FileRepository, TermRepository, BackupRepository {}
+  extends FolderRepository, FileRepository, TermRepository, LearnRepository, BackupRepository {}
 
 export interface FolderRepository {
   /** Sorted by `compareNames`. */
@@ -78,6 +81,30 @@ export interface TermRepository {
    * Sorted by folder name, then file name (`compareNames`), then term id.
    */
   findTermsByWord(word: string, excludeTermId?: string): Promise<TermLocation[]>
+}
+
+/** Everything a Learn session needs, read in one snapshot. */
+export interface LearnData {
+  file: VocabFile
+  /** Newest first, like `listTerms`. */
+  terms: Term[]
+  /** Only terms studied before; a term without a row counts as box 1. In no particular order. */
+  progress: TermProgress[]
+  /** Every term in the other files of the same folder (decision #54). In no particular order. */
+  distractors: ChoiceSource[]
+}
+
+/** docs/learn-algorithm.md#ghi-kết-quả */
+export interface LearnRepository {
+  /** `undefined` when the file does not exist. Never cut at the cloud's row limit. */
+  getLearnData(fileId: string): Promise<LearnData | undefined>
+  /**
+   * Applies one answer to the term's progress and counts it for its study day, in one
+   * transaction (`progressAfter`). Sending the same record again changes nothing (#51), so a
+   * retry after a `ConnectionError` is always safe. A term that no longer exists is a no-op.
+   * `ValidationError` for an invalid record, e.g. a wrong answer that promotes.
+   */
+  recordAnswer(answer: AnswerRecord): Promise<void>
 }
 
 export interface BackupRepository {

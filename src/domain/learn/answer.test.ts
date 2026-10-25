@@ -29,4 +29,13 @@ describe('AnswerRecordSchema', () => {
   it('rejects a day that is not a calendar day', () => {
     expect(AnswerRecordSchema.safeParse({ ...valid, day: '2026-10-25T00:00' }).success).toBe(false)
   })
+
+  it('accepts answeredAt only with milliseconds, as toISOString writes it', () => {
+    expect(
+      AnswerRecordSchema.safeParse({ ...valid, answeredAt: '2026-10-25T09:00:00.1239Z' }).success,
+    ).toBe(false)
+    expect(
+      AnswerRecordSchema.safeParse({ ...valid, answeredAt: '2026-10-25T09:00:00Z' }).success,
+    ).toBe(false)
+  })
 })

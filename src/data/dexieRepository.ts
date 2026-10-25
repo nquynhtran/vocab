@@ -5,6 +5,8 @@ import {
   EntityNotFoundError,
   parseOrThrow,
 } from '../domain/errors.ts'
+import { AnswerRecordSchema, type AnswerRecord } from '../domain/learn/answer.ts'
+import { progressAfter } from '../domain/learn/progress.ts'
 import {
   FileInputSchema,
   FolderInputSchema,
@@ -23,7 +25,7 @@ import type { FileRow, FolderRow, TermRow, VocabDb } from './db.ts'
 import { defaultDeps, type RepositoryDeps } from './deps.ts'
 import { summarizeFiles } from './fileSummaries.ts'
 import { byLocation, byName, newestFirst } from './ordering.ts'
-import type { FolderContents, Repository, TermLocation } from './repository.ts'
+import type { FolderContents, LearnData, Repository, TermLocation } from './repository.ts'
 
 /**
  * Every write is one transaction that also covers the parent table: the parent check and the
@@ -247,6 +249,43 @@ export class DexieRepository implements Repository {
           ]
         })
         .toSorted(byLocation)
+    })
+  }
+
+  // ---- Learn ----
+
+  async getLearnData(fileId: string): Promise<LearnData | undefined> {
+    const { files, terms, progress } = this.db
+    return this.db.transaction('r', [files, terms, progress], async () => {
+      const fileRow = await files.get(fileId)
+      if (!fileRow) return undefined
+      const termRows = await terms.where('fileId').equals(fileId).toArray()
+      const progressRows = await progress.bulkGet(termRows.map((term) => term.id))
+      const otherFileIds = (
+        await files.where('folderId').equals(fileRow.folderId).primaryKeys()
+      ).filter((id) => id !== fileId)
+      const distractorRows = await terms.where('fileId').anyOf(otherFileIds).toArray()
+      return {
+        file: toFile(fileRow),
+        terms: termRows.map(toTerm).toSorted(newestFirst),
+        progress: progressRows.flatMap((row) => (row ? [toProgress(row)] : [])),
+        distractors: distractorRows.map(({ word, meaning }) => ({ word, meaning })),
+      }
+    })
+  }
+
+  async recordAnswer(input: AnswerRecord): Promise<void> {
+    const answer = parseOrThrow(AnswerRecordSchema, input)
+    const { terms, progress, studyDays } = this.db
+    // `terms` is in the transaction so a delete in another tab cannot slip between the check
+    // and the write and leave progress for a term that is gone.
+    await this.db.transaction('rw', [terms, progress, studyDays], async () => {
+      if (!(await terms.get(answer.termId))) return
+      const next = progressAfter(await progress.get(answer.termId), answer)
+      if (!next) return
+      const day = await studyDays.get(answer.day)
+      await progress.put(next)
+      await studyDays.put({ date: answer.day, answeredCount: (day?.answeredCount ?? 0) + 1 })
     })
   }
 

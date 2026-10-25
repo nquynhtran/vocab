@@ -12,6 +12,7 @@ import {
   type TermInput,
   type TermProgress,
 } from '../domain/schemas.ts'
+import type { AnswerRecord } from '../domain/learn/answer.ts'
 import type { RepositoryDeps } from './deps.ts'
 import type { Repository } from './repository.ts'
 
@@ -23,7 +24,7 @@ import type { Repository } from './repository.ts'
  */
 export interface ContractHarness {
   repo: Repository
-  /** No repository method writes these yet (Learn comes later), so tests write them directly. */
+  /** Writes progress and study days directly, so a test can start from any stored state. */
   addProgress(rows: readonly TermProgress[]): Promise<void>
   addStudyDays(rows: readonly StudyDay[]): Promise<void>
 }
@@ -431,6 +432,7 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
         { termCount: MORE_THAN_MAX_ROWS },
       ])
       expect((await repo.exportBackup()).terms).toHaveLength(MORE_THAN_MAX_ROWS)
+      expect((await repo.getLearnData(file.id))?.terms).toHaveLength(MORE_THAN_MAX_ROWS)
     }, 60_000)
   })
 
@@ -491,6 +493,210 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
       const { term } = await seedTerm(repo)
       expect(await repo.findTermsByWord('run', term.id)).toEqual([])
       expect(await repo.findTermsByWord('   ')).toEqual([])
+    })
+  })
+
+  describe('getLearnData', () => {
+    it('reads the file, its terms newest first, their progress and the rest of the folder', async () => {
+      const { repo, addProgress } = await setup()
+      const { folder, file, term } = await seedTerm(repo)
+      const walk = await repo.createTerm(file.id, { word: 'walk', meaning: 'đi bộ' })
+      const unit2 = await repo.createFile(folder.id, { name: 'Unit 2' })
+      await repo.createTerm(unit2.id, { word: 'jump', meaning: 'nhảy' })
+      await repo.createTerm(unit2.id, { word: 'swim', meaning: 'bơi' })
+      const other = await seedTerm(repo, 'TOEIC')
+      const studied = {
+        termId: term.id,
+        box: 3,
+        correctCount: 2,
+        wrongCount: 1,
+        lastWrongAt: '2026-10-20T09:00:00.000Z',
+        lastStudiedAt: '2026-10-21T09:00:00.000Z',
+        lastPromotedDay: '2026-10-21',
+      }
+      await addProgress([
+        studied,
+        { termId: other.term.id, box: 5, correctCount: 4, wrongCount: 0 },
+      ])
+
+      const data = await repo.getLearnData(file.id)
+
+      expect(data && { ...data, distractors: data.distractors.toSorted(byWord) }).toStrictEqual({
+        file,
+        terms: [walk, term],
+        progress: [studied],
+        distractors: [
+          { word: 'jump', meaning: 'nhảy' },
+          { word: 'swim', meaning: 'bơi' },
+        ],
+      })
+    })
+
+    it('gives a file alone in its folder no distractors, and a missing file undefined', async () => {
+      const { repo } = await setup()
+      const { file } = await seedTerm(repo)
+      expect(await repo.getLearnData(file.id)).toMatchObject({ progress: [], distractors: [] })
+      expect(await repo.getLearnData(MISSING_ID)).toBeUndefined()
+    })
+  })
+
+  describe('recordAnswer', () => {
+    const answer = (termId: string, overrides: Partial<AnswerRecord> = {}): AnswerRecord => ({
+      termId,
+      correct: true,
+      promote: false,
+      answeredAt: '2026-10-25T09:00:00.123Z',
+      day: '2026-10-25',
+      ...overrides,
+    })
+
+    async function stored(repo: Repository) {
+      const { progress, studyDays } = await repo.exportBackup()
+      return { progress, studyDays }
+    }
+
+    it('starts a never studied term in box 1 and counts the study day', async () => {
+      const { repo } = await setup()
+      const { term } = await seedTerm(repo)
+
+      await repo.recordAnswer(answer(term.id, { promote: true }))
+
+      expect(await stored(repo)).toStrictEqual({
+        progress: [
+          {
+            termId: term.id,
+            box: 2,
+            correctCount: 1,
+            wrongCount: 0,
+            lastStudiedAt: '2026-10-25T09:00:00.123Z',
+            lastPromotedDay: '2026-10-25',
+          },
+        ],
+        studyDays: [{ date: '2026-10-25', answeredCount: 1 }],
+      })
+    })
+
+    it('applies the answer to what is stored: a wrong answer resets the box', async () => {
+      const { repo, addProgress, addStudyDays } = await setup()
+      const { term } = await seedTerm(repo)
+      const before = {
+        termId: term.id,
+        box: 4,
+        correctCount: 6,
+        wrongCount: 1,
+        lastWrongAt: '2026-10-01T09:00:00.000Z',
+        lastStudiedAt: '2026-10-24T09:00:00.000Z',
+        lastPromotedDay: '2026-10-24',
+      }
+      await addProgress([before])
+      await addStudyDays([{ date: '2026-10-25', answeredCount: 9 }])
+
+      await repo.recordAnswer(answer(term.id, { correct: false }))
+
+      expect(await stored(repo)).toStrictEqual({
+        progress: [
+          {
+            ...before,
+            box: 1,
+            wrongCount: 2,
+            lastWrongAt: '2026-10-25T09:00:00.123Z',
+            lastStudiedAt: '2026-10-25T09:00:00.123Z',
+          },
+        ],
+        studyDays: [{ date: '2026-10-25', answeredCount: 10 }],
+      })
+    })
+
+    it('counts a correct answer without promote, keeping the box and the other fields', async () => {
+      const { repo, addProgress } = await setup()
+      const { term } = await seedTerm(repo)
+      const before = {
+        termId: term.id,
+        box: 4,
+        correctCount: 6,
+        wrongCount: 1,
+        lastWrongAt: '2026-10-01T09:00:00.000Z',
+        lastStudiedAt: '2026-10-24T09:00:00.000Z',
+        lastPromotedDay: '2026-10-24',
+      }
+      await addProgress([before])
+
+      await repo.recordAnswer(answer(term.id))
+
+      expect((await stored(repo)).progress).toStrictEqual([
+        { ...before, correctCount: 7, lastStudiedAt: '2026-10-25T09:00:00.123Z' },
+      ])
+    })
+
+    it('goes up at most one box a day, and at most to box 5 (#50)', async () => {
+      const { repo, addProgress } = await setup()
+      const { term } = await seedTerm(repo)
+      await addProgress([{ termId: term.id, box: 3, correctCount: 0, wrongCount: 0 }])
+      const promote = (answeredAt: string, day: string) =>
+        repo.recordAnswer(answer(term.id, { promote: true, answeredAt, day }))
+
+      await promote('2026-10-25T09:00:00.000Z', '2026-10-25')
+      await promote('2026-10-25T09:01:00.000Z', '2026-10-25')
+      expect((await stored(repo)).progress).toMatchObject([{ box: 4, correctCount: 2 }])
+
+      await promote('2026-10-26T09:00:00.000Z', '2026-10-26')
+      await promote('2026-10-27T09:00:00.000Z', '2026-10-27')
+      expect((await stored(repo)).progress).toMatchObject([
+        { box: 5, correctCount: 4, lastPromotedDay: '2026-10-27' },
+      ])
+    })
+
+    it('changes nothing when the same answer is sent again (#51)', async () => {
+      const { repo } = await setup()
+      const { term } = await seedTerm(repo)
+      await repo.recordAnswer(answer(term.id))
+      const once = await stored(repo)
+
+      await repo.recordAnswer(answer(term.id))
+
+      expect(await stored(repo)).toStrictEqual(once)
+    })
+
+    it('adds study days up per day, across terms', async () => {
+      const { repo } = await setup()
+      const { file, term } = await seedTerm(repo)
+      const walk = await repo.createTerm(file.id, { word: 'walk', meaning: 'đi bộ' })
+
+      await repo.recordAnswer(answer(term.id))
+      await repo.recordAnswer(answer(walk.id))
+      await repo.recordAnswer(
+        answer(term.id, { answeredAt: '2026-10-26T09:00:00.000Z', day: '2026-10-26' }),
+      )
+
+      expect((await stored(repo)).studyDays.toSorted(byDate)).toStrictEqual([
+        { date: '2026-10-25', answeredCount: 2 },
+        { date: '2026-10-26', answeredCount: 1 },
+      ])
+    })
+
+    it('ignores a term that no longer exists, without counting the study day', async () => {
+      const { repo } = await setup()
+      const { term } = await seedTerm(repo)
+      await repo.deleteTerm(term.id)
+
+      await expect(repo.recordAnswer(answer(term.id))).resolves.toBeUndefined()
+      await expect(repo.recordAnswer(answer(MISSING_ID))).resolves.toBeUndefined()
+
+      expect(await stored(repo)).toStrictEqual({ progress: [], studyDays: [] })
+    })
+
+    it('rejects a wrong answer that promotes, and an invalid record, writing nothing', async () => {
+      const { repo } = await setup()
+      const { term } = await seedTerm(repo)
+
+      await expect(
+        repo.recordAnswer(answer(term.id, { correct: false, promote: true })),
+      ).rejects.toThrow(ValidationError)
+      await expect(repo.recordAnswer(answer(term.id, { day: '25/10/2026' }))).rejects.toThrow(
+        ValidationError,
+      )
+
+      expect(await stored(repo)).toStrictEqual({ progress: [], studyDays: [] })
     })
   })
 
@@ -653,3 +859,6 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
     })
   })
 }
+
+const byWord = (a: { word: string }, b: { word: string }) => (a.word < b.word ? -1 : 1)
+const byDate = (a: StudyDay, b: StudyDay) => (a.date < b.date ? -1 : 1)

@@ -9,8 +9,8 @@
 - **Trong phiên** (chỉ trong bộ nhớ, không lưu): mức `0 → 1 → 2` kiểu Quizlet.
 - **Giữa các phiên** (lưu DB): hộp Leitner `box` + số lần sai, dùng để sắp thứ tự và tính "đã thuộc".
 
-Thứ tự học đặt sau interface `TermSelector` (Strategy). Đổi sang FSRS (`ts-fsrs`) **không** chỉ thay một module: quy tắc cập nhật `box` nằm trong `recordAnswer` của cả hai kho (Dexie + SQL), FSRS còn cần trường lưu mới (migration). `TermSelector` chỉ tách phần thứ tự.
-Code ở `src/domain/learn/`, là **hàm thuần**: nhận state, trả state mới. Thời gian và hàm random truyền vào làm tham số để test cố định được kết quả. Phiên đã qua `challenger` (2026-10-25), quyết định #50–#54. File: `session.ts` (vòng, mức, chèn lại), `selector.ts` (`TermSelector`, priority), `question.ts`, `choices.ts`, `example.ts`, `grading.ts`, `answer.ts`, `random.ts`; ngày địa phương ở `domain/day.ts` (dùng chung với streak).
+Thứ tự học đặt sau interface `TermSelector` (Strategy). Đổi sang FSRS (`ts-fsrs`) **không** chỉ thay một module: quy tắc cập nhật `box` có hai bản, `progressAfter` (domain, Dexie dùng) và hàm SQL `record_answer`, FSRS còn cần trường lưu mới (migration). `TermSelector` chỉ tách phần thứ tự.
+Code ở `src/domain/learn/`, là **hàm thuần**: nhận state, trả state mới. Thời gian và hàm random truyền vào làm tham số để test cố định được kết quả. Phiên đã qua `challenger` (2026-10-25), quyết định #50–#54. File: `session.ts` (vòng, mức, chèn lại), `selector.ts` (`TermSelector`, priority), `question.ts`, `choices.ts`, `example.ts`, `grading.ts`, `answer.ts` (`AnswerRecord`), `progress.ts` (`progressAfter`: tiến độ sau một câu trả lời), `random.ts`; ngày địa phương ở `domain/day.ts` (dùng chung với streak).
 
 ## Tiến độ lưu cho mỗi từ (`TermProgress`)
 | Trường | Ý nghĩa |
@@ -61,14 +61,14 @@ recordAnswer(answer: AnswerRecord): Promise<void>
   - Sai → `box = 1`, `wrongCount + 1`, `lastWrongAt = answeredAt`. Đúng → `correctCount + 1`; `promote` thì tăng `box` theo quy tắc `lastPromotedDay` ở trên.
   - Luôn `lastStudiedAt = answeredAt`; `StudyDay(day).answeredCount + 1` (chưa có thì tạo).
   - `promote && !correct` → `ValidationError` (bug của domain, không ghi gì). Input validate bằng Zod như mọi lần ghi.
-- **Chống ghi trùng:** `lastStudiedAt` đã bằng `answeredAt` → không làm gì (cả `StudyDay`). Gửi lại đúng `AnswerRecord` cũ luôn an toàn (#51). Giới hạn đã chấp nhận: nếu giữa lần gửi đầu và lần Retry, máy khác đã ghi một câu khác cho **cùng từ**, lần Retry sẽ được tính thêm một lần; hai máy trả lời cùng từ trong cùng một mili giây thì câu sau bị bỏ.
+- **Chống ghi trùng:** `lastStudiedAt` đã bằng `answeredAt` (so thời điểm, không so chuỗi) → không làm gì (cả `StudyDay`). Gửi lại đúng `AnswerRecord` cũ luôn an toàn (#51). Giới hạn đã chấp nhận: nếu giữa lần gửi đầu và lần Retry, máy khác đã ghi một câu khác cho **cùng từ**, lần Retry sẽ được tính thêm một lần; hai máy trả lời cùng từ trong cùng một mili giây thì câu sau bị bỏ.
 - Từ đã bị xóa (kể cả bị xóa đúng lúc đang ghi) hoặc không thuộc người dùng → không ghi gì, không báo lỗi.
 - **Lỗi mạng** (`ConnectionError`): có thể đã ghi. Không tự thử lại; dừng ở câu hiện tại, báo "Your answer could not be saved." kèm nút **Retry** (gửi lại đúng `AnswerRecord`) và **Stop**. Không cho học tiếp như không có gì: mất sóng cả phiên sẽ không lưu được câu nào (#51).
-- Dexie: một transaction rw trên `terms`, `progress`, `studyDays`. Supabase: RPC `record_answer` (xem [cloud-sync.md](cloud-sync.md#giai-đoạn-3-learn)).
+- Dexie: một transaction rw trên `terms`, `progress`, `studyDays`, tính bằng `progressAfter`. Supabase: RPC `record_answer` (cùng quy tắc viết bằng SQL, sửa thì sửa cả hai; bộ hợp đồng chạy cùng test cho hai kho) (xem [cloud-sync.md](cloud-sync.md#giai-đoạn-3-learn)).
 
 ### Dữ liệu cho phiên học
 `getLearnData(fileId)` → `{ file, terms, progress, distractors } | undefined`, đọc **một snapshot** (Supabase: RPC `get_learn_data` trả `jsonb`, không bị cắt ở 1000 dòng, như #39):
-- `terms` + `progress` của file (từ chưa có tiến độ thì không có trong `progress`).
+- `terms` (mới nhất trước, như `listTerms`) + `progress` của file (từ chưa có tiến độ thì không có trong `progress`).
 - `distractors`: `{ word, meaning }` của mọi từ thuộc **các file khác** cùng folder, luôn trả về (#54). Folder vài nghìn từ cũng chỉ vài trăm KB.
 
 ## Chọn đáp án nhiễu

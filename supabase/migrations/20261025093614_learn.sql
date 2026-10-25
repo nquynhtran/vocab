@@ -93,3 +93,110 @@ begin
   from jsonb_populate_recordset(null::public.study_days, payload -> 'study_days') r;
 end;
 $$;
+
+-- One Learn answer (docs/learn-algorithm.md#recordanswer): the same rule as progressAfter in
+-- src/domain/learn/progress.ts; change both together. The client sends the intent, never new
+-- counts, so two devices cannot overwrite each other's numbers.
+-- One statement: the progress upsert skips a row whose last_studied_at already equals
+-- p_answered_at (a retry, #51), and the study day is counted only when the upsert returned a
+-- row. A concurrent duplicate waits for the row lock, re-checks the `where` and does nothing.
+-- A term that is missing or someone else's is invisible under RLS, so nothing is inserted.
+create function public.record_answer(
+  p_term_id uuid,
+  p_correct boolean,
+  p_promote boolean,
+  p_answered_at timestamptz,
+  p_day date
+)
+returns void
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+begin
+  if p_term_id is null or p_correct is null or p_promote is null or p_answered_at is null
+     or p_day is null then
+    raise exception 'Every argument is required' using errcode = '22023';
+  end if;
+  if p_promote and not p_correct then
+    raise exception 'A wrong answer cannot promote a term' using errcode = '22023';
+  end if;
+
+  with answered as (
+    insert into public.progress as p (
+      user_id, term_id, box, correct_count, wrong_count, last_wrong_at, last_studied_at,
+      last_promoted_day
+    )
+    -- A first answer: box 1 with zero counts, then this answer applied.
+    select t.user_id, t.id,
+      case when p_promote then 2 else 1 end,
+      case when p_correct then 1 else 0 end,
+      case when p_correct then 0 else 1 end,
+      case when p_correct then null else p_answered_at end,
+      p_answered_at,
+      case when p_promote then p_day end
+    from public.terms t
+    where t.id = p_term_id
+    on conflict (user_id, term_id) do update set
+      box = case
+        when not p_correct then 1
+        -- "Different day", not "later day": a clock set back must not block it forever (#50).
+        when p_promote and p.last_promoted_day is distinct from p_day then least(p.box + 1, 5)
+        else p.box
+      end,
+      correct_count = p.correct_count + case when p_correct then 1 else 0 end,
+      wrong_count = p.wrong_count + case when p_correct then 0 else 1 end,
+      last_wrong_at = case when p_correct then p.last_wrong_at else p_answered_at end,
+      last_studied_at = p_answered_at,
+      last_promoted_day = case when p_promote then p_day else p.last_promoted_day end
+    where p.last_studied_at is distinct from p_answered_at
+    returning p.user_id
+  )
+  insert into public.study_days as d (user_id, date, answered_count)
+  select user_id, p_day, 1 from answered
+  on conflict (user_id, date) do update set answered_count = d.answered_count + 1;
+exception
+  -- The term was deleted between the read and the write: the same no-op as a missing term.
+  when foreign_key_violation then
+    null;
+end;
+$$;
+
+-- A file, its terms and their progress, and the word and meaning of every term in the other
+-- files of its folder (distractors, decision #54). jsonb so it is not cut at max_rows, one
+-- statement so it is one snapshot. null when the file does not exist for the caller.
+create function public.get_learn_data(p_file_id uuid)
+returns jsonb
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  select jsonb_build_object(
+    'file', to_jsonb(f),
+    'terms', coalesce(
+      (select jsonb_agg(to_jsonb(t) order by t.id) from public.terms t where t.file_id = f.id),
+      '[]'),
+    'progress', coalesce(
+      (select jsonb_agg(to_jsonb(p) order by p.term_id)
+       from public.terms t
+       join public.progress p on p.term_id = t.id
+       where t.file_id = f.id),
+      '[]'),
+    'distractors', coalesce(
+      (select jsonb_agg(jsonb_build_object('word', t.word, 'meaning', t.meaning) order by t.id)
+       from public.files x
+       join public.terms t on t.file_id = x.id
+       where x.folder_id = f.folder_id and x.id <> f.id),
+      '[]')
+  )
+  from public.files f
+  where f.id = p_file_id;
+$$;
+
+revoke all on function public.record_answer(uuid, boolean, boolean, timestamptz, date),
+  public.get_learn_data(uuid)
+  from public, anon, authenticated;
+grant execute on function public.record_answer(uuid, boolean, boolean, timestamptz, date),
+  public.get_learn_data(uuid)
+  to authenticated;

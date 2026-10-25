@@ -8,6 +8,7 @@
 - Test quyền theo danh sách object cố định → object do migration sau thêm không được kiểm → duyệt mọi object trong schema.
 - Test lời hứa "giữ chữ trong form khi mất phiên" bằng `FakeApp` tự viết → bỏ sót trang thật thay cả trang bằng `LoadError` khi tải lại hỏng → lời hứa về hành vi của UI phải test trên trang thật (`App` + repository), không chỉ trên bản giả của nó.
 - Test chờ "thấy ô Note" rồi bắn `visibilitychange`, trong khi listener gắn trong `useEffect` chạy sau → CI chậm thì mất sự kiện, test lúc đỏ lúc xanh → chờ đúng điều kiện bước sau cần (`await act(async () => {})` để effect chạy xong), không chờ một dấu hiệu gần giống. (lặp lại ×2: đếm `mounts` ngay khi hộp đăng nhập biến mất; khi sửa một test kiểu này, rà luôn mọi test cùng mẫu trong file)
+- Cùng một quy tắc có hai bản (`progressAfter` + SQL `record_answer`) mà nhánh "đúng, không lên hộp" chỉ test ở domain, bộ hợp đồng chỉ kiểm `studyDays` → 3 lỗi SQL vẫn xanh; test "một bậc mỗi ngày" bắt đầu ở hộp 4 nên trần hộp 5 che mất quy tắc → mỗi nhánh của quy tắc có hai bản phải có test trong bộ chạy cho cả hai, so cả bản ghi (`toStrictEqual`), và chọn dữ liệu đầu sao cho không giới hạn nào khác che kết quả.
 - Viết helper test rối (`Object.create` để ghi đè method) → thêm tham số cho helper.
 
 ## UI

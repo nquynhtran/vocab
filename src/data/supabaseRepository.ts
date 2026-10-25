@@ -6,6 +6,7 @@ import {
   EntityNotFoundError,
   parseOrThrow,
 } from '../domain/errors.ts'
+import { AnswerRecordSchema, type AnswerRecord } from '../domain/learn/answer.ts'
 import {
   FileInputSchema,
   FolderInputSchema,
@@ -27,7 +28,7 @@ import { toKey } from '../domain/text.ts'
 import { defaultDeps, type RepositoryDeps } from './deps.ts'
 import { summarizeFiles } from './fileSummaries.ts'
 import { byLocation, byName, newestFirst } from './ordering.ts'
-import type { FolderContents, Repository, TermLocation } from './repository.ts'
+import type { FolderContents, LearnData, Repository, TermLocation } from './repository.ts'
 import { runRequest, type ConstraintHandler, type SupabaseResponse } from './supabaseRequest.ts'
 import {
   arrayField,
@@ -53,6 +54,9 @@ export const MAX_ROWS = 1000
 const TermBoxSchema = TermSchema.pick({ fileId: true }).extend({
   box: TermProgressSchema.shape.box.optional(),
 })
+
+/** The per-term part of `get_learn_data` distractors. */
+const DistractorSchema = TermSchema.pick({ word: true, meaning: true })
 
 /**
  * The same contract as DexieRepository, over Supabase (docs/cloud-sync.md). Every request is its
@@ -267,6 +271,38 @@ export class SupabaseRepository implements Repository {
         }
       })
       .toSorted(byLocation)
+  }
+
+  // ---- Learn ----
+
+  async getLearnData(fileId: string): Promise<LearnData | undefined> {
+    if (!isId(fileId)) return undefined
+    // One RPC for one snapshot, not cut at MAX_ROWS (like getFolderContents).
+    const result = await this.run(this.client.rpc('get_learn_data', { p_file_id: fileId }))
+    if (result === null) return undefined
+    const where = `learn data ${fileId}`
+    const list = <S extends Parameters<typeof parseRow>[0]>(schema: S, key: string) =>
+      arrayField(result, key, where).map((row, i) => parseRow(schema, row, `${where}: ${key} ${i}`))
+    return {
+      file: parseRow(VocabFileSchema, objectField(result, 'file', where), where),
+      terms: list(TermSchema, 'terms').toSorted(newestFirst),
+      progress: list(TermProgressSchema, 'progress'),
+      distractors: list(DistractorSchema, 'distractors'),
+    }
+  }
+
+  async recordAnswer(input: AnswerRecord): Promise<void> {
+    const answer = parseOrThrow(AnswerRecordSchema, input)
+    // The whole rule, retry check included, runs in SQL in one statement (supabase/migrations).
+    await this.run(
+      this.client.rpc('record_answer', {
+        p_term_id: answer.termId,
+        p_correct: answer.correct,
+        p_promote: answer.promote,
+        p_answered_at: answer.answeredAt,
+        p_day: answer.day,
+      }),
+    )
   }
 
   // ---- Backup ----
