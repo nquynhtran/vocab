@@ -6,7 +6,7 @@ Web tĩnh, **không có backend** (giai đoạn 0–6).
 - **Git:** làm việc trực tiếp trên `main` (trunk-based, phù hợp một người). CI đỏ thì không deploy.
 - **Node:** phiên bản ghi trong `.nvmrc`; CI đọc cùng file đó, để máy local và CI giống nhau.
 - **Repo public** (GitHub Pages miễn phí yêu cầu vậy). Chỉ code là public; từ vựng nằm trong trình duyệt, không bao giờ lên GitHub.
-- **Lưu trữ:** Supabase (Postgres + Auth) từ giai đoạn 7, xem [cloud-sync.md](cloud-sync.md). `DexieRepository` (IndexedDB) vẫn giữ: chạy bộ test hợp đồng và test UI trong CI; bản cloud chỉ mở DB ở v3 để tab cũ reload.
+- **Lưu trữ:** Supabase (Postgres + Auth) từ giai đoạn 7, xem [cloud-sync.md](cloud-sync.md). `DexieRepository` (IndexedDB) vẫn giữ: chạy bộ test hợp đồng và test UI trong CI; bản cloud chỉ mở DB (version mới nhất, hiện là v4) để tab cũ reload.
 
 ## Rủi ro
 | Rủi ro | Xử lý |
@@ -41,7 +41,7 @@ src/
   data/        # Repository interface, DexieRepository, SupabaseRepository + mapper, bộ test hợp đồng; Auth, CLIENT_VERSION
   features/    # UI theo tính năng: auth/ folders/ files/ terms/ learn/ streak/ backup/
   shared/      # Component, hook dùng chung; RepositoryContext + useRepository, SignOutContext
-  app/         # Router, layout, AuthGate, khởi tạo (main.tsx tạo client Supabase + SupabaseRepository, mở VocabDb v3)
+  app/         # Router, layout, AuthGate, khởi tạo (main.tsx tạo client Supabase + SupabaseRepository, mở VocabDb bản mới nhất)
 ```
 `scripts/make-icons.mjs`: vẽ icon PNG trong `public/` (chạy tay, xem [cloud-sync.md](cloud-sync.md#iphone)). `supabase/` (ngoài `src/`): `migrations/` (SQL, không sửa file đã đẩy lên), `tests/database/` (pgTAP), `config.toml` và `seed.sql` (chỉ cho Supabase local). Chi tiết: [cloud-sync.md](cloud-sync.md#sql-đã-có-supabase).
 

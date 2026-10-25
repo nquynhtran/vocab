@@ -16,7 +16,7 @@ Không đăng nhập thì dữ liệu nằm riêng trong trình duyệt của t�
 - App cần mạng; học offline không nằm trong phạm vi.
 
 ## SQL đã có (`supabase/`)
-- Migration: `20261022121518_initial_schema.sql` (bảng, RLS, `import_snapshot`, `export_backup`), `20261022124114_read_functions.sql` (`list_terms`, `get_folder_contents`, #39), `20261025093614_learn.sql` (giai đoạn 3, **chưa `db push`**: đang viết thêm, push một lần khi xong `record_answer`). Test pgTAP: `supabase/tests/database/`, chạy `npx supabase start` rồi `npm run test:supabase`. Test giả lập người dùng bằng `set local role authenticated` + `request.jwt.claims`, không cần khóa nào.
+- Migration: `20261022121518_initial_schema.sql` (bảng, RLS, `import_snapshot`, `export_backup`), `20261022124114_read_functions.sql` (`list_terms`, `get_folder_contents`, #39), `20261025093614_learn.sql` (giai đoạn 3: cột `last_promoted_day`, `record_answer`, `get_learn_data`; **chưa `db push`**, push trước khi deploy màn Learn). Test pgTAP: `supabase/tests/database/`, chạy `npx supabase start` rồi `npm run test:supabase`. Test giả lập người dùng bằng `set local role authenticated` + `request.jwt.claims`, không cần khóa nào.
 - **Khóa ngoại gồm `user_id`** (`(user_id, folder_id) → folders(user_id, id)`): Postgres kiểm tra khóa ngoại không qua RLS, khóa đơn sẽ cho gắn dòng vào folder của người khác.
 - Thu hồi rồi cấp quyền tường minh (bảng và `EXECUTE` của hàm), vì Supabase local mặc định cấp hết cho `anon`/`PUBLIC`. `authenticated` không có `TRUNCATE` (bỏ qua RLS). **Mỗi migration mới** tạo bảng/hàm cũng phải revoke/grant như vậy; test duyệt mọi object trong `public` sẽ đỏ nếu quên.
 - Tên constraint là hợp đồng với client: `folders_name_key_unique`, `files_name_key_unique` → `DuplicateNameError`.
@@ -62,7 +62,7 @@ Một dòng hỏng → cả thao tác báo `InvalidStoredDataError` kèm vị tr
 - Ghi lỗi mạng (`ConnectionError`): **không** có nút thử lại (#44). Form giữ nguyên nội dung, trang tải lại danh sách như mọi lần ghi, câu báo nói rõ có thể đã lưu. Nếu sau này thêm thử lại thì phải dùng lại đúng id cũ (xem mục trên).
 - `CLIENT_VERSION` ở `data/clientVersion.ts`, đọc `app_config` lúc đăng nhập và mỗi khi `visibilitychange` sang visible (lỗi lúc này bỏ qua: thao tác kế tiếp sẽ báo). Thấp hơn → thay cả app bằng "A new version is available. Reloading…" rồi reload. Đã tự reload vì lý do này trong 5 phút gần nhất (`sessionStorage`) thì không tự reload nữa mà hiện nút Reload, tránh vòng lặp khi đặt `min_client_version` trước lúc bản mới lên Pages.
 - Nút **Sign out** ở header (`scope: 'local'`: chỉ máy này): gỡ app ngay và về `#/`, cả khi không báo được cho server (supabase-js vẫn xóa phiên ở máy; refresh token còn hiệu lực trên server đến khi hết hạn).
-- Dexie: `VocabDb` version 3 (giữ index) và `main.tsx` gọi `db.open()` ngay, để tab cũ còn chạy bản local nhận `versionchange` và reload sang bản cloud. Vì vậy v3 phát hành cùng lúc với bản cloud (#45, đã deploy 2026-10-23).
+- Dexie: `VocabDb` version 3 (giữ index) và `main.tsx` gọi `db.open()` ngay, để tab cũ còn chạy bản local nhận `versionchange` và reload sang bản cloud. Vì vậy v3 phát hành cùng lúc với bản cloud (#45, đã deploy 2026-10-23). Từ giai đoạn 3 là v4 (#50); mỗi version mới cũng nhờ `db.open()` này mà tab cũ reload.
 
 ## Chuyển dữ liệu local lên cloud (#33, #46)
 Chỉ máy tính có dữ liệu (iPhone chưa dùng), nên chỉ chuyển một chiều, một lần, không gộp.
@@ -74,7 +74,7 @@ Chỉ máy tính có dữ liệu (iPhone chưa dùng), nên chỉ chuyển một
 ## Triển khai và quay lại
 - Dữ liệu trên bản local chỉ là dữ liệu thử (người dùng xác nhận 2026-10-23): **không chuyển**, bỏ bước Export và chạy thử file thật. Mục Import vẫn giữ cho việc khôi phục backup vào tài khoản trống (nền cho giai đoạn 5).
 - Đã làm trước lần push đầu: `supabase db push` lên cloud; build bằng biến cloud rồi `vite preview`, đăng nhập thử để chắc CSP không chặn; đóng mọi tab Vocab (tab cũ sẽ tự reload, mất chữ đang gõ dở).
-- **Quay lại bản local nếu bản cloud hỏng:** trình duyệt đã mở IndexedDB ở v3, bản local cũ (v2) sẽ không mở được (`VersionError`). Revert nhưng **giữ `db.ts` ở v3** (v3 cùng index, bản local chạy bình thường), và giữ `main.tsx` bản local. Không xóa IndexedDB.
+- **Quay lại bản local nếu bản cloud hỏng:** trình duyệt đã mở IndexedDB ở v3, bản local cũ (v2) sẽ không mở được (`VersionError`). Revert nhưng **giữ `db.ts` ở version mới nhất đã phát hành** (cùng index, bản local chạy bình thường; v4 thêm trường thì bản local cũ có thể làm mất `lastPromotedDay`, chấp nhận vì đây là đường lui khẩn cấp), và giữ `main.tsx` bản local. Không xóa IndexedDB.
 
 ## Client cũ ghi đè cột mới (#34)
 Cùng loại lỗi với #32. Không có `versionchange` cho Supabase, nên:
@@ -85,7 +85,7 @@ Cùng loại lỗi với #32. Không có `versionchange` cho Supabase, nên:
 
 ## Test (#37)
 - Test mapper và chuyển lỗi: unit test, chạy trong CI.
-- Bộ test hợp đồng `src/data/repositoryContract.ts`: CI chạy trên Dexie; `npm run test:supabase` chạy pgTAP rồi chạy bộ này trên Supabase local (`VOCAB_SUPABASE_TESTS=1`, đăng nhập bằng người dùng của `seed.sql`, mỗi test xóa sạch dữ liệu của người đó). Chạy tay trước mỗi lần deploy có đổi SQL hoặc `SupabaseRepository`. Không có Supabase thì phần này bị skip.
+- Bộ test hợp đồng `src/data/repositoryContract.ts`: CI chạy trên Dexie; `npm run test:supabase` chạy pgTAP rồi chạy bộ này trên Supabase local (`VOCAB_SUPABASE_TESTS=1`, đăng nhập bằng người dùng của `seed.sql`, mỗi test xóa sạch dữ liệu của người đó). Chạy tay trước mỗi lần deploy có đổi SQL hoặc `SupabaseRepository`. Không có Supabase thì phần này bị skip. Sửa migration chưa push thì `npx supabase db reset --local` rồi **chờ ~30 giây** mới chạy: chạy ngay thì gần hết test cloud hỏng cùng lúc vì dịch vụ chưa sẵn sàng, không phải do code.
 - Dịch lỗi (`ConnectionError`, 401, dòng hỏng, chạm `max_rows`) test bằng `fetch` giả, chạy trong CI.
 - Test RLS, quyền, ràng buộc và RPC nằm ở pgTAP (`supabase/tests/database/`).
 
