@@ -17,7 +17,12 @@ export function normalizeText(text: string): string {
  * recomputes every key. See docs/data-model.md#migration.
  */
 export function toKey(text: string): string {
-  return normalizeText(text).toLowerCase().replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
+  return straightenQuotes(normalizeText(text).toLowerCase())
+}
+
+/** Curly quotes → straight ones, keeping the length (Learn maps match positions back). */
+export function straightenQuotes(text: string): string {
+  return text.replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
 }
 
 /**

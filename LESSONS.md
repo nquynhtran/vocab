@@ -18,6 +18,8 @@
 ## Thư viện
 - Đặt tên lỗi tự định nghĩa là `NotFoundError`: Dexie bọc lại lỗi có `name` trùng tên lỗi DOM của IndexedDB, nên `instanceof` hỏng → không dùng tên lỗi DOM (`NotFound`, `Constraint`, `Data`, `Abort`…) cho lỗi ném trong transaction.
 
+- `escapeRegExp` thoát cả `-` trong regex có cờ `u` → `\-` là cú pháp sai, mọi từ có gạch nối làm vỡ màn Learn; test chỉ thử `C++` → regex dựng từ input người dùng: test với mọi loại ký tự người dùng thật sự gõ (gạch nối, `/`, nháy, dấu), và chỉ thoát đúng ký tự cú pháp.
+
 - `jsonb_populate_recordset` lặng lẽ bỏ key lạ và cho `null` key thiếu → hàm nhận JSON phải tự kiểm tra đúng bộ key.
 
 ## Nhất quán

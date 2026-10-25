@@ -69,6 +69,9 @@ export default defineConfig({
   plugins: [react(), contentSecurityPolicy()],
   test: {
     environment: 'jsdom',
+    // The user's zone, on every machine: CI runs in UTC, where local and UTC days never differ
+    // and a `toISOString()` day bug would pass unnoticed (src/domain/day.ts).
+    env: { TZ: 'Asia/Ho_Chi_Minh' },
     setupFiles: ['./src/test/setup.ts'],
   },
 })

@@ -4,7 +4,7 @@
 
 ## Đang ở đâu
 - **Giai đoạn:** 3 (Learn). Thiết kế đã qua `challenger`, chốt #50–#54.
-- **Việc tiếp theo:** `domain/learn/` (hàm thuần, có test). Chưa push: commit ở máy cần `db push` migration `learn.sql` trước khi deploy.
+- **Việc tiếp theo:** `recordAnswer` + `getLearnData` (Dexie + bộ hợp đồng), thêm RPC vào `learn.sql` + pgTAP. **Không push `main`** cho tới khi `db push` (client v2 cần cột mới); cần sửa gấp bản đang chạy thì tách nhánh từ `origin/main`.
 - **Đang vướng:** không. Build có cảnh báo chunk > 500 kB (supabase-js), chưa xử lý. 🔊 không kêu trong Simple Browser của VS Code. `npm run build` ở máy cần `VITE_SUPABASE_*` (xem cloud-sync.md). iPhone iOS cũ của người dùng tạo folder bị lỗi chưa rõ nguyên nhân (cloud-sync.md#iphone); người dùng sẽ cập nhật máy.
 
 ## Kế hoạch
@@ -29,7 +29,7 @@ Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn 
 - [ ] **3. Learn** — học một file đến khi thuộc hết ([learn-algorithm.md](docs/learn-algorithm.md))
   - [x] Qua `challenger`, chốt #50–#54 (tăng hộp tối đa 1 lần/ngày, chống ghi trùng + Retry, trắc nghiệm ghi ngay, không hiện loại từ, luôn lấy đáp án nhiễu cả folder)
   - [x] `lastPromotedDay`: schema domain, Dexie v4, backup `schemaVersion` 2 (+ nhận file v1), migration `learn.sql` (cột, `import_snapshot`, `min_client_version` 2), `CLIENT_VERSION` 2. Commit ở máy, **chưa push** (phải `db push` trước)
-  - [ ] `domain/learn/`: `localDay`, priority, vòng, chèn lại, đáp án nhiễu, che ví dụ, chấm câu viết, `grade`/`apply`; qua `reviewer`
+  - [x] `domain/learn/` + `domain/day.ts`: `localDay`, priority, vòng, chèn lại, đáp án nhiễu, che ví dụ, chấm câu viết, `applyAnswer`; test cố định `TZ` UTC+7; qua `reviewer` (1 nghiêm trọng: regex gạch nối, đã sửa + 5 nhỏ)
   - [ ] `recordAnswer` + `getLearnData` (Dexie + bộ hợp đồng); migration cloud + pgTAP; qua `reviewer`
   - [ ] Màn Learn + tóm tắt vòng/phiên; deploy (`db push` trước, `min_client_version` 2)
 - [ ] **4. Streak** — đủ các test trong [streak.md](docs/streak.md)
