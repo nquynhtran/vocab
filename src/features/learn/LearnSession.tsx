@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { LearnData } from '../../data/repository.ts'
 import { ConnectionError } from '../../domain/errors.ts'
 import type { Question } from '../../domain/learn/question.ts'
-import { doneCount } from '../../domain/learn/session.ts'
+import { doneCount, type LearnSession } from '../../domain/learn/session.ts'
 import { errorMessage } from '../../shared/errorMessage.ts'
 import { useRepository } from '../../shared/repositoryContext.ts'
 import { ChoiceQuestion } from './ChoiceQuestion.tsx'
@@ -61,11 +61,13 @@ export function LearnSession({
   }, [step])
 
   // Every change goes through an updater that checks the current step, so a late second click
-  // (or key press) changes nothing.
-  const act = setState
+  // (or key press) changes nothing. Some updaters draw random numbers and read the clock, so
+  // StrictMode's second call in development computes another outcome; React keeps one, and the
+  // save effect sends the record of the one kept, so stored data always matches the screen.
+  const update = setState
   const onPick = useCallback(
-    (choice: string) => act((latest) => pickChoice(latest, choice, new Date(), Math.random)),
-    [act],
+    (choice: string) => update((latest) => pickChoice(latest, choice, new Date(), Math.random)),
+    [update],
   )
 
   const total = session.terms.length
@@ -75,7 +77,7 @@ export function LearnSession({
       <div className="learn__bar">
         <h1 className="learn__title">{data.file.name}</h1>
         {step.kind === 'question' && (
-          <button type="button" className="button" onClick={() => act(stop)}>
+          <button type="button" className="button" onClick={() => update(stop)}>
             Stop
           </button>
         )}
@@ -90,9 +92,9 @@ export function LearnSession({
       <div key={`${session.round}-${session.answers.length}`} className="learn__body">
         <StepView
           step={step}
-          state={state}
+          session={session}
           onPick={onPick}
-          act={act}
+          update={update}
           onStudyAgain={onStudyAgain}
           fileId={data.file.id}
         />
@@ -103,16 +105,16 @@ export function LearnSession({
 
 function StepView({
   step,
-  state,
+  session,
   onPick,
-  act,
+  update,
   onStudyAgain,
   fileId,
 }: {
   step: Step
-  state: LearnState
+  session: LearnSession
   onPick: (choice: string) => void
-  act: (change: (latest: LearnState) => LearnState) => void
+  update: (change: (latest: LearnState) => LearnState) => void
   onStudyAgain: () => void
   fileId: string
 }) {
@@ -126,7 +128,7 @@ function StepView({
           ) : (
             <WrittenQuestion
               question={step.question}
-              onSubmit={(text) => act((latest) => submitWritten(latest, text))}
+              onSubmit={(text) => update((latest) => submitWritten(latest, text))}
             />
           )}
         </>
@@ -134,12 +136,12 @@ function StepView({
     case 'roundOver':
       return (
         <RoundSummary
-          session={state.session}
-          onNextRound={() => act((latest) => nextRound(latest, Math.random))}
+          session={session}
+          onNextRound={() => update((latest) => nextRound(latest, Math.random))}
         />
       )
     case 'sessionOver':
-      return <SessionSummary session={state.session} fileId={fileId} onStudyAgain={onStudyAgain} />
+      return <SessionSummary session={session} fileId={fileId} onStudyAgain={onStudyAgain} />
     default: {
       const { answered } = step
       const { question } = answered
@@ -168,12 +170,16 @@ function StepView({
             <Feedback
               answered={answered}
               busy={step.kind === 'saving'}
-              onContinue={() => act((latest) => continueOn(latest, new Date(), Math.random))}
-              onOverrule={() => act(overrule)}
+              onContinue={() => update((latest) => continueOn(latest, new Date(), Math.random))}
+              onOverrule={() => update(overrule)}
             />
           )}
           {step.kind === 'saveFailed' && (
-            <SaveError error={step.error} onRetry={() => act(retry)} onStop={() => act(stop)} />
+            <SaveError
+              error={step.error}
+              onRetry={() => update(retry)}
+              onStop={() => update(stop)}
+            />
           )}
         </>
       )
