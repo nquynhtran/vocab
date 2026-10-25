@@ -3,7 +3,7 @@
 > Nạp tự động mỗi phiên. Chỉ ghi lỗi thật sự do Claude gây ra. Mỗi mục 1–2 dòng: **lỗi → cách tránh**. Trùng bài học cũ thì đánh dấu `(lặp lại ×n)` thay vì thêm dòng mới.
 
 ## Test
-- Viết test không thể đỏ: schema có `.transform` thì `parse` luôn qua, nên "parse được" không chứng minh gì → so `parse(x)` với chính `x`; với test quan trọng, phá code thử xem test có đỏ không. (lặp lại ×2: test pgTAP "folder của B không chứa từ của A" mà folder rỗng và khóa ngoại đã chặn sẵn)
+- Viết test không thể đỏ: schema có `.transform` thì `parse` luôn qua, nên "parse được" không chứng minh gì → so `parse(x)` với chính `x`; với test quan trọng, phá code thử xem test có đỏ không. (lặp lại ×3: test pgTAP "folder của B không chứa từ của A" mà folder rỗng và khóa ngoại đã chặn sẵn; màn Learn: "bấm hai lần" mà nút đã bị khóa, "phím trong hộp đăng nhập" lúc câu hỏi đã khóa, "giữ focus" bằng `fireEvent.click` vốn không chuyển focus)
 - Bỏ sót test cho lớp phòng thủ (unique index, kiểm tra cha khi đổi tên; khóa ngoại kèm `user_id` mới test ở một bảng) vì lớp trước đã chặn → mỗi lớp chặn phải có test riêng đánh thẳng vào nó, ở mọi bảng. (lặp lại ×2)
 - Test quyền theo danh sách object cố định → object do migration sau thêm không được kiểm → duyệt mọi object trong schema.
 - Test lời hứa "giữ chữ trong form khi mất phiên" bằng `FakeApp` tự viết → bỏ sót trang thật thay cả trang bằng `LoadError` khi tải lại hỏng → lời hứa về hành vi của UI phải test trên trang thật (`App` + repository), không chỉ trên bản giả của nó.
@@ -15,6 +15,8 @@
 - Giữ kết quả tra cứu theo input (`{ key, locations }`) rồi dùng lại khi gõ lại đúng input đó → hiện dữ liệu cũ, thiếu bản ghi vừa thêm → bỏ kết quả mỗi khi input đổi; kết quả chỉ hợp lệ cho lần tra sau lần đổi cuối.
 
 - Xóa `value` của ô chọn file sau khi đọc (để chọn lại cùng file vẫn nhận) → ô hiện "No file chosen" cạnh nút Import của file đó → xóa lúc mở hộp chọn (`onClick`), không phải sau khi đọc; sửa góp ý xong thì tự hình dung lại màn hình.
+
+- Nghe phím ở `window` (phím 1–4) → `inert` của lớp phủ đăng nhập không chặn, gõ trong hộp Sign in chọn luôn đáp án bên dưới → listener toàn cục phải tự bỏ qua khi phần tử của nó nằm trong `[inert]` (và khi đang gõ trong ô nhập).
 
 ## Thư viện
 - Đặt tên lỗi tự định nghĩa là `NotFoundError`: Dexie bọc lại lỗi có `name` trùng tên lỗi DOM của IndexedDB, nên `instanceof` hỏng → không dùng tên lỗi DOM (`NotFound`, `Constraint`, `Data`, `Abort`…) cho lỗi ném trong transaction.

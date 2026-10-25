@@ -10,7 +10,7 @@
 - **Giữa các phiên** (lưu DB): hộp Leitner `box` + số lần sai, dùng để sắp thứ tự và tính "đã thuộc".
 
 Thứ tự học đặt sau interface `TermSelector` (Strategy). Đổi sang FSRS (`ts-fsrs`) **không** chỉ thay một module: quy tắc cập nhật `box` có hai bản, `progressAfter` (domain, Dexie dùng) và hàm SQL `record_answer`, FSRS còn cần trường lưu mới (migration). `TermSelector` chỉ tách phần thứ tự.
-Code ở `src/domain/learn/`, là **hàm thuần**: nhận state, trả state mới. Thời gian và hàm random truyền vào làm tham số để test cố định được kết quả. Phiên đã qua `challenger` (2026-10-25), quyết định #50–#54. File: `session.ts` (vòng, mức, chèn lại), `selector.ts` (`TermSelector`, priority), `question.ts`, `choices.ts`, `example.ts`, `grading.ts`, `answer.ts` (`AnswerRecord`), `progress.ts` (`progressAfter`: tiến độ sau một câu trả lời), `random.ts`; ngày địa phương ở `domain/day.ts` (dùng chung với streak).
+Code ở `src/domain/learn/`, là **hàm thuần**: nhận state, trả state mới. Thời gian và hàm random truyền vào làm tham số để test cố định được kết quả. Phiên đã qua `challenger` (2026-10-25), quyết định #50–#54. File: `session.ts` (vòng, mức, chèn lại), `selector.ts` (`TermSelector`, priority), `question.ts`, `choices.ts`, `example.ts`, `grading.ts`, `answer.ts` (`AnswerRecord`), `progress.ts` (`progressAfter`: tiến độ sau một câu trả lời), `summary.ts` (tóm tắt vòng/phiên), `random.ts`; ngày địa phương ở `domain/day.ts` (dùng chung với streak). Các bước của màn hình (câu hỏi → phản hồi → đang lưu → lỗi lưu…) là hàm thuần ở `features/learn/learnFlow.ts`: phiên và câu tiếp theo được tính **trước khi** lưu, nên Retry gửi lại đúng bản ghi cũ.
 
 ## Tiến độ lưu cho mỗi từ (`TermProgress`)
 | Trường | Ý nghĩa |
@@ -63,7 +63,7 @@ recordAnswer(answer: AnswerRecord): Promise<void>
   - `promote && !correct` → `ValidationError` (bug của domain, không ghi gì). Input validate bằng Zod như mọi lần ghi.
 - **Chống ghi trùng:** `lastStudiedAt` đã bằng `answeredAt` (so thời điểm, không so chuỗi) → không làm gì (cả `StudyDay`). Gửi lại đúng `AnswerRecord` cũ luôn an toàn (#51). Giới hạn đã chấp nhận: nếu giữa lần gửi đầu và lần Retry, máy khác đã ghi một câu khác cho **cùng từ**, lần Retry sẽ được tính thêm một lần; hai máy trả lời cùng từ trong cùng một mili giây thì câu sau bị bỏ.
 - Từ đã bị xóa (kể cả bị xóa đúng lúc đang ghi) hoặc không thuộc người dùng → không ghi gì, không báo lỗi.
-- **Lỗi mạng** (`ConnectionError`): có thể đã ghi. Không tự thử lại; dừng ở câu hiện tại, báo "Your answer could not be saved." kèm nút **Retry** (gửi lại đúng `AnswerRecord`) và **Stop**. Không cho học tiếp như không có gì: mất sóng cả phiên sẽ không lưu được câu nào (#51).
+- **Lỗi mạng** (`ConnectionError`): có thể đã ghi. Không tự thử lại; dừng ở câu hiện tại, báo "Your answer could not be saved." kèm nút **Retry** (gửi lại đúng `AnswerRecord`) và **Stop**. Không cho học tiếp như không có gì: mất sóng cả phiên sẽ không lưu được câu nào (#51). Hết phiên đăng nhập (`SessionExpiredError`): hộp Sign in phủ lên, phiên học giữ nguyên, đăng nhập lại rồi bấm Retry; chấp nhận là nút Retry không được focus sẵn sau khi hộp đóng.
 - Dexie: một transaction rw trên `terms`, `progress`, `studyDays`, tính bằng `progressAfter`. Supabase: RPC `record_answer` (cùng quy tắc viết bằng SQL, sửa thì sửa cả hai; bộ hợp đồng chạy cùng test cho hai kho) (xem [cloud-sync.md](cloud-sync.md#giai-đoạn-3-learn)).
 
 ### Dữ liệu cho phiên học
