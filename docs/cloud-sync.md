@@ -101,6 +101,7 @@ Cùng loại lỗi với #32. Không có `versionchange` cho Supabase, nên:
 ## iPhone
 - Chỉ manifest + icon (không service worker, #36): `public/manifest.webmanifest` (đường dẫn tương đối vì app nằm dưới `/vocab/`), `apple-touch-icon.png` 180 px cho iOS, `icon-192/512.png` cho Android. PNG vẽ bằng `scripts/make-icons.mjs` (Node thuần, cùng hình với `favicon.svg`; đổi hình thì sửa cả hai rồi chạy lại). Ảnh vuông kín nền, không bo góc, không trong suốt: hệ điều hành tự bo. Cài qua Safari → Chia sẻ → *Thêm vào MH chính*. Cần thử trên máy thật. App trên màn hình chính có bộ nhớ riêng nên đăng nhập lại một lần.
 - Kiểm tra trên Safari iOS: bàn phím che ô nhập, safe area (tai thỏ), kích thước chạm.
+- **Đã thử (2026-10-25):** chạy tốt trên một iPhone iOS mới. Trên iPhone của người dùng (iOS cũ, chưa biết bản nào) danh sách tải được nhưng tạo folder báo "Something went wrong"; test cloud trên Node vẫn xanh nên nghi là API trình duyệt thiếu trên Safari cũ (vd. `crypto.randomUUID` cần iOS 15.4), chưa xác nhận. Người dùng sẽ cập nhật máy; chưa đặt phiên bản iOS tối thiểu. Gặp lại thì đọc lỗi qua Web Inspector trên Mac trước khi sửa.
 
 ## Thứ tự làm
 1. Export JSON trên bản local (`exportBackup`, `validateBackup`, nút Export), chưa cần Supabase.
@@ -109,4 +110,4 @@ Cùng loại lỗi với #32. Không có `versionchange` cho Supabase, nên:
 4. Mapper + `SupabaseRepository` + bộ test hợp đồng dùng chung.
 5. Đăng nhập, kiểm tra `min_client_version`, Dexie v3 (#45).
 6. Nhập file backup vào cloud trống (#46); CSP, biến build, deploy. Không chuyển dữ liệu (#47). **Xong.**
-7. Manifest, thử trên iPhone; quyết định giữ project hoạt động (#48).
+7. Manifest, thử trên iPhone; quyết định giữ project hoạt động (#48). **Xong.**

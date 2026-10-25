@@ -2,8 +2,8 @@
 
 A personal English vocabulary trainer.
 
-- **Now:** sign-in, folders → files → terms (term, part of speech, meaning, example), a warning when a word already exists, British pronunciation via the browser's speech synthesis, a JSON export of all data, and importing such a file into an empty account.
-- **Planned:** installing on iPhone, a Learn mode (multiple choice + typing the answer), a daily study streak, replacing all data from a JSON backup.
+- **Now:** sign-in, folders → files → terms (term, part of speech, meaning, example), a warning when a word already exists, British pronunciation via the browser's speech synthesis, a JSON export of all data, importing such a file into an empty account, and installing on iPhone (Safari → Share → Add to Home Screen; needs a recent iOS).
+- **Planned:** a Learn mode (multiple choice + typing the answer), a daily study streak, replacing all data from a JSON backup.
 
 **Open the app:** https://nquynhtran.github.io/vocab/
 
