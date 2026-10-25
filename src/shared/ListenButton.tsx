@@ -1,4 +1,4 @@
-import { canSpeak, speak } from '../../shared/speech.ts'
+import { canSpeak, speak } from './speech.ts'
 
 export function ListenButton({ text }: { text: string }) {
   if (!canSpeak()) return null

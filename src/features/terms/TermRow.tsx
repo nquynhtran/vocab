@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Term, TermInput } from '../../domain/schemas.ts'
-import { ListenButton } from './ListenButton.tsx'
+import { ListenButton } from '../../shared/ListenButton.tsx'
 import { PART_OF_SPEECH_ABBREVIATIONS } from './partOfSpeech.ts'
 import { TermForm } from './TermForm.tsx'
 
