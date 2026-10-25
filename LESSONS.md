@@ -42,3 +42,4 @@
 - Ghi `config.toml` của Supabase local theo tên tùy chọn mà không chạy thử luồng thật: `[auth.email] enable_signup = false` tắt luôn đăng nhập email, khác cloud → sau khi đổi cấu hình, thử đúng luồng sẽ dùng (đăng nhập thật, `/auth/v1/settings`).
 - Vòng chờ CI lọc `head_sha` bằng SHA rút gọn → API không khớp, vòng lặp không bao giờ dừng → dùng SHA đầy đủ (`git rev-parse HEAD`) và cho vòng chờ thoát cả khi không tìm thấy kết quả hoặc quá thời gian.
 - Phá code thử để kiểm tra test trên file chưa commit rồi khôi phục bằng `git checkout` → không có tác dụng với file chưa track → chép file ra scratchpad trước khi phá, hoặc commit trước.
+- Deploy giai đoạn 3: `db push` khi mới chạy `npm run check` (59 test cloud bị bỏ qua, CI cũng không chạy pgTAP), dựa vào lần chạy xanh từ mấy commit trước → trước mọi `db push`, chạy `npm run test:supabase` trên đúng commit sẽ deploy.
