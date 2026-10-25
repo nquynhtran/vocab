@@ -10,7 +10,7 @@
 - **Giữa các phiên** (lưu DB): hộp Leitner `box` + số lần sai, dùng để sắp thứ tự và tính "đã thuộc".
 
 Thuật toán đặt sau interface `TermSelector` (Strategy), sau này đổi sang FSRS (`ts-fsrs`) chỉ thay một module.
-Code ở `src/domain/learn/`, là **hàm thuần**: nhận state, trả state mới. Thời gian và hàm random truyền vào làm tham số để test cố định được kết quả. Phiên đã qua `challenger` (2026-10-25), quyết định #50–#54.
+Code ở `src/domain/learn/`, là **hàm thuần**: nhận state, trả state mới. Thời gian và hàm random truyền vào làm tham số để test cố định được kết quả. Phiên đã qua `challenger` (2026-10-25), quyết định #50–#54. File: `session.ts` (vòng, mức, chèn lại), `selector.ts` (`TermSelector`, priority), `question.ts`, `choices.ts`, `example.ts`, `grading.ts`, `answer.ts`, `random.ts`; ngày địa phương ở `domain/day.ts` (dùng chung với streak).
 
 ## Tiến độ lưu cho mỗi từ (`TermProgress`)
 | Trường | Ý nghĩa |
@@ -36,12 +36,12 @@ Code ở `src/domain/learn/`, là **hàm thuần**: nhận state, trả state m�
 4. **Câu hỏi theo mức.** Luôn hiện **Nghĩa**, trả lời bằng **từ tiếng Anh**. **Không** hiện loại từ làm gợi ý (#53):
    - mức 0 → **trắc nghiệm** 4 đáp án.
    - mức 1 → **viết**. Nếu ví dụ chứa từ cần đoán thì hiện ví dụ, che mọi chỗ xuất hiện bằng `____`. Khớp **trọn từ** (trước và sau không phải chữ hay số Unicode), không phân biệt hoa thường, nháy cong = nháy thẳng: "art" không khớp trong "start", "run" không khớp trong "running". Không khớp được (ví dụ dùng dạng chia khác) thì **không hiện ví dụ**, tránh lộ đáp án.
-5. **Chấm** tách hai bước thuần: `grade(câu hỏi, câu trả lời)` → kết quả hiện ở màn phản hồi → `apply(state, kếtQuảCuốiCùng)` mới đổi state và dựng `AnswerRecord`. Đúng → mức + 1. Sai → mức 0, đánh dấu "đã sai trong phiên", hiện đáp án đúng, **chèn lại từ đó sau 2 hoặc 3 câu** (chọn bằng `random`); hàng đợi còn ít câu hơn thì đặt cuối. Vòng chỉ còn đúng từ đó thì câu hỏi lại hiện ngay sau màn phản hồi: chấp nhận (giống Quizlet), có test.
+5. **Chấm** tách hai bước thuần: chấm (`gradeWritten`, hoặc so đáp án trắc nghiệm) → kết quả hiện ở màn phản hồi → `applyAnswer(session, kếtQuảCuốiCùng, random)` mới đổi state, trả `promote` để dựng `AnswerRecord` (`toAnswerRecord`). Đúng → mức + 1. Sai → mức 0, đánh dấu "đã sai trong phiên", hiện đáp án đúng, **chèn lại từ đó sau 2 hoặc 3 câu** (chọn bằng `random`); hàng đợi còn ít câu hơn thì đặt cuối. Vòng chỉ còn đúng từ đó thì câu hỏi lại hiện ngay sau màn phản hồi: chấp nhận (giống Quizlet), có test.
 6. Hết vòng → màn tóm tắt vòng → vòng tiếp. **Phiên kết thúc** khi mọi từ trong file đạt mức 2 trong phiên, hoặc người học bấm dừng.
 
 ## Ghi kết quả
 - **Trắc nghiệm** (đúng hay sai): ghi ngay khi chấm (#52). Đúng thì sang câu sau ~0.8 giây sau khi ghi xong; sai thì hiện màn phản hồi. Trắc nghiệm không có "I was right".
-- **Câu viết**: hiện màn phản hồi; kết quả được ghi khi bấm **Continue** (hoặc Enter). Nhờ vậy nút **"I was right"** chỉ cần đổi kết quả trước khi `apply`, không phải hoàn tác dữ liệu đã lưu. Đóng tab ở màn này thì mất câu đó: chấp nhận.
+- **Câu viết**: hiện màn phản hồi; kết quả được ghi khi bấm **Continue** (hoặc Enter). Nhờ vậy nút **"I was right"** chỉ cần đổi kết quả trước khi `applyAnswer`, không phải hoàn tác dữ liệu đã lưu. Đóng tab ở màn này thì mất câu đó: chấp nhận.
 - Ghi qua một lệnh `repository.recordAnswer(...)`: cập nhật `TermProgress` và `StudyDay` trong một transaction.
 
 ### `recordAnswer`
@@ -79,7 +79,7 @@ Hàm thuần nhận `{ fileTerms, folderTerms }`. Lấy từ file trước, sau 
 ## Chấm câu viết
 - Chuẩn hóa: `toKey` của `domain/text.ts` (NFC, trim, gộp khoảng trắng, chữ thường, nháy cong → nháy thẳng), sau đó bỏ thêm dấu câu ở hai đầu.
 - Từ (đã chuẩn hóa) ≥ 5 ký tự và lệch đúng 1 ký tự (Levenshtein = 1) → **gần đúng**: tính đúng nhưng hiện chỗ sai chính tả.
-- Nút **"I was right"** (chỉ ở câu viết bị chấm sai): đổi kết quả thành đúng **trước** `apply`, nên trạng thái phiên như thể trả lời đúng (mức + 1, không đánh dấu đã sai, không chèn lại, `promote` tính lại). Dùng khi máy chấm sai, ví dụ từ đồng nghĩa.
+- Nút **"I was right"** (chỉ ở câu viết bị chấm sai): đổi kết quả thành đúng **trước** `applyAnswer`, nên trạng thái phiên như thể trả lời đúng (mức + 1, không đánh dấu đã sai, không chèn lại, `promote` tính lại). Dùng khi máy chấm sai, ví dụ từ đồng nghĩa.
 
 ## Trường hợp biên
 | Tình huống | Xử lý |

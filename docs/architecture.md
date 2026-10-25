@@ -35,6 +35,7 @@ Thêm thư viện mới → ghi lý do vào [decisions.md](decisions.md).
 ```
 src/
   domain/      # Kiểu, Zod schema, logic thuần. Không import React/Dexie
+    day.ts     #   ngày địa phương `localDay` (Learn + streak)
     learn/     #   thuật toán học
     streak/    #   tính chuỗi ngày
   data/        # Repository interface, DexieRepository, SupabaseRepository + mapper, bộ test hợp đồng; Auth, CLIENT_VERSION
