@@ -62,8 +62,20 @@ export function validateBackup(value: unknown): Backup {
  */
 function migrateBackup(value: unknown): unknown {
   if (typeof value !== 'object' || value === null) return value
-  const version = (value as { schemaVersion?: unknown }).schemaVersion
-  return version === 1 ? { ...value, schemaVersion: 2 } : value
+  const { schemaVersion, progress } = value as { schemaVersion?: unknown; progress?: unknown }
+  if (schemaVersion !== 1) return value
+  // A version 1 file with the newer field was edited by hand: reject it like any change (#35).
+  const index = Array.isArray(progress)
+    ? progress.findIndex(
+        (row) => typeof row === 'object' && row !== null && 'lastPromotedDay' in row,
+      )
+    : -1
+  if (index !== -1) {
+    throw new ValidationError({
+      [`progress.${index}.lastPromotedDay`]: ['Unexpected or non-normalized value'],
+    })
+  }
+  return { ...value, schemaVersion: 2 }
 }
 
 /** Checked before reading a chosen file, so a wrong pick cannot freeze the page (data-model.md). */

@@ -75,6 +75,12 @@ describe('validateBackup', () => {
     expect(validateBackup(v1)).toStrictEqual({ ...v1, schemaVersion: 2 })
   })
 
+  it('rejects a version 1 backup carrying lastPromotedDay, which version 1 never wrote', () => {
+    expect(problemsOf({ ...validBackup(), schemaVersion: 1 })).toEqual({
+      'progress.0.lastPromotedDay': ['Unexpected or non-normalized value'],
+    })
+  })
+
   it('rejects lastPromotedDay that is not a calendar day', () => {
     const backup = validBackup()
     const bad = { ...backup, progress: [{ ...backup.progress[0]!, lastPromotedDay: '22/10/2026' }] }

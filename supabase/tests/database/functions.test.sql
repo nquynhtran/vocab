@@ -56,6 +56,10 @@ select throws_ok($$
     (pg_temp.snapshot() #> '{terms,0}') - 'example'))
 $$, '22023', null, 'a missing nullable key is rejected (every column is sent)');
 select throws_ok($$
+  select public.import_snapshot(jsonb_set(pg_temp.snapshot(), '{progress,0}',
+    (pg_temp.snapshot() #> '{progress,0}') - 'last_promoted_day'))
+$$, '22023', null, 'a progress row from a client before last_promoted_day is rejected');
+select throws_ok($$
   select public.import_snapshot(jsonb_set(pg_temp.snapshot(), '{folders,0,user_id}',
     '"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"'))
 $$, '22023', null, 'a payload cannot carry user_id');
