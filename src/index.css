@@ -7,6 +7,9 @@
   --color-primary: #4255ff;
   --color-border: #d9dde8;
   --color-danger: #c0263b;
+  --color-danger-bg: #fdecee;
+  --color-success: #1b7a45;
+  --color-success-bg: #e6f6ec;
   --color-warning-bg: #fff4d6;
   --color-warning-text: #6b4a00;
   --radius: 8px;
@@ -125,6 +128,13 @@ label {
   color: var(--color-text);
   font: inherit;
   cursor: pointer;
+}
+
+.button:is(a) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
 }
 
 .button:disabled {
@@ -365,4 +375,227 @@ label {
   max-width: var(--content-max-width);
   margin: 0 auto;
   padding: var(--space);
+}
+
+/* ---- Learn ---- */
+
+.file-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--space) / 2);
+  margin-bottom: var(--space);
+}
+
+.file-actions p {
+  margin: 0;
+}
+
+.learn {
+  display: grid;
+  gap: var(--space);
+}
+
+.learn__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space);
+}
+
+.learn__title {
+  margin: 0;
+  font-size: 1.25rem;
+  overflow-wrap: anywhere;
+}
+
+.learn__progress {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--space) / 2);
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+.learn__progress progress {
+  flex: 1;
+  height: 8px;
+  accent-color: var(--color-primary);
+}
+
+.learn__body {
+  display: grid;
+  gap: var(--space);
+}
+
+.learn__prompt p {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.learn__meaning {
+  margin: 0;
+  font-size: 1.5rem;
+  overflow-wrap: anywhere;
+}
+
+.learn__example {
+  margin: 0;
+  font-style: italic;
+  color: var(--color-muted);
+  overflow-wrap: anywhere;
+}
+
+.choices {
+  display: grid;
+  gap: calc(var(--space) / 2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+/* Locked options stay readable: the marks carry the result. */
+.choice:disabled {
+  opacity: 1;
+}
+
+.choice__key {
+  flex: none;
+  min-width: 1.5em;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.choice--right {
+  border-color: var(--color-success);
+  background: var(--color-success-bg);
+}
+
+.choice--wrong {
+  border-color: var(--color-danger);
+  background: var(--color-danger-bg);
+}
+
+.written {
+  display: grid;
+  gap: calc(var(--space) / 2);
+}
+
+.feedback,
+.save-error {
+  display: grid;
+  gap: calc(var(--space) / 2);
+  padding: var(--space);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.feedback p,
+.save-error p {
+  margin: 0;
+}
+
+.feedback--right {
+  border-color: var(--color-success);
+}
+
+.feedback--wrong,
+.save-error {
+  border-color: var(--color-danger);
+}
+
+.feedback__verdict {
+  margin: 0;
+  font-weight: 600;
+}
+
+.feedback--right .feedback__verdict,
+.feedback__verdict.feedback--right {
+  color: var(--color-success);
+}
+
+.feedback--wrong .feedback__verdict {
+  color: var(--color-danger);
+}
+
+.feedback__given {
+  text-decoration: line-through;
+  overflow-wrap: anywhere;
+}
+
+.feedback__answer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  overflow-wrap: anywhere;
+}
+
+.feedback__actions,
+.summary__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--space) / 2);
+}
+
+.summary {
+  display: grid;
+  gap: calc(var(--space) / 2);
+}
+
+.summary h2,
+.summary h3,
+.summary p {
+  margin: 0;
+}
+
+.tally-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tally {
+  display: grid;
+  gap: 2px;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  overflow-wrap: anywhere;
+}
+
+.tally__word {
+  font-weight: 600;
+}
+
+.tally__meaning,
+.tally__count {
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+.tally__count--wrong {
+  color: var(--color-danger);
+}
+
+@media (min-width: 640px) {
+  .tally {
+    grid-template-columns: 1fr 1.5fr auto;
+    align-items: center;
+    gap: 12px;
+  }
 }

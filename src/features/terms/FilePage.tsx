@@ -48,7 +48,16 @@ export function FilePage() {
         <Link to={`/folders/${folder.id}`}>{folder.name}</Link>
       </nav>
       <h1>{file.name}</h1>
-      <p className="muted">{plural(terms.length, 'term')}</p>
+      <div className="file-actions">
+        <p className="muted">{plural(terms.length, 'term')}</p>
+        {terms.length > 0 ? (
+          <Link className="button button--primary" to={`/files/${file.id}/learn`}>
+            Learn
+          </Link>
+        ) : (
+          <p className="muted">Add some terms to start learning.</p>
+        )}
+      </div>
       <TermForm
         submitLabel="Add"
         onSubmit={(input) => write(() => repository.createTerm(file.id, input))}

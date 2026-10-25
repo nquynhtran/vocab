@@ -13,11 +13,11 @@ Giai đoạn 0–6 ưu tiên máy tính, nhưng CSS **responsive ngay từ đầ
 1. **Home**: danh sách folder, nút "New folder", ô streak (🔥 N-day streak, "Today: 4/10 answers") và lịch nhỏ; cuối trang là mục Backup với nút "Export JSON" (tải file `vocab-backup-YYYY-MM-DD.json`, ngày theo giờ máy). Khi chưa có folder nào: thêm mục "Import a backup" (chọn file → nút "Import 1 folder, 2 files, 30 terms"; lỗi file hiện tối đa 5 dòng kèm vị trí), xem [cloud-sync.md](cloud-sync.md#chuyển-dữ-liệu-local-lên-cloud-33-46).
 2. **Folder**: danh sách file (tên, số từ, % mastered), nút "New file".
 3. **File**: bảng từ (Term (loại từ) 🔊 · Meaning · Example), từ mới nhất trên cùng, form thêm từ ở đầu bảng, nút **Learn** (ẩn khi file trống, thay bằng "Add some terms to start learning").
-4. **Learn**: một câu hỏi mỗi lần, thanh tiến độ (số từ đã đạt mức 2 / tổng), nút "Stop". Phản hồi đúng/sai ngay; câu sai và câu viết có màn phản hồi với nút **Continue** (và **"I was right"** nếu câu viết bị chấm sai).
-5. **Tóm tắt vòng**: các từ vừa học, đúng/sai; nút "Next round".
-6. **Kết thúc phiên**: số câu đúng/sai, các từ sai nhiều nhất trong phiên; nút "Study again" và "Back to list".
+4. **Learn** (`#/files/:fileId/learn`): một câu hỏi mỗi lần, thanh tiến độ ("3 / 12 learned": số từ đã đạt mức 2 / tổng), nút "Stop" (ở màn câu hỏi và màn lỗi lưu; màn phản hồi chỉ có Continue). Trắc nghiệm: đúng → tô xanh, sang câu sau; sai → màn phản hồi tô đỏ đáp án đã chọn, tô xanh đáp án đúng. Câu viết luôn có màn phản hồi: đúng / gần đúng (hiện chữ đã gõ và chữ đúng) / sai (hiện đáp án đúng, kèm nút **"I was right"**). Màn phản hồi có 🔊 đọc từ đúng (không hiện lúc đang hỏi để khỏi lộ đáp án) và nút **Continue** được focus sẵn. Lưu hỏng → "Your answer could not be saved." + **Retry** / **Stop** ([learn-algorithm.md](learn-algorithm.md#recordanswer)).
+5. **Tóm tắt vòng**: các từ vừa học kèm số lần đúng/sai trong vòng; nút "Next round".
+6. **Kết thúc phiên** (học hết, hoặc bấm Stop): số câu đúng/sai, tối đa 5 từ sai nhiều nhất trong phiên (chỉ từ sai ≥ 1 lần); nút "Study again" (đọc lại dữ liệu, mở phiên mới) và "Back to list" (về trang File).
 
-Đường dẫn (`HashRouter`): `#/` Home · `#/folders/:folderId` Folder · `#/files/:fileId` File · đường dẫn khác → "Page not found" kèm link về Home.
+Đường dẫn (`HashRouter`): `#/` Home · `#/folders/:folderId` Folder · `#/files/:fileId` File · `#/files/:fileId/learn` Learn · đường dẫn khác → "Page not found" kèm link về Home.
 
 ## Thao tác
 - Xóa folder / file / từ luôn hỏi xác nhận bằng `window.confirm` có sẵn của trình duyệt, ghi rõ sẽ xóa bao nhiêu thứ bên trong (ví dụ `Delete folder "IELTS" and its 3 files (120 terms)?`; folder/file trống thì chỉ `Delete folder "IELTS"?`).
@@ -27,7 +27,6 @@ Giai đoạn 0–6 ưu tiên máy tính, nhưng CSS **responsive ngay từ đầ
 - Lỗi nhập (`ValidationError`, `DuplicateNameError`) hiện cạnh ô nhập. Sau mỗi lần ghi (kể cả lỗi) trang tải lại, nên thứ đang mở đã bị xóa ở tab khác (`EntityNotFoundError`) → trang "no longer exists" kèm link về Home. Lỗi cloud (`ConnectionError`, `SessionExpiredError`, `InvalidStoredDataError`) có câu báo riêng, hiện như lỗi nhập và form giữ nguyên chữ; nếu lần tải lại sau đó cũng hỏng thì trang giữ dữ liệu cũ kèm dòng "This page could not be refreshed…". Lỗi không lường trước → "Something went wrong. Please try again.".
 - Ô **Part of speech** là `<select>` đặt sau ô Term, mặc định trống. Danh sách hiện loại từ dạng viết tắt sau từ, ví dụ `run (v.)`.
 - Nút 🔊 (`Listen to "run"`) đọc từ bằng `speechSynthesis`, `lang = en-GB`. Trình duyệt không hỗ trợ thì ẩn nút. Bấm lần nữa khi đang đọc thì đọc lại từ đầu.
-- Nút **Learn** chỉ xuất hiện sau khi làm xong Learn.
 
 ## Responsive
 - Viết CSS cho màn hẹp (~375px) trước, mở rộng bằng `min-width`. Nội dung rộng tối đa ~720px, căn giữa.
@@ -36,4 +35,4 @@ Giai đoạn 0–6 ưu tiên máy tính, nhưng CSS **responsive ngay từ đầ
 - Dùng `dvh` thay `vh`, để câu hỏi và ô nhập không bị bàn phím che.
 
 ## Phím tắt (máy tính)
-Phím `1`–`4` chọn đáp án trắc nghiệm, `Enter` gửi câu viết / sang câu tiếp theo.
+Phím `1`–`4` chọn đáp án trắc nghiệm (bỏ qua khi đang gõ trong ô nhập), `Enter` gửi câu viết / bấm Continue (nút được focus sẵn). Đã làm cùng màn Learn (giai đoạn 3).

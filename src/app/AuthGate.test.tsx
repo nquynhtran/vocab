@@ -1,10 +1,14 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useEffect, useState } from 'react'
+import { IDBFactory, IDBKeyRange } from 'fake-indexeddb'
 import { describe, expect, it, vi } from 'vitest'
 import type { Auth, AuthListener, SignInInput } from '../data/auth.ts'
-import { AuthenticationError, ConnectionError } from '../domain/errors.ts'
+import { VocabDb } from '../data/db.ts'
+import { DexieRepository } from '../data/dexieRepository.ts'
+import { AuthenticationError, ConnectionError, SessionExpiredError } from '../domain/errors.ts'
 import { SignOutButton } from '../features/auth/SignOutButton.tsx'
 import { useSignOut } from '../shared/signOutContext.ts'
+import { App } from './App.tsx'
 import { AuthGate } from './AuthGate.tsx'
 
 const PASSWORD = 'right password'
@@ -253,5 +257,56 @@ describe('AuthGate', () => {
     await waitFor(() => expect(isOutdated).toHaveBeenCalledTimes(2))
     expect(onOutdated).not.toHaveBeenCalled()
     expect(screen.getByLabelText('Note')).toBeInTheDocument()
+  })
+})
+
+describe('AuthGate over Learn', () => {
+  it('keeps the session when it expires mid-answer; Retry after signing in stores it once', async () => {
+    const repository = new DexieRepository(
+      new VocabDb({ indexedDB: new IDBFactory(), IDBKeyRange }),
+    )
+    const folder = await repository.createFolder({ name: 'IELTS' })
+    const file = await repository.createFile(folder.id, { name: 'Unit 1' })
+    const run = await repository.createTerm(file.id, { word: 'run', meaning: 'chạy' })
+    await repository.createTerm(file.id, { word: 'walk', meaning: 'đi bộ' })
+    const auth = new FakeAuth('me@example.com')
+    const real = repository.recordAnswer.bind(repository)
+    // Like SupabaseRepository on a 401: the session is dropped and the write fails.
+    const record = vi.spyOn(repository, 'recordAnswer').mockImplementationOnce(async () => {
+      void auth.expireSession()
+      throw new SessionExpiredError()
+    })
+    record.mockImplementation(real)
+    window.location.hash = `#/files/${file.id}/learn`
+    render(
+      <AuthGate auth={auth} isOutdated={async () => false} onOutdated={vi.fn()}>
+        <App repository={repository} />
+      </AuthGate>,
+    )
+
+    const meaning = (await screen.findByRole('heading', { level: 2 })).textContent
+    const word = meaning === 'chạy' ? 'run' : 'walk'
+    await act(async () => {})
+
+    // Signed out in another tab while a question is open: a key pressed in the dialog must not
+    // answer the question beneath it.
+    await auth.expireSession()
+    fireEvent.keyDown(await screen.findByRole('button', { name: 'Sign in' }), { key: '2' })
+    await signIn('me@example.com')
+    await dialogClosed()
+    expect(record).not.toHaveBeenCalled()
+
+    // The session expires again while saving: after signing in, Retry stores the answer once.
+    fireEvent.click(screen.getByRole('button', { name: word }))
+    expect(await screen.findByRole('dialog')).toBeInTheDocument()
+    await signIn('me@example.com')
+    await dialogClosed()
+    fireEvent.click(await screen.findByRole('button', { name: 'Retry' }))
+    expect(await screen.findByText('Correct!')).toBeInTheDocument()
+    expect(record).toHaveBeenCalledTimes(2)
+    const data = await repository.getLearnData(file.id)
+    const termId = word === 'run' ? run.id : data!.terms.find((t) => t.word === 'walk')!.id
+    expect(data!.progress.find((p) => p.termId === termId)).toMatchObject({ correctCount: 1 })
+    window.location.hash = ''
   })
 })

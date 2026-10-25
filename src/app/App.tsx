@@ -2,6 +2,7 @@ import { HashRouter, Route, Routes } from 'react-router'
 import type { Repository } from '../data/repository.ts'
 import { FolderPage } from '../features/files/FolderPage.tsx'
 import { HomePage } from '../features/folders/HomePage.tsx'
+import { LearnPage } from '../features/learn/LearnPage.tsx'
 import { FilePage } from '../features/terms/FilePage.tsx'
 import { NotFound } from '../shared/PageStatus.tsx'
 import { RepositoryContext } from '../shared/repositoryContext.ts'
@@ -17,6 +18,7 @@ export function App({ repository }: { repository: Repository }) {
             <Route index element={<HomePage />} />
             <Route path="folders/:folderId" element={<FolderPage />} />
             <Route path="files/:fileId" element={<FilePage />} />
+            <Route path="files/:fileId/learn" element={<LearnPage />} />
             <Route path="*" element={<NotFound message="Page not found." />} />
           </Route>
         </Routes>
