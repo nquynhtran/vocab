@@ -155,7 +155,7 @@ describe('version 2', () => {
     const db = new VocabDb({ indexedDB, IDBKeyRange })
     await db.open()
 
-    expect(db.verno).toBe(3)
+    expect(db.verno).toBe(4)
     expect(await db.folders.toArray()).toMatchObject([folder])
     expect(await db.terms.toArray()).toStrictEqual([term])
     db.close()
@@ -202,7 +202,33 @@ describe('version 3', () => {
     await db.open()
 
     expect(onOldTabVersionChange).toHaveBeenCalledOnce()
-    expect(db.verno).toBe(3)
+    expect(db.verno).toBe(4)
+    db.close()
+  })
+})
+
+describe('version 4', () => {
+  it('makes a tab still on v3 reload, so it cannot rebuild progress without lastPromotedDay', async () => {
+    const indexedDB = new IDBFactory()
+    const onOldTabVersionChange = vi.fn()
+    const oldTab = new Dexie(DB_NAME, { indexedDB, IDBKeyRange })
+    // Exactly the released v3 schema, v1 and v2 included.
+    oldTab.version(1).stores(V1_STORES)
+    oldTab.version(2).stores(V1_STORES)
+    oldTab.version(3).stores(V1_STORES)
+    oldTab.on('versionchange', () => {
+      onOldTabVersionChange()
+      oldTab.close({ disableAutoOpen: true })
+      return false
+    })
+    await oldTab.open()
+    expect(oldTab.verno).toBe(3)
+
+    const db = new VocabDb({ indexedDB, IDBKeyRange })
+    await db.open()
+
+    expect(onOldTabVersionChange).toHaveBeenCalledOnce()
+    expect(db.verno).toBe(4)
     db.close()
   })
 })

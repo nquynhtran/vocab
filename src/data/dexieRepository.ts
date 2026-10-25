@@ -361,6 +361,7 @@ function toProgress({
   wrongCount,
   lastWrongAt,
   lastStudiedAt,
+  lastPromotedDay,
 }: TermProgress): TermProgress {
   return {
     termId,
@@ -369,6 +370,7 @@ function toProgress({
     wrongCount,
     ...(lastWrongAt !== undefined && { lastWrongAt }),
     ...(lastStudiedAt !== undefined && { lastStudiedAt }),
+    ...(lastPromotedDay !== undefined && { lastPromotedDay }),
   }
 }
 

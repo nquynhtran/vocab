@@ -12,7 +12,7 @@ import {
 import { toKey } from './text.ts'
 
 /** Bump with a migration for older files whenever the backup shape changes (docs/data-model.md). */
-export const BACKUP_SCHEMA_VERSION = 1
+export const BACKUP_SCHEMA_VERSION = 2
 
 export const BackupSchema = z.object({
   schemaVersion: z.literal(BACKUP_SCHEMA_VERSION),
@@ -41,17 +41,29 @@ export function validateBackup(value: unknown): Backup {
       schemaVersion: ['This backup is from a newer version. Reload the page to update the app.'],
     })
   }
-  const backup = parseOrThrow(BackupSchema, value)
+  const current = migrateBackup(value)
+  const backup = parseOrThrow(BackupSchema, current)
   // The schemas normalize text and drop blank fields. A backup is written only by this app,
   // so any change means a bug or a hand edit: reject it instead of silently fixing the data
   // (decision #35), otherwise stored text and its `toKey` columns could disagree.
-  const changed = firstDifference(value, backup)
+  const changed = firstDifference(current, backup)
   if (changed !== undefined) {
     throw new ValidationError({ [changed || '_']: ['Unexpected or non-normalized value'] })
   }
   const problems = integrityProblems(backup)
   if (Object.keys(problems).length > 0) throw new ValidationError(problems)
   return backup
+}
+
+/**
+ * Brings an older backup up to `BACKUP_SCHEMA_VERSION`; anything else is returned as is.
+ * Version 2 only added the optional `progress[].lastPromotedDay`, so a version 1 file is
+ * already a valid version 2 file apart from its number.
+ */
+function migrateBackup(value: unknown): unknown {
+  if (typeof value !== 'object' || value === null) return value
+  const version = (value as { schemaVersion?: unknown }).schemaVersion
+  return version === 1 ? { ...value, schemaVersion: 2 } : value
 }
 
 /** Checked before reading a chosen file, so a wrong pick cannot freeze the page (data-model.md). */

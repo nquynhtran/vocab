@@ -99,6 +99,9 @@ export const TermSchema = z.object({
   updatedAt: TimestampSchema,
 })
 
+/** A local calendar day, `YYYY-MM-DD` (docs/streak.md). */
+export const DaySchema = z.iso.date()
+
 export const TermProgressSchema = z.object({
   termId: IdSchema,
   box: z.int().min(BOX_MIN).max(BOX_MAX),
@@ -106,10 +109,12 @@ export const TermProgressSchema = z.object({
   wrongCount: CountSchema,
   lastWrongAt: TimestampSchema.optional(),
   lastStudiedAt: TimestampSchema.optional(),
+  /** The last day `box` went up: at most one step per day (decision #50). */
+  lastPromotedDay: DaySchema.optional(),
 })
 
 export const StudyDaySchema = z.object({
-  date: z.iso.date(),
+  date: DaySchema,
   answeredCount: CountSchema,
 })
 

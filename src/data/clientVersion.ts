@@ -4,10 +4,13 @@ import { runRequest } from './supabaseRequest.ts'
 import { parseRow } from './supabaseRows.ts'
 
 /**
- * Raise this, deploy, then raise `app_config.min_client_version` to match: tabs and phones still
+ * Raised together with `app_config.min_client_version` (a SQL migration): tabs and phones still
  * running older code reload instead of writing rows in a shape they no longer understand (#34).
+ * When this client needs the migration's columns, push the migration first and deploy right
+ * after; meanwhile old clients show a Reload button (reload.ts stops the reload loop).
+ * 2: progress.last_promoted_day (decision #50).
  */
-export const CLIENT_VERSION = 1
+export const CLIENT_VERSION = 2
 
 const AppConfigSchema = z.object({ minClientVersion: z.int().min(1) })
 

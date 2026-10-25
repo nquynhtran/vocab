@@ -427,7 +427,7 @@ describe('backup', () => {
     })
     const backup = JSON.parse(await blobs[0]!.text())
     expect(backup).toMatchObject({
-      schemaVersion: 1,
+      schemaVersion: 2,
       folders: [{ name: 'IELTS' }],
       files: [{ name: 'Unit 1' }],
       terms: [{ word: 'run', meaning: 'chạy' }],

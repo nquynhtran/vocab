@@ -7,7 +7,7 @@ const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')
 
 function validBackup(): Backup {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     exportedAt: NOW,
     folders: [{ id: id(1), name: 'IELTS', createdAt: NOW, updatedAt: NOW }],
     files: [{ id: id(2), folderId: id(1), name: 'Unit 1', createdAt: NOW, updatedAt: NOW }],
@@ -23,7 +23,16 @@ function validBackup(): Backup {
         updatedAt: NOW,
       },
     ],
-    progress: [{ termId: id(3), box: 2, correctCount: 1, wrongCount: 0, lastStudiedAt: NOW }],
+    progress: [
+      {
+        termId: id(3),
+        box: 2,
+        correctCount: 1,
+        wrongCount: 0,
+        lastStudiedAt: NOW,
+        lastPromotedDay: '2026-10-22',
+      },
+    ],
     studyDays: [{ date: '2026-10-22', answeredCount: 12 }],
   }
 }
@@ -56,8 +65,24 @@ describe('validateBackup', () => {
     expect(validateBackup(empty)).toStrictEqual(empty)
   })
 
+  it('brings a version 1 backup (no lastPromotedDay yet) up to the current version', () => {
+    const current = validBackup()
+    const v1 = {
+      ...current,
+      schemaVersion: 1,
+      progress: current.progress.map(({ lastPromotedDay: _day, ...rest }) => rest),
+    }
+    expect(validateBackup(v1)).toStrictEqual({ ...v1, schemaVersion: 2 })
+  })
+
+  it('rejects lastPromotedDay that is not a calendar day', () => {
+    const backup = validBackup()
+    const bad = { ...backup, progress: [{ ...backup.progress[0]!, lastPromotedDay: '22/10/2026' }] }
+    expect(Object.keys(problemsOf(bad))).toEqual(['progress.0.lastPromotedDay'])
+  })
+
   it('asks to reload for a backup from a newer version', () => {
-    expect(problemsOf({ ...validBackup(), schemaVersion: 2 })).toEqual({
+    expect(problemsOf({ ...validBackup(), schemaVersion: 3 })).toEqual({
       schemaVersion: ['This backup is from a newer version. Reload the page to update the app.'],
     })
   })

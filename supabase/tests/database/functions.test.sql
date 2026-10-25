@@ -25,7 +25,8 @@ create function pg_temp.snapshot() returns jsonb language sql as $$
       'created_at', '2026-10-01T08:00:00.000Z', 'updated_at', '2026-10-01T08:00:00.000Z')),
     'progress', jsonb_build_array(jsonb_build_object(
       'term_id', 'a0000000-0000-4000-8000-000000000003', 'box', 3, 'correct_count', 4,
-      'wrong_count', 1, 'last_wrong_at', '2026-10-03T08:00:00.000Z', 'last_studied_at', null)),
+      'wrong_count', 1, 'last_wrong_at', '2026-10-03T08:00:00.000Z', 'last_studied_at', null,
+      'last_promoted_day', '2026-10-02')),
     'study_days', jsonb_build_array(jsonb_build_object(
       'date', '2026-10-03', 'answered_count', 12))
   );
@@ -100,6 +101,10 @@ select is(
 select is(
   public.export_backup() -> 'progress' -> 0 -> 'last_studied_at', 'null'::jsonb,
   'export keeps null columns (the client mapper drops them)'
+);
+select is(
+  public.export_backup() -> 'progress' -> 0 -> 'last_promoted_day', '"2026-10-02"'::jsonb,
+  'import and export keep last_promoted_day'
 );
 
 -- ---- Another user ----

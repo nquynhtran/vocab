@@ -508,6 +508,7 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
           wrongCount: 2,
           lastWrongAt: '2026-10-22T09:00:00.000Z',
           lastStudiedAt: '2026-10-22T09:00:01.500Z',
+          lastPromotedDay: '2026-10-21',
         },
       ]
       const studyDay = { date: '2026-10-22', answeredCount: 10 }
@@ -517,7 +518,7 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
       const backup = await repo.exportBackup()
 
       expect(backup).toStrictEqual({
-        schemaVersion: 1,
+        schemaVersion: 2,
         exportedAt: '2026-10-22T08:00:04.000Z',
         folders: [folder],
         files: [file],
@@ -545,7 +546,7 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
     function sampleBackup(): Backup {
       const at = '2026-10-01T07:30:00.250Z'
       return {
-        schemaVersion: 1,
+        schemaVersion: 2,
         exportedAt: '2026-10-20T00:00:00.000Z',
         folders: [{ id: testId(101), name: 'IELTS', createdAt: at, updatedAt: at }],
         files: [
@@ -579,6 +580,7 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
             wrongCount: 1,
             lastWrongAt: at,
             lastStudiedAt: at,
+            lastPromotedDay: '2026-09-30',
           },
           { termId: testId(302), box: 1, correctCount: 0, wrongCount: 0 },
         ],

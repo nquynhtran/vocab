@@ -157,6 +157,7 @@ describe('writing', () => {
       correctCount: 1,
       wrongCount: 0,
       lastStudiedAt: '2026-10-22T08:00:00.000Z',
+      lastPromotedDay: '2026-10-22',
     }
     const row = entityToRow(TermProgressSchema, progress)
     expect(row).toStrictEqual({
@@ -166,6 +167,7 @@ describe('writing', () => {
       wrong_count: 0,
       last_wrong_at: null,
       last_studied_at: progress.lastStudiedAt,
+      last_promoted_day: '2026-10-22',
     })
     expect(parseRow(TermProgressSchema, row, 'progress 0')).toStrictEqual(progress)
     expect(parseRow(TermSchema, termToRow(term), 'terms 0')).toStrictEqual(term)
