@@ -3,10 +3,9 @@
 > File này được nạp tự động mỗi phiên. Giữ ngắn: chỉ trạng thái hiện tại, checklist và 5 mục nhật ký gần nhất.
 
 ## Đang ở đâu
-- **Giai đoạn:** 7 (cloud & iPhone) **xong**. Sang giai đoạn **3 (Learn)**.
-- **Việc tiếp theo:** gọi `challenger` phản biện [learn-algorithm.md](docs/learn-algorithm.md) (gồm RPC `record_answer`, migration mới cho cloud), chốt câu hỏi mở bên dưới, rồi mới viết `domain/learn/`.
+- **Giai đoạn:** 3 (Learn). Thiết kế đã qua `challenger`, chốt #50–#54.
+- **Việc tiếp theo:** `lastPromotedDay` (schema, Dexie v4, backup v2) + `domain/learn/` (hàm thuần, có test).
 - **Đang vướng:** không. Build có cảnh báo chunk > 500 kB (supabase-js), chưa xử lý. 🔊 không kêu trong Simple Browser của VS Code. `npm run build` ở máy cần `VITE_SUPABASE_*` (xem cloud-sync.md). iPhone iOS cũ của người dùng tạo folder bị lỗi chưa rõ nguyên nhân (cloud-sync.md#iphone); người dùng sẽ cập nhật máy.
-- **Câu hỏi mở (giai đoạn 3):** có hiện loại từ làm gợi ý trong câu hỏi Learn không.
 
 ## Kế hoạch
 Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn đề nghiêm trọng đã biết, người dùng dùng thử OK. Khi nào gọi agent: xem CLAUDE.md. Thứ tự làm: 0 → 1 → 2 → **7** → 3 → 4 → 5 → 6.
@@ -28,6 +27,11 @@ Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn 
   - [x] Nhập backup vào tài khoản trống (#46, qua `challenger` + `reviewer`); CSP, biến build; `db push`; deploy (#45). Không chuyển dữ liệu (#47)
   - [x] Manifest + icon (`scripts/make-icons.mjs`), thử trên iPhone (máy khác OK); giữ project bằng việc dùng app (#48); CI xếp hàng trên `main` (#49)
 - [ ] **3. Learn** — học một file đến khi thuộc hết ([learn-algorithm.md](docs/learn-algorithm.md))
+  - [x] Qua `challenger`, chốt #50–#54 (tăng hộp tối đa 1 lần/ngày, chống ghi trùng + Retry, trắc nghiệm ghi ngay, không hiện loại từ, luôn lấy đáp án nhiễu cả folder)
+  - [ ] `lastPromotedDay`: schema domain, Dexie v4, backup `schemaVersion` 2 (+ nhận file v1), mapper cloud
+  - [ ] `domain/learn/`: `localDay`, priority, vòng, chèn lại, đáp án nhiễu, che ví dụ, chấm câu viết, `grade`/`apply`; qua `reviewer`
+  - [ ] `recordAnswer` + `getLearnData` (Dexie + bộ hợp đồng); migration cloud + pgTAP; qua `reviewer`
+  - [ ] Màn Learn + tóm tắt vòng/phiên; deploy (`db push` trước, `min_client_version` 2)
 - [ ] **4. Streak** — đủ các test trong [streak.md](docs/streak.md)
 - [ ] **5. Sao lưu** — khôi phục toàn bộ dữ liệu từ file backup
 - [ ] **6. Hoàn thiện** — phím tắt, dark mode, README; dùng thử 1 tuần

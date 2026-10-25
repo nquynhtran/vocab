@@ -4,7 +4,7 @@
 Folder       { id, name, createdAt, updatedAt }
 VocabFile    { id, folderId, name, createdAt, updatedAt }   // không đặt tên "File" vì trùng kiểu File có sẵn của trình duyệt
 Term         { id, fileId, word, partOfSpeech?, meaning, example?, createdAt, updatedAt }
-TermProgress { termId, box, correctCount, wrongCount, lastWrongAt?, lastStudiedAt? }
+TermProgress { termId, box, correctCount, wrongCount, lastWrongAt?, lastStudiedAt?, lastPromotedDay? }
 StudyDay     { date /* YYYY-MM-DD */, answeredCount }
 Meta         { key, value }  // lastBackupAt
 ```
@@ -17,7 +17,7 @@ Kiểu và validate định nghĩa bằng Zod ở `src/domain/schemas.ts`; chu�
 - Phiên bản schema là version của Dexie (`db.verno`), không lưu riêng.
 - Tên DB: `vocab-app` (hằng số trong `src/data/db.ts`). Không đổi tên: IndexedDB tính theo origin `nquynhtran.github.io`, dùng chung với mọi repo Pages khác của tài khoản, nên tên phải riêng biệt.
 
-Index Dexie (version 1 tạo sẵn đủ bảng cho các giai đoạn sau; version 2 giữ nguyên index, chỉ để báo tab cũ khi thêm `partOfSpeech`, xem #32; version 3 cũng giữ nguyên index, để tab bản local reload sang bản cloud, xem #33/#45):
+Index Dexie (version 1 tạo sẵn đủ bảng cho các giai đoạn sau; version 2 giữ nguyên index, chỉ để báo tab cũ khi thêm `partOfSpeech`, xem #32; version 3 cũng giữ nguyên index, để tab bản local reload sang bản cloud, xem #33/#45; version 4 giữ nguyên index, báo tab cũ khi thêm `lastPromotedDay`, #50):
 ```
 folders:   id, &nameKey
 files:     id, folderId, &[folderId+nameKey]
@@ -42,13 +42,13 @@ IndexedDB không có khóa ngoại nên kiểm tra ở `domain/` (Zod) và trong
 - Xóa folder → xóa file, từ, tiến độ bên trong. Xóa từ → xóa tiến độ. Luôn **trong một transaction**.
 - Sửa nội dung từ: giữ nguyên tiến độ.
 - Từ trùng ở file khác: chỉ cảnh báo, không chặn (tra theo index `wordKey`).
-- `box` trong khoảng 1..5; `correctCount`, `wrongCount`, `answeredCount` là số nguyên ≥ 0.
+- `box` trong khoảng 1..5; `lastPromotedDay` dạng `YYYY-MM-DD`; `correctCount`, `wrongCount`, `answeredCount` là số nguyên ≥ 0.
 
 ## Sao lưu JSON
 ```json
-{ "schemaVersion": 1, "exportedAt": "...", "folders": [], "files": [], "terms": [], "progress": [], "studyDays": [] }
+{ "schemaVersion": 2, "exportedAt": "...", "folders": [], "files": [], "terms": [], "progress": [], "studyDays": [] }
 ```
-Không xuất `nameKey`/`wordKey` (tính lại khi nhập) và `Meta`. Xuất: `Repository.exportBackup()` đọc mọi bảng trong một transaction, không validate (bản sao an toàn vẫn phải tải được). Validate khi nhập: `validateBackup()` ở `src/domain/backup.ts` (giai đoạn 7 đã có xuất, và nhập vào kho **trống** `importIntoEmpty` (#46); nhập đè "Replace all" chưa có). Dữ liệu mà schema sẽ đổi (chưa chuẩn hóa, trường lạ, ô trống) bị **từ chối** kèm đường dẫn, không lặng lẽ sửa (#35): file backup chỉ do app ghi, khác đi nghĩa là có bug hoặc bị sửa tay.
+`schemaVersion` 2 thêm `lastPromotedDay` (không bắt buộc) vào `progress`; file version 1 nhập được, chuyển lên 2 không cần đổi gì vì trường mới không bắt buộc. Không xuất `nameKey`/`wordKey` (tính lại khi nhập) và `Meta`. Xuất: `Repository.exportBackup()` đọc mọi bảng trong một transaction, không validate (bản sao an toàn vẫn phải tải được). Validate khi nhập: `validateBackup()` ở `src/domain/backup.ts` (giai đoạn 7 đã có xuất, và nhập vào kho **trống** `importIntoEmpty` (#46); nhập đè "Replace all" chưa có). Dữ liệu mà schema sẽ đổi (chưa chuẩn hóa, trường lạ, ô trống) bị **từ chối** kèm đường dẫn, không lặng lẽ sửa (#35): file backup chỉ do app ghi, khác đi nghĩa là có bug hoặc bị sửa tay.
 Nhập: kiểm tra kích thước ≤ 5 MB → parse → validate bằng Zod (kể cả ràng buộc tham chiếu, và trùng `toKey` giữa các bản ghi trong chính file, ví dụ "IELTS" và "ielts ") → migration nếu là bản cũ → hỏi xác nhận "Replace all current data?" → ghi trong **một transaction**. Lỗi ở bất kỳ bước nào thì dữ liệu hiện tại giữ nguyên.
 
 ## Migration

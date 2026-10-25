@@ -49,7 +49,7 @@ src/
 ## Quy tắc `Repository`
 Để giai đoạn 7 thay `DexieRepository` bằng `SupabaseRepository` mà không sửa UI hay domain:
 - Mọi phương thức `async`, trả về plain object; không lộ kiểu của Dexie/Supabase.
-- Thao tác cần toàn vẹn gói thành **một** phương thức, ví dụ `deleteFolder(id)` (xóa dây chuyền) hay `recordAnswer(termId, result, date)` (cập nhật tiến độ + ngày học). UI không tự ghép nhiều lệnh ghi. Dexie dùng transaction, Supabase dùng hàm Postgres (RPC).
+- Thao tác cần toàn vẹn gói thành **một** phương thức, ví dụ `deleteFolder(id)` (xóa dây chuyền) hay `recordAnswer(answer)` (cập nhật tiến độ + ngày học). UI không tự ghép nhiều lệnh ghi. Dexie dùng transaction, Supabase dùng hàm Postgres (RPC).
 - UI không dùng `liveQuery`; ghi xong thì tải lại qua repository.
 - `id` do client sinh (`crypto.randomUUID()`).
 - UI lấy repository qua React Context (Dependency Injection), test truyền bản giả vào.
