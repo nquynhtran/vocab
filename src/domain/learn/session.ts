@@ -64,10 +64,15 @@ export function startSession({
   if (terms.length === 0) throw new Error('A Learn session needs at least one term')
   const ordered = selector.order(terms, progress, today, random).map((term): SessionTerm => ({
     term,
-    level: (progress.get(term.id)?.box ?? 1) >= MASTERED_BOX ? 1 : 0,
+    level: startingLevel(progress.get(term.id)),
     missed: false,
   }))
   return startRound({ terms: ordered, round: 0, queue: [], answers: [] })
+}
+
+/** Mastered terms (box ≥ 3) go straight to the written question. */
+export function startingLevel(progress: TermProgress | undefined): Level {
+  return (progress?.box ?? 1) >= MASTERED_BOX ? 1 : 0
 }
 
 export function currentTerm(session: LearnSession): SessionTerm | undefined {

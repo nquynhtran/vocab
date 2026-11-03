@@ -42,10 +42,12 @@ Code ở `src/domain/learn/`, là **hàm thuần**: nhận state, trả state m�
 8. **Trắc nghiệm cũng hiện ví dụ** đã che từ (#57), cùng quy tắc che với câu viết.
 
 ## Học tiếp sau khi dừng (#58)
-- Sau **mỗi** câu đã áp dụng (và lúc sang vòng), lưu phiên vào `localStorage` của máy đang dùng, khóa `vocab-learn:<fileId>`. Chỉ lưu id và trạng thái (`{ version, round, queue, answers, terms: [{ termId, level, missed }] }`), không lưu chữ của từ.
-- Mở Learn mà có phiên đã lưu → hỏi "Continue where you left off? (3 / 12 learned)" với **Continue** / **Start over**. Phiên học xong hết hoặc Start over → xóa bản lưu. Stop thì giữ.
-- Continue = đọc lại `getLearnData` rồi ghép: từ đã bị xóa → bỏ (cả trong hàng đợi và `answers`); từ mới thêm → cuối danh sách, mức khởi đầu như lúc mở phiên; chữ của từ lấy bản mới. Hàng đợi rỗng sau khi ghép → sang vòng mới.
-- Bản lưu là dữ liệu không tin cậy (bản cũ, sửa tay): validate bằng Zod, sai `version` hay sai cấu trúc → bỏ, mở phiên mới. Không dùng được `localStorage` → học như cũ, không lưu.
+- Lưu vào `localStorage` của máy đang dùng, khóa `vocab-learn:<fileId>`, mỗi khi phiên trong bộ nhớ đổi, tức sau mỗi câu **đã lưu xong vào DB** và lúc sang vòng; nhờ vậy bản lưu không bao giờ đi trước DB. Chỉ lưu id và trạng thái (`{ version: 1, savedAt, round, queue, answers, terms: [{ termId, level, missed }] }`), không lưu chữ của từ. Code: `domain/learn/resume.ts` (thuần), `features/learn/sessionStore.ts`.
+- **Một chỗ duy nhất** quyết định (effect theo phiên): phiên học xong hết → xóa; còn lại, đã có câu trả lời → ghi (mở Learn rồi thoát ngay không tạo bản lưu). Start over → xóa trước khi mở phiên mới. Stop và "Study again" không xóa gì: "Study again" mở lại trang, nên còn phiên dở thì lại hỏi.
+- Ghi hỏng (hết chỗ, bị chặn) → xóa luôn bản lưu của file đó: thà mất bản lưu còn hơn lần sau học tiếp từ một chỗ cũ hơn.
+- Mở Learn mà có phiên dở dùng được → hỏi "Continue where you left off? 3 / 12 learned, last studied 5 days ago." (`today`, `yesterday`, `N days ago`, theo `savedAt`; luôn hỏi, không tự hết hạn, #62) với **Continue** / **Start over**.
+- Ghép (`resumeSession`, không cần random): đọc lại `getLearnData`; từ đã bị xóa → bỏ (cả trong hàng đợi và `answers`); từ mới thêm → cuối danh sách, mức khởi đầu như lúc mở phiên (`box ≥ 3` → 1); chữ của từ lấy bản mới; mức và `missed` của từ cũ giữ nguyên (không tính lại theo `box` mới). Hàng đợi rỗng sau khi ghép → sang vòng mới. Sau khi ghép mà không còn câu trả lời nào, hoặc mọi từ đã mức 2 → coi như không có phiên dở và xóa bản lưu (để nó không sống lại khi thêm từ sau này).
+- Bản lưu là dữ liệu không tin cậy (bản cũ, sửa tay): validate bằng Zod, sai `version` hay sai cấu trúc → bỏ, mở phiên mới. Bất biến: `termId` không trùng; `queue` không trùng, chỉ chứa từ có trong `terms` và mức < 2; `answers` chỉ chứa từ có trong `terms`, `round` ≤ `round` của phiên; `round` ≥ 1. Không dùng được `localStorage` → học như cũ, không lưu.
 - Chỉ trên máy đó (người dùng nhập từ trên máy tính, học trên điện thoại). Hộp Leitner vẫn đồng bộ qua cloud như cũ.
 
 ## Ghi kết quả
@@ -100,3 +102,4 @@ Hàm thuần nhận `{ fileTerms, folderTerms }`. Lấy từ file trước, sau 
 | Từ bị xóa khi đang học | `recordAnswer` không ghi gì, không báo lỗi |
 | Phiên kéo qua nửa đêm | Mỗi câu ghi vào ngày lúc trả lời (`localDay(now)` của từng câu) |
 | Đổi múi giờ, đồng hồ máy sai | Chấp nhận: ngày theo đồng hồ máy lúc trả lời |
+| Rời trang, đóng tab (hoặc Stop sau lỗi lưu) khi một câu đang lưu, rồi học tiếp | Câu đó có thể đã ghi nhưng phiên đã lưu chưa có nó, nên được hỏi lại và đếm thêm một lần vào `correctCount`/`wrongCount`: chấp nhận (hiếm, chỉ lệch bộ đếm) |

@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import type { LearnData } from '../../data/repository.ts'
 import { ConnectionError } from '../../domain/errors.ts'
 import type { Question } from '../../domain/learn/question.ts'
-import { progressCounts, type LearnSession } from '../../domain/learn/session.ts'
+import { toSaved } from '../../domain/learn/resume.ts'
+import { isSessionOver, progressCounts, type LearnSession } from '../../domain/learn/session.ts'
 import { errorMessage } from '../../shared/errorMessage.ts'
 import { PartOfSpeechLabel } from '../../shared/PartOfSpeechLabel.tsx'
 import { useRepository } from '../../shared/repositoryContext.ts'
@@ -14,6 +15,7 @@ import {
   nextRound,
   overrule,
   pickChoice,
+  resumeLearn,
   retry,
   saveFailed,
   saveSucceeded,
@@ -23,6 +25,7 @@ import {
   type LearnState,
   type Step,
 } from './learnFlow.ts'
+import { clearSavedSession, writeSavedSession } from './sessionStore.ts'
 import { RoundSummary, SessionSummary } from './Summaries.tsx'
 import { WrittenQuestion } from './WrittenQuestion.tsx'
 
@@ -31,14 +34,30 @@ export const CORRECT_PAUSE_MS = 800
 
 export function LearnSession({
   data,
+  resumed,
   onStudyAgain,
 }: {
   data: LearnData
+  /** A session saved on this device, to go on with (#58). */
+  resumed?: LearnSession
   onStudyAgain: () => void
 }) {
   const repository = useRepository()
-  const [state, setState] = useState(() => startLearn(data, new Date(), Math.random))
+  const [state, setState] = useState(() =>
+    resumed ? resumeLearn(data, resumed, Math.random) : startLearn(data, new Date(), Math.random),
+  )
   const { session, step } = state
+  const fileId = data.file.id
+
+  // The one place that keeps the saved copy in step (docs/learn-algorithm.md#học-tiếp-sau-khi-dừng-58).
+  // The session only changes once an answer is stored, or at a new round, so the copy never runs
+  // ahead of the database. The session as opened is never written: a new one has no answer yet,
+  // and rewriting a resumed one would make "last studied" say today.
+  const [opened] = useState(session)
+  useEffect(() => {
+    if (isSessionOver(session)) clearSavedSession(fileId)
+    else if (session !== opened) writeSavedSession(fileId, toSaved(session, new Date()))
+  }, [fileId, opened, session])
 
   // Saving follows the step, so Retry is just "back to saving" with the same record. Under
   // StrictMode the effect runs twice and sends the record twice: the repository keeps one (#51).

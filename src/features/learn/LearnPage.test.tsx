@@ -86,6 +86,7 @@ async function answerAllRight(wordOf: Map<string, string>) {
 afterEach(() => {
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
+  localStorage.clear()
   window.location.hash = ''
 })
 
@@ -108,6 +109,8 @@ describe('Learn', () => {
     await answerAllRight(wordOf)
 
     expect(await screen.findByRole('heading', { name: 'You learned all 2 terms!' })).toBeVisible()
+    // Learned to the end: no session left to continue (#58).
+    expect(localStorage.length).toBe(0)
     expect(screen.getByText('4 answers: 4 right, 0 wrong.')).toBeInTheDocument()
     expect(screen.getByText('2 learned · 0 familiar / 2')).toBeInTheDocument()
     // No mistake this session: one box up.
@@ -330,5 +333,111 @@ describe('Learn', () => {
     expect(
       await screen.findByRole('heading', { name: 'This file no longer exists.' }),
     ).toBeVisible()
+  })
+
+  describe('continuing a stopped session (#58)', () => {
+    /** Stop, then "Study again": the page loads afresh, as when opened later. */
+    async function stopAndStudyAgain() {
+      await asked()
+      fireEvent.click(screen.getByRole('button', { name: 'Stop' }))
+      fireEvent.click(await screen.findByRole('button', { name: 'Study again' }))
+    }
+
+    it('after Stop, asks to continue and goes on where it stopped', async () => {
+      const { repository, file, wordOf } = await setUp(TWO)
+      renderAt(repository, `/files/${file.id}/learn`)
+      await answerRight(wordOf)
+      await stopAndStudyAgain()
+
+      expect(
+        await screen.findByRole('heading', { name: 'Continue where you left off?' }),
+      ).toBeVisible()
+      expect(screen.getByText('0 / 2 learned, last studied today.')).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+      expect(await screen.findByText('0 learned · 1 familiar / 2')).toBeInTheDocument()
+      await answerAllRight(wordOf)
+      // Three more answers: the stopped session went on, it did not start again.
+      expect(await screen.findByText('4 answers: 4 right, 0 wrong.')).toBeInTheDocument()
+    })
+
+    it('keeps "last studied" when continuing and stopping without an answer', async () => {
+      const { repository, file, wordOf } = await setUp(TWO)
+      renderAt(repository, `/files/${file.id}/learn`)
+      await answerRight(wordOf)
+      const key = `vocab-learn:${file.id}`
+      const saved = JSON.parse(localStorage.getItem(key)!) as { savedAt: string }
+      const longAgo = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+      localStorage.setItem(key, JSON.stringify({ ...saved, savedAt: longAgo }))
+
+      await stopAndStudyAgain()
+      fireEvent.click(await screen.findByRole('button', { name: 'Continue' }))
+      await stopAndStudyAgain()
+      expect(await screen.findByText(/last studied 5 days ago/)).toBeInTheDocument()
+    })
+
+    it('forgets a copy with nothing left to continue, so adding a term cannot revive it', async () => {
+      const { repository, file, wordOf } = await setUp(TWO)
+      renderAt(repository, `/files/${file.id}/learn`)
+      await answerRight(wordOf)
+      // The only answered term is deleted elsewhere: nothing worth continuing.
+      const data = await repository.getLearnData(file.id)
+      const answered = JSON.parse(localStorage.getItem(`vocab-learn:${file.id}`)!) as {
+        answers: { termId: string }[]
+      }
+      const gone = data!.terms.find((t) => t.id === answered.answers[0]!.termId)!
+      await repository.deleteTerm(gone.id)
+      await stopAndStudyAgain()
+      expect(await screen.findByText('0 learned · 0 familiar / 1')).toBeInTheDocument()
+      expect(localStorage.length).toBe(0)
+    })
+
+    it('Start over opens a new session and forgets the stopped one', async () => {
+      const { repository, file, wordOf } = await setUp(TWO)
+      renderAt(repository, `/files/${file.id}/learn`)
+      await answerRight(wordOf)
+      await stopAndStudyAgain()
+      fireEvent.click(await screen.findByRole('button', { name: 'Start over' }))
+      expect(await screen.findByText('0 learned · 0 familiar / 2')).toBeInTheDocument()
+
+      await stopAndStudyAgain()
+      expect(await screen.findByText('0 learned · 0 familiar / 2')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Continue' })).toBeNull()
+    })
+
+    it('does not ask when nothing was answered', async () => {
+      const { repository, file } = await setUp(TWO)
+      renderAt(repository, `/files/${file.id}/learn`)
+      await stopAndStudyAgain()
+      expect(await screen.findByText('0 learned · 0 familiar / 2')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Continue' })).toBeNull()
+    })
+
+    it('learns as before when storage cannot be used', async () => {
+      vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+        throw new DOMException('blocked', 'SecurityError')
+      })
+      vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+        throw new DOMException('blocked', 'SecurityError')
+      })
+      const { repository, file, wordOf } = await setUp(TWO)
+      renderAt(repository, `/files/${file.id}/learn`)
+      await answerRight(wordOf)
+      await stopAndStudyAgain()
+      expect(await screen.findByText('0 learned · 0 familiar / 2')).toBeInTheDocument()
+    })
+
+    it('forgets the older copy when a later save fails, rather than going back to it', async () => {
+      const { repository, file, wordOf } = await setUp(TWO)
+      renderAt(repository, `/files/${file.id}/learn`)
+      await answerRight(wordOf)
+      expect(localStorage.length).toBe(1)
+      vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+        throw new DOMException('full', 'QuotaExceededError')
+      })
+      await answerRight(wordOf)
+      expect(localStorage.length).toBe(0)
+      await stopAndStudyAgain()
+      expect(await screen.findByText('0 learned · 0 familiar / 2')).toBeInTheDocument()
+    })
   })
 })

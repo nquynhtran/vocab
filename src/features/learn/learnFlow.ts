@@ -63,17 +63,20 @@ export type Step =
   /** Every term learned, or the learner stopped. */
   | { kind: 'sessionOver' }
 
-export function startLearn(
-  data: Pick<LearnData, 'terms' | 'progress' | 'distractors'>,
-  now: Date,
-  random: Random,
-): LearnState {
+type FlowData = Pick<LearnData, 'terms' | 'progress' | 'distractors'>
+
+export function startLearn(data: FlowData, now: Date, random: Random): LearnState {
   const session = startSession({
     terms: data.terms,
     progress: new Map(data.progress.map((entry) => [entry.termId, entry])),
     today: localDay(now),
     random,
   })
+  return resumeLearn(data, session, random)
+}
+
+/** Goes on with a session already under way: one saved on this device (#58). */
+export function resumeLearn(data: FlowData, session: LearnSession, random: Random): LearnState {
   const sources = { fileTerms: data.terms, folderTerms: data.distractors }
   return { session, sources, step: stepFor(session, sources, random) }
 }
