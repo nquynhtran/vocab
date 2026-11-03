@@ -11,8 +11,9 @@ function contentSecurityPolicyFor(supabaseOrigin: string): string {
     "style-src 'self'",
     "img-src 'self' data:",
     "font-src 'self'",
-    // No wss: realtime is not used.
-    `connect-src 'self' ${supabaseOrigin}`,
+    // No wss: realtime is not used. Wiktionary: the Look up button (WIKTIONARY_API in
+    // src/data/wiktionary.ts, docs/pronunciation-lookup.md).
+    `connect-src 'self' ${supabaseOrigin} https://en.wiktionary.org`,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
