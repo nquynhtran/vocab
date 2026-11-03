@@ -94,6 +94,9 @@ export function TermForm({
           onChange={(event) => setWord(event.target.value)}
           autoFocus={autoFocus}
           autoComplete="off"
+          // The browser's own red underline for typos (#60); `lang` picks its English dictionary.
+          spellCheck
+          lang="en"
           aria-invalid={wordError !== undefined}
           aria-describedby={describedBy(
             wordError && `${ids.word}-error`,
@@ -136,6 +139,8 @@ export function TermForm({
           value={meaning}
           onChange={(event) => setMeaning(event.target.value)}
           autoComplete="off"
+          // Usually Vietnamese: an English dictionary would underline every word.
+          spellCheck={false}
           aria-invalid={meaningError !== undefined}
           aria-describedby={describedBy(meaningError && `${ids.meaning}-error`)}
         />
@@ -148,6 +153,8 @@ export function TermForm({
           value={example}
           onChange={(event) => setExample(event.target.value)}
           autoComplete="off"
+          spellCheck
+          lang="en"
           aria-invalid={exampleError !== undefined}
           aria-describedby={describedBy(exampleError && `${ids.example}-error`)}
         />

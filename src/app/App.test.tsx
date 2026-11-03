@@ -157,6 +157,15 @@ describe('terms', () => {
     expect(screen.getByLabelText('Term')).toHaveAttribute('aria-invalid', 'true')
   })
 
+  it('underlines typos in the English fields only (#60)', async () => {
+    await renderFile()
+    for (const label of ['Term', 'Example (optional)']) {
+      expect(screen.getByLabelText(label)).toHaveAttribute('spellcheck', 'true')
+      expect(screen.getByLabelText(label)).toHaveAttribute('lang', 'en')
+    }
+    expect(screen.getByLabelText('Meaning')).toHaveAttribute('spellcheck', 'false')
+  })
+
   it('warns while typing a word that exists elsewhere, but still adds it', async () => {
     await renderFile()
     typeInto('Term', ' RUN')
