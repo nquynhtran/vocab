@@ -12,7 +12,7 @@ import {
 import { toKey } from './text.ts'
 
 /** Bump with a migration for older files whenever the backup shape changes (docs/data-model.md). */
-export const BACKUP_SCHEMA_VERSION = 2
+export const BACKUP_SCHEMA_VERSION = 3
 
 export const BackupSchema = z.object({
   schemaVersion: z.literal(BACKUP_SCHEMA_VERSION),
@@ -56,26 +56,43 @@ export function validateBackup(value: unknown): Backup {
 }
 
 /**
- * Brings an older backup up to `BACKUP_SCHEMA_VERSION`; anything else is returned as is.
- * Version 2 only added the optional `progress[].lastPromotedDay`, so a version 1 file is
- * already a valid version 2 file apart from its number.
+ * The fields each backup version added. Every version so far only added optional fields, so an
+ * older file is already valid at the current version apart from its number. A file carrying a
+ * field newer than its own version was edited by hand: rejected like any change (#35).
+ * A new version adds a line here (and needs a real migration step if it changes existing data).
  */
+const FIELDS_ADDED_IN: Readonly<
+  Record<number, readonly (readonly [table: string, field: string])[]>
+> = {
+  2: [['progress', 'lastPromotedDay']],
+  3: [
+    ['files', 'notes'],
+    ['terms', 'pronunciation'],
+  ],
+}
+
+/** Brings an older backup up to `BACKUP_SCHEMA_VERSION`; anything else is returned as is. */
 function migrateBackup(value: unknown): unknown {
   if (typeof value !== 'object' || value === null) return value
-  const { schemaVersion, progress } = value as { schemaVersion?: unknown; progress?: unknown }
-  if (schemaVersion !== 1) return value
-  // A version 1 file with the newer field was edited by hand: reject it like any change (#35).
-  const index = Array.isArray(progress)
-    ? progress.findIndex(
-        (row) => typeof row === 'object' && row !== null && 'lastPromotedDay' in row,
-      )
-    : -1
-  if (index !== -1) {
-    throw new ValidationError({
-      [`progress.${index}.lastPromotedDay`]: ['Unexpected or non-normalized value'],
-    })
+  const backup = value as Record<string, unknown>
+  const version = backup.schemaVersion
+  if (!Number.isInteger(version) || (version as number) < 1) return value
+  if ((version as number) >= BACKUP_SCHEMA_VERSION) return value
+
+  const problems: Record<string, string[]> = {}
+  for (let newer = (version as number) + 1; newer <= BACKUP_SCHEMA_VERSION; newer++) {
+    for (const [table, field] of FIELDS_ADDED_IN[newer] ?? []) {
+      const rows = backup[table]
+      if (!Array.isArray(rows)) continue // the schema reports the missing table
+      rows.forEach((row, index) => {
+        if (typeof row === 'object' && row !== null && field in row) {
+          problems[`${table}.${index}.${field}`] = ['Unexpected or non-normalized value']
+        }
+      })
+    }
   }
-  return { ...value, schemaVersion: 2 }
+  if (Object.keys(problems).length > 0) throw new ValidationError(problems)
+  return { ...backup, schemaVersion: BACKUP_SCHEMA_VERSION }
 }
 
 /** Checked before reading a chosen file, so a wrong pick cannot freeze the page (data-model.md). */

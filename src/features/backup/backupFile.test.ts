@@ -23,7 +23,7 @@ describe('downloadBackup', () => {
     })
     const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
-    const backup = { schemaVersion: 2, exportedAt: '2026-10-22T08:00:00.000Z' } as Backup
+    const backup = { schemaVersion: 3, exportedAt: '2026-10-22T08:00:00.000Z' } as Backup
 
     downloadBackup(backup, 'vocab-backup-2026-10-22.json')
 

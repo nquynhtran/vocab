@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseBackupFile, validateBackup, type Backup } from './backup.ts'
+import { BACKUP_SCHEMA_VERSION, parseBackupFile, validateBackup, type Backup } from './backup.ts'
 import { ValidationError } from './errors.ts'
 
 const NOW = '2026-10-22T08:00:00.000Z'
@@ -7,16 +7,26 @@ const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')
 
 function validBackup(): Backup {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     exportedAt: NOW,
     folders: [{ id: id(1), name: 'IELTS', createdAt: NOW, updatedAt: NOW }],
-    files: [{ id: id(2), folderId: id(1), name: 'Unit 1', createdAt: NOW, updatedAt: NOW }],
+    files: [
+      {
+        id: id(2),
+        folderId: id(1),
+        name: 'Unit 1',
+        notes: 'Reading:\n\n  The river runs.',
+        createdAt: NOW,
+        updatedAt: NOW,
+      },
+    ],
     terms: [
       {
         id: id(3),
         fileId: id(2),
         word: 'run',
         partOfSpeech: 'verb',
+        pronunciation: '/rʌn/',
         meaning: 'chạy',
         example: 'I run.',
         createdAt: NOW,
@@ -65,19 +75,64 @@ describe('validateBackup', () => {
     expect(validateBackup(empty)).toStrictEqual(empty)
   })
 
-  it('brings a version 1 backup (no lastPromotedDay yet) up to the current version', () => {
+  /** The current sample as an older version wrote it: without the fields added later. */
+  function version2Backup() {
     const current = validBackup()
-    const v1 = {
+    return {
       ...current,
-      schemaVersion: 1,
-      progress: current.progress.map(({ lastPromotedDay: _day, ...rest }) => rest),
+      schemaVersion: 2,
+      files: current.files.map(({ notes: _notes, ...rest }) => rest),
+      terms: current.terms.map(({ pronunciation: _pronunciation, ...rest }) => rest),
     }
-    expect(validateBackup(v1)).toStrictEqual({ ...v1, schemaVersion: 2 })
+  }
+
+  function version1Backup() {
+    const v2 = version2Backup()
+    return {
+      ...v2,
+      schemaVersion: 1,
+      progress: v2.progress.map(({ lastPromotedDay: _day, ...rest }) => rest),
+    }
+  }
+
+  it('is at version 3', () => {
+    expect(BACKUP_SCHEMA_VERSION).toBe(3)
+  })
+
+  it.each([
+    ['1', version1Backup],
+    ['2', version2Backup],
+  ])('brings a version %s backup up to the current version unchanged', (_, older) => {
+    const backup = older()
+    expect(validateBackup(backup)).toStrictEqual({ ...backup, schemaVersion: 3 })
   })
 
   it('rejects a version 1 backup carrying lastPromotedDay, which version 1 never wrote', () => {
-    expect(problemsOf({ ...validBackup(), schemaVersion: 1 })).toEqual({
+    const v1 = version1Backup()
+    const progress = [{ ...v1.progress[0]!, lastPromotedDay: '2026-10-22' }]
+    expect(problemsOf({ ...v1, progress })).toEqual({
       'progress.0.lastPromotedDay': ['Unexpected or non-normalized value'],
+    })
+  })
+
+  it('rejects an older backup carrying notes or pronunciation, listing every such field', () => {
+    const expected = {
+      'files.0.notes': ['Unexpected or non-normalized value'],
+      'terms.0.pronunciation': ['Unexpected or non-normalized value'],
+    }
+    const current = validBackup()
+    expect(problemsOf({ ...current, schemaVersion: 2 })).toEqual(expected)
+    expect(problemsOf({ ...current, schemaVersion: 1 })).toEqual({
+      ...expected,
+      'progress.0.lastPromotedDay': ['Unexpected or non-normalized value'],
+    })
+  })
+
+  it('rejects notes with Windows line breaks, which the app never writes', () => {
+    const backup = validBackup()
+    const files = [{ ...backup.files[0]!, notes: 'Line 1\r\nLine 2' }]
+    expect(problemsOf({ ...backup, files })).toEqual({
+      'files.0.notes': ['Unexpected or non-normalized value'],
     })
   })
 
@@ -88,7 +143,7 @@ describe('validateBackup', () => {
   })
 
   it('asks to reload for a backup from a newer version', () => {
-    expect(problemsOf({ ...validBackup(), schemaVersion: 3 })).toEqual({
+    expect(problemsOf({ ...validBackup(), schemaVersion: 4 })).toEqual({
       schemaVersion: ['This backup is from a newer version. Reload the page to update the app.'],
     })
   })

@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { parseOrThrow, ValidationError } from './errors.ts'
 import {
+  FileNotesInputSchema,
   FolderInputSchema,
+  NOTES_MAX_LENGTH,
+  PRONUNCIATION_MAX_LENGTH,
+  VocabFileSchema,
   StudyDaySchema,
   TermInputSchema,
   TermProgressSchema,
@@ -80,6 +84,69 @@ describe('part of speech', () => {
     expect(() =>
       parseOrThrow(TermInputSchema, { word: 'run', meaning: 'chạy', partOfSpeech: 'Verb' }),
     ).toThrow(new ValidationError({ partOfSpeech: ['Choose a part of speech from the list'] }))
+  })
+})
+
+describe('pronunciation', () => {
+  const base = { word: 'run', meaning: 'chạy' }
+
+  it('keeps what was typed, slashes included, after single-line normalization', () => {
+    expect(TermInputSchema.parse({ ...base, pronunciation: ' /rʌn/ ' }).pronunciation).toBe('/rʌn/')
+    expect(TermInputSchema.parse({ ...base, pronunciation: 'rʌn' }).pronunciation).toBe('rʌn')
+  })
+
+  it('treats a blank value as not set', () => {
+    expect(TermInputSchema.parse({ ...base, pronunciation: '  ' }).pronunciation).toBeUndefined()
+    expect(TermInputSchema.parse(base).pronunciation).toBeUndefined()
+  })
+
+  it(`allows at most ${PRONUNCIATION_MAX_LENGTH} characters`, () => {
+    const atLimit = 'ə'.repeat(PRONUNCIATION_MAX_LENGTH)
+    expect(TermInputSchema.parse({ ...base, pronunciation: atLimit }).pronunciation).toBe(atLimit)
+    expect(() => parseOrThrow(TermInputSchema, { ...base, pronunciation: `${atLimit}ə` })).toThrow(
+      new ValidationError({
+        pronunciation: [`Pronunciation must be at most ${PRONUNCIATION_MAX_LENGTH} characters`],
+      }),
+    )
+  })
+})
+
+describe('file notes', () => {
+  it('keeps line breaks and blank lines', () => {
+    const notes = 'Title\r\n\n  Paragraph one.\n\nParagraph two. '
+    expect(FileNotesInputSchema.parse({ notes })).toEqual({
+      notes: 'Title\n\n  Paragraph one.\n\nParagraph two.',
+    })
+  })
+
+  it('treats blank notes as not set', () => {
+    expect(FileNotesInputSchema.parse({ notes: ' \n\n ' }).notes).toBeUndefined()
+  })
+
+  it(`allows at most ${NOTES_MAX_LENGTH} characters, counted after normalization`, () => {
+    const atLimit = 'a'.repeat(NOTES_MAX_LENGTH)
+    expect(FileNotesInputSchema.parse({ notes: `\n${atLimit}\n` }).notes).toBe(atLimit)
+    expect(() => parseOrThrow(FileNotesInputSchema, { notes: `${atLimit}a` })).toThrow(
+      new ValidationError({ notes: [`Notes must be at most ${NOTES_MAX_LENGTH} characters`] }),
+    )
+  })
+
+  it('rejects characters the cloud cannot store', () => {
+    expect(() => parseOrThrow(FileNotesInputSchema, { notes: 'a\u0000b' })).toThrow(
+      new ValidationError({ notes: ['Notes contains a character that cannot be saved'] }),
+    )
+  })
+
+  it('is part of a stored file', () => {
+    const file = {
+      id: ID,
+      folderId: ID,
+      name: 'Unit 1',
+      notes: 'Line 1\nLine 2',
+      createdAt: NOW,
+      updatedAt: NOW,
+    }
+    expect(VocabFileSchema.parse(file)).toStrictEqual(file)
   })
 })
 

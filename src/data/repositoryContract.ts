@@ -747,7 +747,7 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
       const backup = await repo.exportBackup()
 
       expect(backup).toStrictEqual({
-        schemaVersion: 2,
+        schemaVersion: 3,
         exportedAt: '2026-10-22T08:00:04.000Z',
         folders: [folder],
         files: [file],
@@ -775,7 +775,7 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
     function sampleBackup(): Backup {
       const at = '2026-10-01T07:30:00.250Z'
       return {
-        schemaVersion: 2,
+        schemaVersion: 3,
         exportedAt: '2026-10-20T00:00:00.000Z',
         folders: [{ id: testId(101), name: 'IELTS', createdAt: at, updatedAt: at }],
         files: [

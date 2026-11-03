@@ -1,10 +1,25 @@
 /**
  * Canonical form of user-entered text before it is stored.
  * NFC matters for Vietnamese: macOS/iOS keyboards can produce NFD, which looks identical
- * but compares as a different string. Newlines collapse too: every input is single-line.
+ * but compares as a different string. Newlines collapse too: every input except file notes is
+ * single-line (those use `normalizeMultilineText`).
  */
 export function normalizeText(text: string): string {
   return text.normalize('NFC').trim().replace(/\s+/g, ' ')
+}
+
+/**
+ * Canonical form of multi-line text (file notes): NFC, one kind of line break, trimmed ends.
+ * Inner spacing and blank lines stay, since a pasted reading has paragraphs and indents.
+ * Every break style becomes "\n" in ONE pass: replacing "\r" before "\r\n" would turn one
+ * Windows break into two. Must be idempotent, because imported backups and cloud rows are
+ * rejected when they differ from their normalized form (decision #35).
+ */
+export function normalizeMultilineText(text: string): string {
+  return text
+    .normalize('NFC')
+    .replace(/\r\n?|[\u2028\u2029]/g, '\n')
+    .trim()
 }
 
 /**

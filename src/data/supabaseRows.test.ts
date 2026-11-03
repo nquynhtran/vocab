@@ -126,6 +126,7 @@ describe('writing', () => {
       word: 'Don’t',
       word_key: "don't",
       part_of_speech: null,
+      pronunciation: null,
       meaning: 'đừng',
       example: null,
       created_at: term.createdAt,
@@ -145,6 +146,7 @@ describe('writing', () => {
       word: 'Run',
       word_key: 'run',
       part_of_speech: null,
+      pronunciation: null,
       meaning: 'chạy',
       example: null,
     })

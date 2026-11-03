@@ -1,8 +1,11 @@
 import { z } from 'zod'
-import { normalizeText } from './text.ts'
+import { normalizeMultilineText, normalizeText } from './text.ts'
 
 export const NAME_MAX_LENGTH = 200
 export const EXAMPLE_MAX_LENGTH = 500
+export const PRONUNCIATION_MAX_LENGTH = 100
+/** Repeated in the CHECK on files.notes in supabase/migrations. */
+export const NOTES_MAX_LENGTH = 10_000
 export const BOX_MIN = 1
 export const BOX_MAX = 5
 
@@ -41,6 +44,16 @@ function optionalText(label: string, max: number, normalize: (text: string) => s
 
 const ExampleSchema = optionalText('Example', EXAMPLE_MAX_LENGTH, normalizeText)
 
+/** Stored exactly as typed, slashes included or not (docs/data-model.md). */
+export const PronunciationSchema = optionalText(
+  'Pronunciation',
+  PRONUNCIATION_MAX_LENGTH,
+  normalizeText,
+)
+
+/** Multi-line: keeps line breaks and blank lines (docs/data-model.md). */
+const NotesSchema = optionalText('Notes', NOTES_MAX_LENGTH, normalizeMultilineText)
+
 /**
  * Stored as these full names; abbreviations ("v.") are display only (features/terms).
  * Removing or renaming a value needs a migration of stored terms and backups. Any change also
@@ -73,9 +86,12 @@ const CountSchema = z.int().min(0)
 
 export const FolderInputSchema = z.object({ name: requiredText('Name', NAME_MAX_LENGTH) })
 export const FileInputSchema = z.object({ name: requiredText('Name', NAME_MAX_LENGTH) })
+/** Separate from the name, so renaming and editing notes never overwrite each other (#65). */
+export const FileNotesInputSchema = z.object({ notes: NotesSchema })
 export const TermInputSchema = z.object({
   word: requiredText('Term', NAME_MAX_LENGTH),
   partOfSpeech: PartOfSpeechSchema,
+  pronunciation: PronunciationSchema,
   meaning: requiredText('Meaning', NAME_MAX_LENGTH),
   example: ExampleSchema,
 })
@@ -91,6 +107,7 @@ export const VocabFileSchema = z.object({
   id: IdSchema,
   folderId: IdSchema,
   ...FileInputSchema.shape,
+  ...FileNotesInputSchema.shape,
   createdAt: TimestampSchema,
   updatedAt: TimestampSchema,
 })
@@ -125,6 +142,7 @@ export const StudyDaySchema = z.object({
 /** Raw values as typed in a form, before normalization. */
 export type FolderInput = z.input<typeof FolderInputSchema>
 export type FileInput = z.input<typeof FileInputSchema>
+export type FileNotesInput = z.input<typeof FileNotesInputSchema>
 export type TermInput = z.input<typeof TermInputSchema>
 
 export type Folder = z.output<typeof FolderSchema>

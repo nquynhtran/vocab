@@ -47,7 +47,7 @@ const folderRow = {
 }
 
 const EMPTY_BACKUP: Backup = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   exportedAt: '2026-10-22T08:00:00.000Z',
   folders: [],
   files: [],
