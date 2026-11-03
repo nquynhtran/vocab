@@ -209,9 +209,9 @@ describe('stop', () => {
 describe('rounds', () => {
   it(`asks up to ${ROUND_SIZE} terms a round, then the next round, until all are learned`, () => {
     let state = answerAllRight(start(ROUND_SIZE + 1))
-    // Round 1: everyone answered once (level 0 → 1), so the round ends but the session does not.
+    // Round 1: each term asked twice (choice, then written), so the round ends but not the session.
     expect(state.step.kind).toBe('roundOver')
-    expect(state.session.answers).toHaveLength(ROUND_SIZE)
+    expect(state.session.answers).toHaveLength(2 * ROUND_SIZE)
     expect(nextRound(state, low).session.round).toBe(2)
 
     while (state.step.kind === 'roundOver') state = answerAllRight(nextRound(state, low))

@@ -11,6 +11,13 @@ export const ROUND_SIZE = 7
 /** A missed term comes back after this many other questions, picked at random. */
 const RETRY_GAP_MIN = 2
 const RETRY_GAP_MAX = 3
+/**
+ * A term just right in multiple choice comes back for its written question after this many
+ * others (#56): written questions mix with the others' choices, and the gap keeps the written
+ * answer from being only the choice just seen.
+ */
+const WRITTEN_GAP_MIN = 3
+const WRITTEN_GAP_MAX = 4
 
 export interface SessionTerm {
   term: Term
@@ -94,8 +101,9 @@ export interface AppliedAnswer {
 /**
  * Applies the final result of the current question: after "I was right", `correct` is true and
  * the session goes on as if the answer had been right all along.
- * Correct: one level up and off this round's queue. Wrong: back to level 0, marked as missed,
- * and asked again after 2-3 other questions (at the end when fewer are left).
+ * Correct: one level up; at level 1 asked again (written) after 3-4 other questions, at level 2
+ * off this round's queue. Wrong: back to level 0, marked as missed, and asked again after 2-3
+ * other questions. A gap longer than the queue puts the term at the end.
  */
 export function applyAnswer(
   session: LearnSession,
@@ -108,9 +116,10 @@ export function applyAnswer(
     ? { ...current, level: Math.min(current.level + 1, DONE_LEVEL) as Level }
     : { ...current, level: 0, missed: true }
   const rest = session.queue.slice(1)
-  const queue = correct
-    ? rest
-    : insertAt(rest, randomInt(random, RETRY_GAP_MIN, RETRY_GAP_MAX), current.term.id)
+  const queue =
+    updated.level === DONE_LEVEL
+      ? rest
+      : insertAt(rest, randomInt(random, ...gapFor(correct)), current.term.id)
   return {
     session: {
       ...session,
@@ -122,9 +131,14 @@ export function applyAnswer(
   }
 }
 
-/** For the progress bar: terms at level 2 out of all. */
-export function doneCount(session: LearnSession): number {
-  return session.terms.filter((entry) => entry.level === DONE_LEVEL).length
+/** For the two-colour progress bar (#56): `learned` at level 2, `familiar` at level 1. */
+export function progressCounts(session: LearnSession): { learned: number; familiar: number } {
+  const count = (level: Level) => session.terms.filter((entry) => entry.level === level).length
+  return { learned: count(DONE_LEVEL), familiar: count(1) }
+}
+
+function gapFor(correct: boolean): [number, number] {
+  return correct ? [WRITTEN_GAP_MIN, WRITTEN_GAP_MAX] : [RETRY_GAP_MIN, RETRY_GAP_MAX]
 }
 
 function findTerm(session: LearnSession, id: string): SessionTerm | undefined {

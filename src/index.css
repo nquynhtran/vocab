@@ -5,6 +5,7 @@
   --color-text: #2e3856;
   --color-muted: #586380;
   --color-primary: #4255ff;
+  --color-primary-soft: #a9b1ff;
   --color-border: #d9dde8;
   --color-danger: #c0263b;
   --color-danger-bg: #fdecee;
@@ -418,10 +419,24 @@ label {
   font-size: 0.9rem;
 }
 
-.learn__progress progress {
+.learn__meter {
   flex: 1;
   height: 8px;
-  accent-color: var(--color-primary);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--color-border);
+}
+
+.learn__meter rect {
+  transition: width 0.3s;
+}
+
+.learn__meter-learned {
+  fill: var(--color-primary);
+}
+
+.learn__meter-familiar {
+  fill: var(--color-primary-soft);
 }
 
 .learn__body {

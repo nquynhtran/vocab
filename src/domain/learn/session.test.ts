@@ -5,9 +5,9 @@ import type { TermSelector } from './selector.ts'
 import {
   applyAnswer,
   currentTerm,
-  doneCount,
   isRoundOver,
   isSessionOver,
+  progressCounts,
   ROUND_SIZE,
   startRound,
   startSession,
@@ -31,7 +31,7 @@ const progressOf = (n: number, box: number): TermProgress => ({
 })
 /** Keeps the input order, so tests read in the order terms are given. */
 const asGiven: TermSelector = { order: (terms) => [...terms] }
-/** Retry gap of 2; 0.999999 gives 3. */
+/** Gaps at their smallest: retry after 2, written after 3. 0.999999 gives 3 and 4. */
 const low: Random = () => 0
 
 function start(count: number, progress: TermProgress[] = []): LearnSession {
@@ -50,6 +50,17 @@ const answer = (session: LearnSession, correct: boolean, random: Random = low) =
 
 const words = (session: LearnSession) =>
   session.queue.map((termId) => session.terms.find((t) => t.term.id === termId)!.term.word)
+
+/** Answers right until the round is over; returns `word@level` for each question asked. */
+function askedThroughRound(session: LearnSession): { session: LearnSession; asked: string[] } {
+  const asked: string[] = []
+  while (!isRoundOver(session)) {
+    const current = currentTerm(session)!
+    asked.push(`${current.term.word.replace('word ', '')}@${current.level}`)
+    session = answer(session, true)
+  }
+  return { session, asked }
+}
 
 describe('startSession', () => {
   it('starts round 1 with the first 7 terms in study order', () => {
@@ -81,10 +92,37 @@ describe('startSession', () => {
 })
 
 describe('applyAnswer', () => {
-  it('moves a right answer one level up and off the round', () => {
-    const session = answer(start(3), true)
+  it('asks a term right in multiple choice again, written, after 3 or 4 questions (#56)', () => {
+    const session = answer(start(6), true)
     expect(session.terms[0]).toMatchObject({ level: 1, missed: false })
+    expect(words(session)).toEqual(['word 2', 'word 3', 'word 4', 'word 1', 'word 5', 'word 6'])
+    expect(words(answer(start(6), true, () => 0.999999))).toEqual([
+      'word 2',
+      'word 3',
+      'word 4',
+      'word 5',
+      'word 1',
+      'word 6',
+    ])
+  })
+
+  it('takes a term right in its written question off the round', () => {
+    const session = answer(start(3, [progressOf(1, 3)]), true)
+    expect(session.terms[0]).toMatchObject({ level: 2, missed: false })
     expect(words(session)).toEqual(['word 2', 'word 3'])
+  })
+
+  it('puts a term right in multiple choice last when fewer questions are left', () => {
+    expect(words(answer(start(2), true))).toEqual(['word 2', 'word 1'])
+    expect(words(answer(start(1), true))).toEqual(['word 1'])
+  })
+
+  it('after a miss, asks the written question with the written gap', () => {
+    let session = answer(start(6), false) // word 1 after 2 others
+    session = answer(answer(session, true), true) // words 2 and 3
+    expect(currentTerm(session)).toMatchObject({ term: { word: 'word 1' }, level: 0 })
+    session = answer(session, true)
+    expect(words(session).indexOf('word 1')).toBe(3)
   })
 
   it('sends a wrong answer back to level 0 and asks it again after 2 or 3 questions', () => {
@@ -110,9 +148,7 @@ describe('applyAnswer', () => {
   })
 
   it('promotes a term reaching level 2 without a mistake this session', () => {
-    const round1 = answer(start(1), true)
-    expect(isRoundOver(round1)).toBe(true)
-    const { session, promote } = applyAnswer(startRound(round1), true, low)
+    const { session, promote } = applyAnswer(answer(start(1), true), true, low)
     expect(promote).toBe(true)
     expect(session.terms[0]!.level).toBe(2)
     expect(isSessionOver(session)).toBe(true)
@@ -125,7 +161,6 @@ describe('applyAnswer', () => {
   it('does not promote a term missed earlier in the session', () => {
     let session = answer(start(1), false)
     session = answer(session, true) // level 1
-    session = startRound(session)
     const { promote, session: done } = applyAnswer(session, true, low)
     expect(done.terms[0]!.level).toBe(2)
     expect(promote).toBe(false)
@@ -160,36 +195,47 @@ describe('applyAnswer', () => {
   })
 
   it('refuses an answer when the round is over', () => {
-    const over = answer(start(1), true)
+    const over = answer(start(1, [progressOf(1, 3)]), true)
+    expect(isRoundOver(over)).toBe(true)
     expect(() => applyAnswer(over, true, low)).toThrow()
   })
 })
 
 describe('rounds', () => {
-  it('takes the next terms not done yet, in study order, up to 7', () => {
-    let session = start(9, [progressOf(1, 3)])
-    for (let i = 0; i < ROUND_SIZE; i++) session = answer(session, true)
-    session = startRound(session)
-    expect(session.round).toBe(2)
-    // word 1 is done (written → level 2); words 2-7 are at level 1; 8 and 9 never asked.
-    expect(words(session)).toEqual([
-      'word 2',
-      'word 3',
-      'word 4',
-      'word 5',
-      'word 6',
-      'word 7',
-      'word 8',
+  it('mixes written questions in with the multiple choice of other terms (#56)', () => {
+    const { asked } = askedThroughRound(start(ROUND_SIZE))
+    // prettier-ignore
+    expect(asked).toEqual([
+      '1@0', '2@0', '3@0', '4@0', '1@1', '2@1', '3@1', '4@1',
+      '5@0', '6@0', '7@0', '5@1', '6@1', '7@1',
     ])
-    expect(doneCount(session)).toBe(1)
+  })
+
+  it('ends a round when its terms are all learned, then takes the next ones', () => {
+    const { session } = askedThroughRound(start(9, [progressOf(1, 3)]))
+    expect(progressCounts(session)).toEqual({ learned: ROUND_SIZE, familiar: 0 })
+    const round2 = startRound(session)
+    expect(round2.round).toBe(2)
+    expect(words(round2)).toEqual(['word 8', 'word 9'])
   })
 
   it('ends the session only when every term is at level 2', () => {
-    let session = start(2)
+    let session = start(ROUND_SIZE + 1)
     while (!isSessionOver(session)) {
       session = isRoundOver(session) ? startRound(session) : answer(session, true)
     }
     expect(session.round).toBe(2)
-    expect(session.answers).toHaveLength(4)
+    expect(session.answers).toHaveLength(2 * (ROUND_SIZE + 1))
+  })
+})
+
+describe('progressCounts', () => {
+  it('counts terms learned (level 2) and familiar (level 1) apart', () => {
+    let session = start(4, [progressOf(4, 3)]) // word 4 starts familiar
+    expect(progressCounts(session)).toEqual({ learned: 0, familiar: 1 })
+    session = answer(session, true) // word 1 familiar
+    expect(progressCounts(session)).toEqual({ learned: 0, familiar: 2 })
+    session = answer(answer(answer(session, true), true), true) // words 2, 3 familiar; word 4 written
+    expect(progressCounts(session)).toEqual({ learned: 1, familiar: 3 })
   })
 })

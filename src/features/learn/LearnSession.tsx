@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { LearnData } from '../../data/repository.ts'
 import { ConnectionError } from '../../domain/errors.ts'
 import type { Question } from '../../domain/learn/question.ts'
-import { doneCount, type LearnSession } from '../../domain/learn/session.ts'
+import { progressCounts, type LearnSession } from '../../domain/learn/session.ts'
 import { errorMessage } from '../../shared/errorMessage.ts'
 import { useRepository } from '../../shared/repositoryContext.ts'
 import { ChoiceQuestion } from './ChoiceQuestion.tsx'
@@ -71,7 +71,7 @@ export function LearnSession({
   )
 
   const total = session.terms.length
-  const done = doneCount(session)
+  const { learned, familiar } = progressCounts(session)
   return (
     <section className="learn">
       <div className="learn__bar">
@@ -83,9 +83,20 @@ export function LearnSession({
         )}
       </div>
       <div className="learn__progress">
-        <progress value={done} max={total} aria-label="Terms learned" />
+        {/*
+          Two colours, which <progress> cannot draw. SVG widths are attributes, so the strict
+          style-src of the CSP never comes into it. The text says the same for screen readers.
+        */}
+        <svg className="learn__meter" aria-hidden="true" focusable="false">
+          <rect
+            className="learn__meter-familiar"
+            width={percent(learned + familiar, total)}
+            height="100%"
+          />
+          <rect className="learn__meter-learned" width={percent(learned, total)} height="100%" />
+        </svg>
         <span>
-          {done} / {total} learned
+          {learned} learned · {familiar} familiar / {total}
         </span>
       </div>
       {/* A new key per answer resets the written box, also when the same term comes right back. */}
@@ -222,4 +233,8 @@ function SaveError({
       </div>
     </div>
   )
+}
+
+function percent(part: number, whole: number): string {
+  return `${(part / whole) * 100}%`
 }

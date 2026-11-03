@@ -5,6 +5,7 @@ import { App } from '../../app/App.tsx'
 import { VocabDb } from '../../data/db.ts'
 import { DexieRepository } from '../../data/dexieRepository.ts'
 import { ConnectionError } from '../../domain/errors.ts'
+import { toAnswerRecord } from '../../domain/learn/answer.ts'
 
 const MISSING_ID = '00000000-0000-4000-8000-ffffffffffff'
 /** The 0.8 s pause after a right pick, plus room for a slow CI. */
@@ -23,6 +24,16 @@ async function setUp(terms: { word: string; meaning: string; example?: string }[
 function renderAt(repository: DexieRepository, path: string) {
   window.location.hash = `#${path}`
   render(<App repository={repository} />)
+}
+
+/** Two promotions on two days: box 3, so every term starts at the written question. */
+async function masterAll(repository: DexieRepository, fileId: string) {
+  const data = await repository.getLearnData(fileId)
+  for (const term of data!.terms) {
+    for (const now of ['2026-10-01T05:00:00.000Z', '2026-10-02T05:00:00.000Z']) {
+      await repository.recordAnswer(toAnswerRecord(term.id, true, true, new Date(now)))
+    }
+  }
 }
 
 async function progressOf(repository: DexieRepository, fileId: string, word: string) {
@@ -87,16 +98,16 @@ describe('Learn', () => {
     renderAt(repository, `/files/${file.id}`)
     fireEvent.click(await screen.findByRole('link', { name: 'Learn' }))
 
-    expect(await screen.findByText('0 / 2 learned')).toBeInTheDocument()
-    await answerAllRight(wordOf)
-    // Both asked once (level 0 → 1): the round ends, the session does not.
-    expect(await screen.findByRole('heading', { name: 'Round 1 done' })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Next round' }))
+    expect(await screen.findByText('0 learned · 0 familiar / 2')).toBeInTheDocument()
+    // Right in multiple choice: the bar moves at once (#56).
+    await answerRight(wordOf)
+    expect(screen.getByText('0 learned · 1 familiar / 2')).toBeInTheDocument()
+    // Each term comes back for its written question in the same round.
     await answerAllRight(wordOf)
 
     expect(await screen.findByRole('heading', { name: 'You learned all 2 terms!' })).toBeVisible()
     expect(screen.getByText('4 answers: 4 right, 0 wrong.')).toBeInTheDocument()
-    expect(screen.getByText('2 / 2 learned')).toBeInTheDocument()
+    expect(screen.getByText('2 learned · 0 familiar / 2')).toBeInTheDocument()
     // No mistake this session: one box up.
     expect(await progressOf(repository, file.id, 'run')).toMatchObject({
       box: 2,
@@ -105,7 +116,25 @@ describe('Learn', () => {
     })
 
     fireEvent.click(screen.getByRole('button', { name: 'Study again' }))
-    expect(await screen.findByText('0 / 2 learned')).toBeInTheDocument()
+    expect(await screen.findByText('0 learned · 0 familiar / 2')).toBeInTheDocument()
+  })
+
+  it('ends a round once its 7 terms are learned, then goes on with the rest', async () => {
+    const terms = Array.from({ length: 8 }, (_, i) => ({ word: `w${i}`, meaning: `nghĩa ${i}` }))
+    const { repository, file, wordOf } = await setUp(terms)
+    await masterAll(repository, file.id)
+    renderAt(repository, `/files/${file.id}/learn`)
+    expect(await screen.findByText('0 learned · 8 familiar / 8')).toBeInTheDocument()
+    await answerAllRight(wordOf)
+
+    expect(await screen.findByRole('heading', { name: 'Round 1 done' })).toBeInTheDocument()
+    expect(screen.getByText('7 learned · 1 familiar / 8')).toBeInTheDocument()
+    expect(
+      within(screen.getByRole('list', { name: 'This round' })).getAllByRole('listitem'),
+    ).toHaveLength(7)
+    fireEvent.click(screen.getByRole('button', { name: 'Next round' }))
+    await answerAllRight(wordOf)
+    expect(await screen.findByRole('heading', { name: 'You learned all 8 terms!' })).toBeVisible()
   })
 
   it('saves a wrong pick before Continue and shows the right word', async () => {
@@ -178,9 +207,9 @@ describe('Learn', () => {
     expect(screen.getByRole('button', { name: 'Continue' })).toHaveFocus()
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
 
-    // Right at level 0 → level 1, so not learned yet; the only term was asked, so the round ends.
-    expect(await screen.findByRole('heading', { name: 'Round 1 done' })).toBeInTheDocument()
-    expect(screen.getByText('0 / 1 learned')).toBeInTheDocument()
+    // Right at level 0 → level 1, so not learned yet; the only term comes right back.
+    await asked()
+    expect(screen.getByText('0 learned · 1 familiar / 1')).toBeInTheDocument()
     await waitFor(async () =>
       expect(await progressOf(repository, file.id, 'big')).toMatchObject({
         correctCount: 1,
@@ -203,7 +232,7 @@ describe('Learn', () => {
 
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('Your answer could not be saved. Check your connection')
-    expect(screen.getByText('0 / 2 learned')).toBeInTheDocument()
+    expect(screen.getByText('0 learned · 0 familiar / 2')).toBeInTheDocument()
     expect(screen.queryByRole('heading', { level: 2, name: /chạy|đi bộ/ })).toHaveTextContent(
       [...wordOf].find(([, w]) => w === word)![0],
     )
@@ -232,9 +261,8 @@ describe('Learn', () => {
     await asked()
     fireEvent.click(screen.getByRole('button', { name: 'Answer' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Continue' }))
-    // The only term of the round comes right back; right this time ends the round at level 1.
+    // The only term of the round comes right back, after a right answer too.
     await answerRight(wordOf)
-    fireEvent.click(await screen.findByRole('button', { name: 'Next round' }))
     await answerRight(wordOf)
 
     expect(await screen.findByRole('heading', { name: 'You learned all 1 term!' })).toBeVisible()
