@@ -19,6 +19,11 @@ Web app học từ vựng cá nhân (một người dùng), chỉ có chế đ�
 ## Không làm (YAGNI)
 Nhiều người dùng, flashcard, Match, Test, chia sẻ bộ từ, file ghi âm / phát âm ngoài danh sách từ, hình ảnh, chiều hỏi Từ → Nghĩa.
 
+## Đã chốt làm, chưa thiết kế xong (đợt 2, qua `challenger` trước)
+- **Ghi chú cho file**: một ô chữ dài (ví dụ bài đọc chứa các từ), mục "Notes" thu gọn được ở cuối trang File, chữ thường giữ xuống dòng, có bộ đếm và giới hạn ký tự.
+- **Phiên âm** (IPA) cho từ: không bắt buộc, gõ/dán tay được, nút **Look up** tự điền từ một từ điển miễn phí trên mạng (lỗi thì báo nhẹ, không chặn lưu). Hiện ở danh sách từ và màn phản hồi Learn.
+- Cả hai đổi cấu trúc dữ liệu trong cùng một lần (Dexie, backup, migration cloud).
+
 ## Có thể làm sau (chưa cam kết)
 - Dán nhanh danh sách từ (mỗi dòng `từ<TAB>nghĩa<TAB>ví dụ`).
 - Học gộp nhiều file / cả folder.

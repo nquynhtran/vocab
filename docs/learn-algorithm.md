@@ -32,12 +32,21 @@ Code ở `src/domain/learn/`, là **hàm thuần**: nhận state, trả state m�
    `priority = (6 − box) × 10 + min(wrongCount, 5) × 3 + min(sốNgàyChưaHọc, 30) + (chưa học bao giờ ? 5 : 0) + random(0..3)`
    - `sốNgàyChưaHọc` = số ngày lịch giữa `localDay(lastStudiedAt)` và hôm nay; chưa học bao giờ → 0 (đã có +5 riêng).
    - Giới hạn `min(...)` để một từ sai nhiều từ rất lâu không chiếm mãi vị trí đầu; `sốNgàyChưaHọc` đưa dần từ lâu không ôn lên trước.
-3. **Vòng:** lấy tối đa 7 từ chưa đạt mức 2, theo thứ tự trên. Mỗi từ hỏi **một lần** mỗi vòng, cộng các lần chèn lại do sai. Hết hàng đợi là hết vòng.
+3. **Vòng:** lấy tối đa 7 từ chưa đạt mức 2, theo thứ tự trên. Từ ở mức 0 trả lời đúng (lên mức 1) được **chèn lại sau 3 hoặc 4 câu** để hỏi câu viết ngay trong vòng đó, nên trắc nghiệm và câu viết của các từ khác nhau đan xen (#56). Mỗi từ còn được chèn lại khi sai. Hết hàng đợi là hết vòng: mọi từ trong vòng đã đạt mức 2, trừ khi bấm dừng.
 4. **Câu hỏi theo mức.** Luôn hiện **Nghĩa**, trả lời bằng **từ tiếng Anh**. **Không** hiện loại từ làm gợi ý (#53):
    - mức 0 → **trắc nghiệm** 4 đáp án.
    - mức 1 → **viết**. Nếu ví dụ chứa từ cần đoán thì hiện ví dụ, che mọi chỗ xuất hiện bằng `____`. Khớp **trọn từ** (trước và sau không phải chữ hay số Unicode), không phân biệt hoa thường, nháy cong = nháy thẳng: "art" không khớp trong "start", "run" không khớp trong "running". Không khớp được (ví dụ dùng dạng chia khác) thì **không hiện ví dụ**, tránh lộ đáp án.
-5. **Chấm** tách hai bước thuần: chấm (`gradeWritten`, hoặc so đáp án trắc nghiệm) → kết quả hiện ở màn phản hồi → `applyAnswer(session, kếtQuảCuốiCùng, random)` mới đổi state, trả `promote` để dựng `AnswerRecord` (`toAnswerRecord`). Đúng → mức + 1. Sai → mức 0, đánh dấu "đã sai trong phiên", hiện đáp án đúng, **chèn lại từ đó sau 2 hoặc 3 câu** (chọn bằng `random`); hàng đợi còn ít câu hơn thì đặt cuối. Vòng chỉ còn đúng từ đó thì câu hỏi lại hiện ngay sau màn phản hồi: chấp nhận (giống Quizlet), có test.
+5. **Chấm** tách hai bước thuần: chấm (`gradeWritten`, hoặc so đáp án trắc nghiệm) → kết quả hiện ở màn phản hồi → `applyAnswer(session, kếtQuảCuốiCùng, random)` mới đổi state, trả `promote` để dựng `AnswerRecord` (`toAnswerRecord`). Đúng → mức + 1; vừa lên mức 1 thì chèn lại sau 3 hoặc 4 câu (hàng đợi ít hơn thì đặt cuối), lên mức 2 thì rời hàng đợi. Sai → mức 0, đánh dấu "đã sai trong phiên", hiện đáp án đúng, **chèn lại từ đó sau 2 hoặc 3 câu** (chọn bằng `random`); hàng đợi còn ít câu hơn thì đặt cuối. Vòng chỉ còn đúng từ đó thì câu hỏi lại hiện ngay sau màn phản hồi: chấp nhận (giống Quizlet), có test.
 6. Hết vòng → màn tóm tắt vòng → vòng tiếp. **Phiên kết thúc** khi mọi từ trong file đạt mức 2 trong phiên, hoặc người học bấm dừng.
+7. **Thanh tiến độ** hai màu (#56): đậm = từ ở mức 2 ("learned"), nhạt = từ ở mức 1 ("familiar"). Câu đúng nào cũng làm thanh nhích lên.
+8. **Trắc nghiệm cũng hiện ví dụ** đã che từ (#57), cùng quy tắc che với câu viết.
+
+## Học tiếp sau khi dừng (#58)
+- Sau **mỗi** câu đã áp dụng (và lúc sang vòng), lưu phiên vào `localStorage` của máy đang dùng, khóa `vocab-learn:<fileId>`. Chỉ lưu id và trạng thái (`{ version, round, queue, answers, terms: [{ termId, level, missed }] }`), không lưu chữ của từ.
+- Mở Learn mà có phiên đã lưu → hỏi "Continue where you left off? (3 / 12 learned)" với **Continue** / **Start over**. Phiên học xong hết hoặc Start over → xóa bản lưu. Stop thì giữ.
+- Continue = đọc lại `getLearnData` rồi ghép: từ đã bị xóa → bỏ (cả trong hàng đợi và `answers`); từ mới thêm → cuối danh sách, mức khởi đầu như lúc mở phiên; chữ của từ lấy bản mới. Hàng đợi rỗng sau khi ghép → sang vòng mới.
+- Bản lưu là dữ liệu không tin cậy (bản cũ, sửa tay): validate bằng Zod, sai `version` hay sai cấu trúc → bỏ, mở phiên mới. Không dùng được `localStorage` → học như cũ, không lưu.
+- Chỉ trên máy đó (người dùng nhập từ trên máy tính, học trên điện thoại). Hộp Leitner vẫn đồng bộ qua cloud như cũ.
 
 ## Ghi kết quả
 - **Trắc nghiệm** (đúng hay sai): ghi ngay khi chấm (#52). Đúng thì sang câu sau ~0.8 giây sau khi ghi xong; sai thì hiện màn phản hồi. Trắc nghiệm không có "I was right".

@@ -3,12 +3,12 @@
 > File này được nạp tự động mỗi phiên. Giữ ngắn: chỉ trạng thái hiện tại, checklist và 5 mục nhật ký gần nhất.
 
 ## Đang ở đâu
-- **Giai đoạn:** 3 (Learn). Thiết kế đã qua `challenger`, chốt #50–#54.
-- **Việc tiếp theo:** deploy giai đoạn 3: `npx supabase db push --dry-run` (migration `20261025093614_learn.sql`) → cho người dùng xem, hỏi → `db push` → push `main` → chờ CI → người dùng dùng thử (thử cả: gõ câu viết rồi Enter có dừng ở màn phản hồi không). **Không push `main`** trước `db push`; cần sửa gấp bản đang chạy thì tách nhánh từ `origin/main`.
+- **Giai đoạn:** 3 (Learn), đã deploy và người dùng dùng thử. Đang làm đợt 1 cải tiến theo góp ý (#56–#60).
+- **Việc tiếp theo:** đợt 1 cải tiến theo góp ý của người dùng (checklist giai đoạn 3), bắt đầu từ đan xen câu viết + thanh hai màu. Thiết kế đã ghi ở learn-algorithm.md và ui.md.
 - **Đang vướng:** không. Build có cảnh báo chunk > 500 kB (supabase-js), chưa xử lý. 🔊 không kêu trong Simple Browser của VS Code. `npm run build` ở máy cần `VITE_SUPABASE_*` (xem cloud-sync.md). iPhone iOS cũ của người dùng tạo folder bị lỗi chưa rõ nguyên nhân (cloud-sync.md#iphone); người dùng sẽ cập nhật máy.
 
 ## Kế hoạch
-Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn đề nghiêm trọng đã biết, người dùng dùng thử OK. Khi nào gọi agent: xem CLAUDE.md. Thứ tự làm: 0 → 1 → 2 → **7** → 3 → 4 → 5 → 6.
+Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn đề nghiêm trọng đã biết, người dùng dùng thử OK. Khi nào gọi agent: xem CLAUDE.md. Thứ tự làm: 0 → 1 → 2 → **7** → 3 → 3b → 4 → 5 → 6.
 
 - [x] **0. Chuẩn bị** — Node 24 (nvm), Vite 8 + React 19 + TS strict, CI/CD lên GitHub Pages, CSP production
 - [x] **1. Tầng dữ liệu** — domain + `DexieRepository`, test CRUD + ràng buộc ([data-model.md](docs/data-model.md))
@@ -32,7 +32,9 @@ Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn 
   - [x] `domain/learn/` + `domain/day.ts`: `localDay`, priority, vòng, chèn lại, đáp án nhiễu, che ví dụ, chấm câu viết, `applyAnswer`; test cố định `TZ` UTC+7; qua `reviewer` (1 nghiêm trọng: regex gạch nối, đã sửa + 5 nhỏ)
   - [x] `recordAnswer` + `getLearnData` (Dexie + bộ hợp đồng, `progressAfter` ở domain); `record_answer`/`get_learn_data` trong `learn.sql` + pgTAP; qua `reviewer` (2 điểm, đã sửa). Commit ở máy, **chưa push**
   - [x] Màn Learn + tóm tắt vòng/phiên + phím 1–4 (#55), `learnFlow.ts` thuần; qua `reviewer` (6 điểm đã sửa, 1 chấp nhận). Commit ở máy, **chưa push**
-  - [ ] Deploy (`db push` trước, `min_client_version` 2), người dùng dùng thử
+  - [x] Deploy (`db push` trước, `min_client_version` 2), người dùng dùng thử: "khá mượt"
+  - [ ] **Đợt 1** theo góp ý (#56–#60, không đổi dữ liệu): đan xen câu viết + thanh hai màu → ví dụ trong trắc nghiệm → chạm từ để nghe ở màn tóm tắt + dòng giải thích mastered → học tiếp sau Stop (`localStorage`, nhờ `challenger` soát trước, `reviewer` sau) → gạch đỏ chính tả ở form từ → menu ⋯ ở mỗi hàng
+- [ ] **3b. Ghi chú file + phiên âm** (đợt 2, [scope.md](docs/scope.md)): thiết kế → `challenger` → đổi cấu trúc dữ liệu một lần → deploy
 - [ ] **4. Streak** — đủ các test trong [streak.md](docs/streak.md)
 - [ ] **5. Sao lưu** — khôi phục toàn bộ dữ liệu từ file backup
 - [ ] **6. Hoàn thiện** — phím tắt còn lại (nếu cần; 1–4 và Enter đã có, #55), dark mode, README; dùng thử 1 tuần
