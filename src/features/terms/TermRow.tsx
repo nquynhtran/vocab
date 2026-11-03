@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Term, TermInput } from '../../domain/schemas.ts'
 import { ListenButton } from '../../shared/ListenButton.tsx'
-import { PART_OF_SPEECH_ABBREVIATIONS } from './partOfSpeech.ts'
+import { PartOfSpeechLabel } from '../../shared/PartOfSpeechLabel.tsx'
 import { TermForm } from './TermForm.tsx'
 
 interface TermRowProps {
@@ -35,11 +35,7 @@ export function TermRow({ term, onUpdate, onDelete }: TermRowProps) {
     <li className="term">
       <span className="term__head">
         <span className="term__word">{term.word}</span>
-        {term.partOfSpeech && (
-          <abbr className="term__pos" title={term.partOfSpeech}>
-            {PART_OF_SPEECH_ABBREVIATIONS[term.partOfSpeech]}
-          </abbr>
-        )}
+        {term.partOfSpeech && <PartOfSpeechLabel partOfSpeech={term.partOfSpeech} />}
         <ListenButton text={term.word} />
       </span>
       <span className="term__meaning">{term.meaning}</span>

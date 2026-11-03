@@ -3,7 +3,7 @@ import { ValidationError } from '../../domain/errors.ts'
 import { PARTS_OF_SPEECH, type PartOfSpeech, type TermInput } from '../../domain/schemas.ts'
 import { errorMessage } from '../../shared/errorMessage.ts'
 import { FieldError } from '../../shared/FieldError.tsx'
-import { PART_OF_SPEECH_ABBREVIATIONS } from './partOfSpeech.ts'
+import { PART_OF_SPEECH_ABBREVIATIONS } from '../../shared/partOfSpeech.ts'
 import { formatLocations, useDuplicateWarning } from './useDuplicateWarning.ts'
 
 interface TermFormProps {

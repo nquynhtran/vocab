@@ -273,7 +273,7 @@ label {
   font-weight: 600;
 }
 
-.term__pos {
+.pos {
   color: var(--color-muted);
   font-size: 0.9rem;
   font-style: italic;

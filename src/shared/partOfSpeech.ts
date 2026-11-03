@@ -1,4 +1,4 @@
-import type { PartOfSpeech } from '../../domain/schemas.ts'
+import type { PartOfSpeech } from '../domain/schemas.ts'
 
 /** Display only; the stored value is the full name, so these can change freely. */
 export const PART_OF_SPEECH_ABBREVIATIONS: Readonly<Record<PartOfSpeech, string>> = {
