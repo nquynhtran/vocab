@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { IDBFactory, IDBKeyRange } from 'fake-indexeddb'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { App } from '../../app/App.tsx'
+import { unusedLookup } from '../../app/testLookups.ts'
 import { VocabDb } from '../../data/db.ts'
 import { DexieRepository } from '../../data/dexieRepository.ts'
 import { ConnectionError } from '../../domain/errors.ts'
@@ -24,7 +25,7 @@ async function setUp(terms: TermInput[]) {
 
 function renderAt(repository: DexieRepository, path: string) {
   window.location.hash = `#${path}`
-  render(<App repository={repository} />)
+  render(<App repository={repository} lookup={unusedLookup} />)
 }
 
 /** Two promotions on two days: box 3, so every term starts at the written question. */
@@ -199,6 +200,24 @@ describe('Learn', () => {
     await asked()
     expect(screen.getByRole('list', { name: 'Choices' })).toBeInTheDocument()
     expect(screen.getByText('I ____ every day.')).toBeInTheDocument()
+  })
+
+  it('shows the pronunciation with the answer only, never while asking', async () => {
+    const { repository, file } = await setUp([
+      { word: 'schedule', pronunciation: '/ˈʃedʒuːl/', meaning: 'lịch trình' },
+    ])
+    await masterAll(repository, file.id)
+    renderAt(repository, `/files/${file.id}/learn`)
+    await asked()
+    // A written question: the pronunciation would give the spelling away.
+    expect(screen.getByLabelText('Type the English word')).toBeInTheDocument()
+    expect(screen.queryByText('/ˈʃedʒuːl/')).toBeNull()
+
+    fireEvent.change(screen.getByLabelText('Type the English word'), { target: { value: 'x' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Answer' }))
+
+    expect(await screen.findByText('Not quite.')).toBeInTheDocument()
+    expect(screen.getByText('/ˈʃedʒuːl/')).toHaveClass('pronunciation')
   })
 
   it('shows the part of speech after the meaning (#61)', async () => {

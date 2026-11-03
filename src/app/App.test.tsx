@@ -6,6 +6,7 @@ import { MAX_BACKUP_FILE_BYTES } from '../domain/backup.ts'
 import { ConnectionError, SessionExpiredError } from '../domain/errors.ts'
 import { DexieRepository } from '../data/dexieRepository.ts'
 import { App } from './App.tsx'
+import { unusedLookup } from './testLookups.ts'
 
 const MISSING_ID = '00000000-0000-4000-8000-ffffffffffff'
 
@@ -17,7 +18,7 @@ function openRepository(indexedDB: IDBFactory) {
 function renderApp(path = '/', indexedDB = new IDBFactory()) {
   window.location.hash = `#${path}`
   const repository = openRepository(indexedDB)
-  const view = render(<App repository={repository} />)
+  const view = render(<App repository={repository} lookup={unusedLookup} />)
   return { ...view, repository, indexedDB }
 }
 
@@ -37,6 +38,13 @@ async function startEditing(word: string) {
   const row = screen.getByRole('button', { name: 'Save' }).closest('li')
   if (!row) throw new Error(`edit form for "${word}" not found`)
   return within(row)
+}
+
+/** The "Already in …" line under Term; the Pronunciation lookup has its own status line. */
+function duplicateWarning() {
+  const warning = screen.getAllByRole('status').find((element) => element.id.endsWith('-warning'))
+  if (!warning) throw new Error('duplicate warning not found')
+  return warning
 }
 
 async function addTerm(word: string, meaning: string, example = '') {
@@ -175,18 +183,14 @@ describe('terms', () => {
   it('warns while typing a word that exists elsewhere, but still adds it', async () => {
     await renderFile()
     typeInto('Term', ' RUN')
-    await waitFor(() =>
-      expect(screen.getByRole('status')).toHaveTextContent('Already in IELTS / Unit 1'),
-    )
+    await waitFor(() => expect(duplicateWarning()).toHaveTextContent('Already in IELTS / Unit 1'))
 
     await addTerm(' RUN', 'điều hành')
     // Now it also exists in this file; the cleared field shows no warning.
-    expect(screen.getByRole('status')).toHaveTextContent(/^$/)
+    expect(duplicateWarning()).toHaveTextContent(/^$/)
     typeInto('Term', 'run')
     await waitFor(() =>
-      expect(screen.getByRole('status')).toHaveTextContent(
-        'Already in IELTS / Unit 1, IELTS / Unit 2',
-      ),
+      expect(duplicateWarning()).toHaveTextContent('Already in IELTS / Unit 1, IELTS / Unit 2'),
     )
   })
 

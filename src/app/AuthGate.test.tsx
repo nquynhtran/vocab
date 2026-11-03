@@ -9,6 +9,7 @@ import { AuthenticationError, ConnectionError, SessionExpiredError } from '../do
 import { SignOutButton } from '../features/auth/SignOutButton.tsx'
 import { useSignOut } from '../shared/signOutContext.ts'
 import { App } from './App.tsx'
+import { unusedLookup } from './testLookups.ts'
 import { AuthGate } from './AuthGate.tsx'
 
 const PASSWORD = 'right password'
@@ -280,7 +281,7 @@ describe('AuthGate over Learn', () => {
     window.location.hash = `#/files/${file.id}/learn`
     render(
       <AuthGate auth={auth} isOutdated={async () => false} onOutdated={vi.fn()}>
-        <App repository={repository} />
+        <App repository={repository} lookup={unusedLookup} />
       </AuthGate>,
     )
 

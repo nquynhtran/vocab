@@ -33,7 +33,9 @@ export function Feedback({
         </p>
       )}
       <p className="feedback__answer">
-        Answer: <strong>{question.word}</strong> <ListenButton text={question.word} />
+        Answer: <strong>{question.word}</strong>{' '}
+        {question.pronunciation && <span className="pronunciation">{question.pronunciation}</span>}{' '}
+        <ListenButton text={question.word} />
       </p>
       <div className="feedback__actions">
         <button

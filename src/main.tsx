@@ -11,6 +11,7 @@ import { VocabDb } from './data/db.ts'
 import { defaultDeps } from './data/deps.ts'
 import { createSupabaseClient } from './data/supabaseClient.ts'
 import { SupabaseRepository } from './data/supabaseRepository.ts'
+import { createWiktionaryLookup } from './data/wiktionary.ts'
 
 /** Long enough to read the notice before the page reloads. */
 const RELOAD_DELAY_MS = 1500
@@ -38,6 +39,7 @@ const client = createSupabaseClient()
 const auth = new SupabaseAuth(client)
 const expireSession = () => void auth.expireSession()
 const repository = new SupabaseRepository(client, defaultDeps, expireSession)
+const lookup = createWiktionaryLookup()
 const isOutdated = () => isClientOutdated(client, expireSession)
 
 function handleOutdated() {
@@ -50,7 +52,7 @@ function handleOutdated() {
 root.render(
   <StrictMode>
     <AuthGate auth={auth} isOutdated={isOutdated} onOutdated={handleOutdated}>
-      <App repository={repository} />
+      <App repository={repository} lookup={lookup} />
     </AuthGate>
   </StrictMode>,
 )

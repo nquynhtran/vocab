@@ -95,7 +95,8 @@ a {
 /* ---- Controls ---- */
 
 input,
-select {
+select,
+textarea {
   width: 100%;
   min-height: var(--tap-size);
   padding: 8px 12px;
@@ -109,7 +110,8 @@ select {
 }
 
 input[aria-invalid='true'],
-select[aria-invalid='true'] {
+select[aria-invalid='true'],
+textarea[aria-invalid='true'] {
   border-color: var(--color-danger);
 }
 
@@ -170,6 +172,79 @@ label {
 }
 
 /* ---- Forms ---- */
+
+/* The pronunciation box and its Look up button share one line, even on a phone. */
+.lookup-row {
+  display: flex;
+  gap: 8px;
+}
+
+.lookup-row input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.lookup-status {
+  margin-top: 4px;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.lookup-status:empty {
+  display: none;
+}
+
+/* ---- File notes ---- */
+
+.notes {
+  margin-bottom: var(--space);
+  padding: 0 var(--space);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.notes summary {
+  padding: 10px 0;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.notes summary .muted {
+  font-weight: normal;
+}
+
+.notes[open] {
+  padding-bottom: var(--space);
+}
+
+/* Keeps the reading's line breaks; long URLs wrap instead of widening a narrow screen. */
+.notes__text {
+  margin: 0 0 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.notes__form {
+  display: grid;
+  gap: 8px;
+}
+
+.notes__form textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.notes__count {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.notes__actions {
+  display: flex;
+  gap: 8px;
+}
 
 .inline-form {
   margin-bottom: var(--space);
@@ -320,6 +395,12 @@ label {
   font-weight: 600;
 }
 
+.pronunciation {
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
 .pos {
   color: var(--color-muted);
   font-size: 0.9rem;
@@ -367,9 +448,14 @@ label {
     font-weight: 600;
   }
 
+  /* Term · part of speech · pronunciation, then meaning · example. */
   .term-form {
-    grid-template-columns: 1fr 10rem 1fr 1.5fr;
+    grid-template-columns: 1fr 10rem 1fr;
     align-items: start;
+  }
+
+  .term-form .field--wide {
+    grid-column: span 2;
   }
 
   .term-form__actions,

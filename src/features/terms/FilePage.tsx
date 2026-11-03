@@ -12,6 +12,7 @@ import {
 import { useRepository } from '../../shared/repositoryContext.ts'
 import { useAsync } from '../../shared/useAsync.ts'
 import { usePageWrites } from '../../shared/usePageWrites.ts'
+import { FileNotes } from './FileNotes.tsx'
 import { TermForm } from './TermForm.tsx'
 import { TermRow } from './TermRow.tsx'
 
@@ -58,6 +59,11 @@ export function FilePage() {
           <p className="muted">Add some terms to start learning.</p>
         )}
       </div>
+      <FileNotes
+        key={file.id}
+        file={file}
+        onSave={(notes) => write(() => repository.updateFileNotes(file.id, { notes }))}
+      />
       <TermForm
         submitLabel="Add"
         onSubmit={(input) => write(() => repository.createTerm(file.id, input))}

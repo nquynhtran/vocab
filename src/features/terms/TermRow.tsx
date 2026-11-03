@@ -37,6 +37,7 @@ export function TermRow({ term, onUpdate, onDelete }: TermRowProps) {
       <span className="term__head">
         <span className="term__word">{term.word}</span>
         {term.partOfSpeech && <PartOfSpeechLabel partOfSpeech={term.partOfSpeech} />}
+        {term.pronunciation && <span className="pronunciation">{term.pronunciation}</span>}
         <ListenButton text={term.word} />
       </span>
       <span className="term__meaning">{term.meaning}</span>

@@ -15,6 +15,8 @@ interface Asked {
   example?: string
   /** The answer. */
   word: string
+  /** Shown with the answer only, never while asking: it would give the written answer away. */
+  pronunciation?: string
 }
 
 export type Question =
@@ -37,6 +39,7 @@ export function buildQuestion(
     ...(term.partOfSpeech !== undefined && { partOfSpeech: term.partOfSpeech }),
     ...(example !== undefined && { example }),
     word: term.word,
+    ...(term.pronunciation !== undefined && { pronunciation: term.pronunciation }),
   }
   if (level === 0) {
     const choices = pickChoices(term, fileTerms, folderTerms, random)
