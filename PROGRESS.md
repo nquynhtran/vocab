@@ -5,7 +5,7 @@
 ## Đang ở đâu
 - **Giai đoạn:** 3 xong (2026-11-04). Bắt đầu 3b.
 - **Việc tiếp theo:** 3b: viết thiết kế ghi chú file + phiên âm (data-model.md, ui.md, scope.md đã có ý tưởng), gồm đổi cấu trúc ở Dexie (version mới), backup `schemaVersion` 3, migration Supabase; rồi gọi `challenger` trước khi code.
-- **Đang vướng:** không. Build có cảnh báo chunk > 500 kB (supabase-js), chưa xử lý. 🔊 không kêu trong Simple Browser của VS Code. `npm run build` ở máy cần `VITE_SUPABASE_*` (xem cloud-sync.md). iPhone iOS cũ của người dùng tạo folder bị lỗi chưa rõ nguyên nhân (cloud-sync.md#iphone); người dùng sẽ cập nhật máy.
+- **Đang vướng:** không. Build có cảnh báo chunk > 500 kB (supabase-js), để giai đoạn 6. 🔊 không kêu trong Simple Browser của VS Code. `npm run build` ở máy cần `VITE_SUPABASE_*` (xem cloud-sync.md). iPhone iOS cũ của người dùng tạo folder bị lỗi chưa rõ nguyên nhân (cloud-sync.md#iphone); người dùng sẽ cập nhật máy.
 
 ## Kế hoạch
 Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn đề nghiêm trọng đã biết, người dùng dùng thử OK. Khi nào gọi agent: xem CLAUDE.md. Thứ tự làm: 0 → 1 → 2 → **7** → 3 → 3b → 4 → 5 → 6.
@@ -30,7 +30,7 @@ Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn 
 - [ ] **3b. Ghi chú file + phiên âm** (đợt 2, [scope.md](docs/scope.md)): thiết kế → `challenger` → đổi cấu trúc dữ liệu một lần → deploy
 - [ ] **4. Streak** — đủ các test trong [streak.md](docs/streak.md)
 - [ ] **5. Sao lưu** — khôi phục toàn bộ dữ liệu từ file backup
-- [ ] **6. Hoàn thiện** — phím tắt còn lại (nếu cần; 1–4 và Enter đã có, #55), dark mode, README; dùng thử 1 tuần
+- [ ] **6. Hoàn thiện** — phím tắt còn lại (nếu cần; 1–4 và Enter đã có, #55), dark mode, README; tối ưu gói code (709 kB, nén 208 kB, chủ yếu supabase-js: xem có code bản local như Dexie bị gói vào không, tách phần chưa cần lúc mở app; người dùng nhờ ghi lại 2026-11-04); dùng thử 1 tuần
 
 ## Nhật ký (5 mục gần nhất, mới nhất trên cùng)
 - 2026-11-04 — **Xong giai đoạn 3** (người dùng xác nhận dùng ổn). Dọn PROGRESS.
