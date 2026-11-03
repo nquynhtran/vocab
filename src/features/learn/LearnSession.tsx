@@ -138,10 +138,7 @@ function StepView({
           {step.question.kind === 'choice' ? (
             <ChoiceQuestion question={step.question} onPick={onPick} />
           ) : (
-            <WrittenQuestion
-              question={step.question}
-              onSubmit={(text) => update((latest) => submitWritten(latest, text))}
-            />
+            <WrittenQuestion onSubmit={(text) => update((latest) => submitWritten(latest, text))} />
           )}
         </>
       )
@@ -164,9 +161,6 @@ function StepView({
           <Prompt question={question} />
           {question.kind === 'choice' && (
             <ChoiceQuestion question={question} picked={answered.given} />
-          )}
-          {question.kind === 'written' && question.example !== undefined && (
-            <p className="learn__example">{question.example}</p>
           )}
           {step.kind === 'saving' && question.kind === 'choice' && (
             <p className="muted" role="status">
@@ -212,6 +206,7 @@ function Prompt({ question }: { question: Question }) {
           </>
         )}
       </h2>
+      {question.example !== undefined && <p className="learn__example">{question.example}</p>}
     </div>
   )
 }

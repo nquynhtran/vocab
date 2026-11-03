@@ -185,6 +185,17 @@ describe('Learn', () => {
     expect(record).toHaveBeenCalledTimes(1)
   })
 
+  it('shows the example with the word hidden in multiple choice too (#57)', async () => {
+    const { repository, file } = await setUp([
+      { word: 'run', meaning: 'chạy', example: 'I run every day.' },
+      { word: 'walk', meaning: 'đi bộ', example: 'I walk every day.' },
+    ])
+    renderAt(repository, `/files/${file.id}/learn`)
+    await asked()
+    expect(screen.getByRole('list', { name: 'Choices' })).toBeInTheDocument()
+    expect(screen.getByText('I ____ every day.')).toBeInTheDocument()
+  })
+
   it('shows the part of speech after the meaning (#61)', async () => {
     const { repository, file } = await setUp([
       { word: 'big', partOfSpeech: 'adjective', meaning: 'to' },

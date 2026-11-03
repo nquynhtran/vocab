@@ -20,13 +20,14 @@ const others = [
 ]
 
 describe('buildQuestion', () => {
-  it('asks multiple choice at level 0, with the part of speech (#61)', () => {
+  it('asks multiple choice at level 0, with the part of speech and example (#61, #57)', () => {
     const question = buildQuestion(at(0), [run, ...others], [], Math.random)
     expect(question).toMatchObject({
       kind: 'choice',
       termId: run.id,
       meaning: 'chạy',
       partOfSpeech: 'verb',
+      example: 'I ____ every day.',
       word: 'run',
     })
     expect(question.kind === 'choice' && [...question.choices].sort()).toEqual([
@@ -48,8 +49,14 @@ describe('buildQuestion', () => {
   })
 
   it('leaves the example out when the word cannot be hidden in it', () => {
-    const ran = { ...at(1), term: { ...run, example: 'I ran home.' } }
-    expect(buildQuestion(ran, [], [], Math.random)).not.toHaveProperty('example')
+    const ran = (level: SessionTerm['level']) => ({
+      ...at(level),
+      term: { ...run, example: 'I ran home.' },
+    })
+    expect(buildQuestion(ran(1), [], [], Math.random)).not.toHaveProperty('example')
+    const choice = buildQuestion(ran(0), [run, ...others], [], Math.random)
+    expect(choice).toMatchObject({ kind: 'choice' })
+    expect(choice).not.toHaveProperty('example')
   })
 
   it('leaves the part of speech out when the term has none', () => {

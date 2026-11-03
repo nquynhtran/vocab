@@ -4,17 +4,21 @@ import { maskExample } from './example.ts'
 import type { Random } from './random.ts'
 import type { SessionTerm } from './session.ts'
 
-/** What the screen asks: always the meaning, with the part of speech when known (#61). */
+/**
+ * What the screen asks: always the meaning, with the part of speech when known (#61) and the
+ * example with the word hidden, when it can be hidden (#57).
+ */
 interface Asked {
   termId: string
   meaning: string
   partOfSpeech?: PartOfSpeech
+  example?: string
   /** The answer. */
   word: string
 }
 
 export type Question =
-  ({ kind: 'choice'; choices: string[] } & Asked) | ({ kind: 'written'; example?: string } & Asked)
+  ({ kind: 'choice'; choices: string[] } & Asked) | ({ kind: 'written' } & Asked)
 
 /**
  * Level 0 is multiple choice, unless no distractor is usable: then it is written, and stays
@@ -26,16 +30,17 @@ export function buildQuestion(
   folderTerms: readonly ChoiceSource[],
   random: Random,
 ): Question {
+  const example = maskExample(term.example, term.word)
   const base: Asked = {
     termId: term.id,
     meaning: term.meaning,
     ...(term.partOfSpeech !== undefined && { partOfSpeech: term.partOfSpeech }),
+    ...(example !== undefined && { example }),
     word: term.word,
   }
   if (level === 0) {
     const choices = pickChoices(term, fileTerms, folderTerms, random)
     if (choices.length > 1) return { kind: 'choice', ...base, choices }
   }
-  const example = maskExample(term.example, term.word)
-  return { kind: 'written', ...base, ...(example !== undefined && { example }) }
+  return { kind: 'written', ...base }
 }

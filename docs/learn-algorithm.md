@@ -88,7 +88,7 @@ Hàm thuần nhận `{ fileTerms, folderTerms }`. Lấy từ file trước, sau 
 ## Chấm câu viết
 - Chuẩn hóa: `toKey` của `domain/text.ts` (NFC, trim, gộp khoảng trắng, chữ thường, nháy cong → nháy thẳng), sau đó bỏ thêm dấu câu ở hai đầu.
 - Từ (đã chuẩn hóa) ≥ 5 ký tự và lệch đúng 1 ký tự (Levenshtein = 1) → **gần đúng**: tính đúng nhưng hiện chỗ sai chính tả.
-- Nút **"I was right"** (chỉ ở câu viết bị chấm sai): đổi kết quả thành đúng **trước** `applyAnswer`, nên trạng thái phiên như thể trả lời đúng (mức + 1, không đánh dấu đã sai, không chèn lại, `promote` tính lại). Dùng khi máy chấm sai, ví dụ từ đồng nghĩa.
+- Nút **"I was right"** (chỉ ở câu viết bị chấm sai): đổi kết quả thành đúng **trước** `applyAnswer`, nên trạng thái phiên như thể trả lời đúng (mức + 1, không đánh dấu đã sai, không chèn lại như câu sai mà như câu đúng, `promote` tính lại). Dùng khi máy chấm sai, ví dụ từ đồng nghĩa.
 
 ## Trường hợp biên
 | Tình huống | Xử lý |
