@@ -20,15 +20,20 @@ const others = [
 ]
 
 describe('buildQuestion', () => {
-  it('asks multiple choice at level 0, without the part of speech', () => {
+  it('asks multiple choice at level 0, with the part of speech (#61)', () => {
     const question = buildQuestion(at(0), [run, ...others], [], Math.random)
-    expect(question).toMatchObject({ kind: 'choice', termId: run.id, meaning: 'chạy', word: 'run' })
+    expect(question).toMatchObject({
+      kind: 'choice',
+      termId: run.id,
+      meaning: 'chạy',
+      partOfSpeech: 'verb',
+      word: 'run',
+    })
     expect(question.kind === 'choice' && [...question.choices].sort()).toEqual([
       'run',
       'swim',
       'walk',
     ])
-    expect(question).not.toHaveProperty('partOfSpeech')
   })
 
   it('asks written at level 1, with the word hidden in the example', () => {
@@ -36,6 +41,7 @@ describe('buildQuestion', () => {
       kind: 'written',
       termId: run.id,
       meaning: 'chạy',
+      partOfSpeech: 'verb',
       word: 'run',
       example: 'I ____ every day.',
     })
@@ -44,6 +50,12 @@ describe('buildQuestion', () => {
   it('leaves the example out when the word cannot be hidden in it', () => {
     const ran = { ...at(1), term: { ...run, example: 'I ran home.' } }
     expect(buildQuestion(ran, [], [], Math.random)).not.toHaveProperty('example')
+  })
+
+  it('leaves the part of speech out when the term has none', () => {
+    const { partOfSpeech: _, ...plain } = run
+    const question = buildQuestion({ ...at(1), term: plain }, [], [], Math.random)
+    expect(question).not.toHaveProperty('partOfSpeech')
   })
 
   it('asks written at level 0 when no distractor is usable', () => {

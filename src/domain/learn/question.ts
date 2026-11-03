@@ -1,15 +1,20 @@
+import type { PartOfSpeech } from '../schemas.ts'
 import { pickChoices, type ChoiceSource } from './choices.ts'
 import { maskExample } from './example.ts'
 import type { Random } from './random.ts'
 import type { SessionTerm } from './session.ts'
 
-/**
- * What the screen asks: always the meaning, answered with the English word. The part of speech
- * is not shown as a hint (decision #53).
- */
+/** What the screen asks: always the meaning, with the part of speech when known (#61). */
+interface Asked {
+  termId: string
+  meaning: string
+  partOfSpeech?: PartOfSpeech
+  /** The answer. */
+  word: string
+}
+
 export type Question =
-  | { kind: 'choice'; termId: string; meaning: string; word: string; choices: string[] }
-  | { kind: 'written'; termId: string; meaning: string; word: string; example?: string }
+  ({ kind: 'choice'; choices: string[] } & Asked) | ({ kind: 'written'; example?: string } & Asked)
 
 /**
  * Level 0 is multiple choice, unless no distractor is usable: then it is written, and stays
@@ -21,7 +26,12 @@ export function buildQuestion(
   folderTerms: readonly ChoiceSource[],
   random: Random,
 ): Question {
-  const base = { termId: term.id, meaning: term.meaning, word: term.word }
+  const base: Asked = {
+    termId: term.id,
+    meaning: term.meaning,
+    ...(term.partOfSpeech !== undefined && { partOfSpeech: term.partOfSpeech }),
+    word: term.word,
+  }
   if (level === 0) {
     const choices = pickChoices(term, fileTerms, folderTerms, random)
     if (choices.length > 1) return { kind: 'choice', ...base, choices }

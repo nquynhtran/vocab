@@ -4,6 +4,7 @@ import { ConnectionError } from '../../domain/errors.ts'
 import type { Question } from '../../domain/learn/question.ts'
 import { progressCounts, type LearnSession } from '../../domain/learn/session.ts'
 import { errorMessage } from '../../shared/errorMessage.ts'
+import { PartOfSpeechLabel } from '../../shared/PartOfSpeechLabel.tsx'
 import { useRepository } from '../../shared/repositoryContext.ts'
 import { ChoiceQuestion } from './ChoiceQuestion.tsx'
 import { Feedback } from './Feedback.tsx'
@@ -202,7 +203,15 @@ function Prompt({ question }: { question: Question }) {
   return (
     <div className="learn__prompt">
       <p className="muted">Meaning</p>
-      <h2 className="learn__meaning">{question.meaning}</h2>
+      <h2 className="learn__meaning">
+        {question.meaning}
+        {question.partOfSpeech && (
+          <>
+            {' '}
+            <PartOfSpeechLabel partOfSpeech={question.partOfSpeech} />
+          </>
+        )}
+      </h2>
     </div>
   )
 }

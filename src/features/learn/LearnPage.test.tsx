@@ -6,13 +6,14 @@ import { VocabDb } from '../../data/db.ts'
 import { DexieRepository } from '../../data/dexieRepository.ts'
 import { ConnectionError } from '../../domain/errors.ts'
 import { toAnswerRecord } from '../../domain/learn/answer.ts'
+import type { TermInput } from '../../domain/schemas.ts'
 
 const MISSING_ID = '00000000-0000-4000-8000-ffffffffffff'
 /** The 0.8 s pause after a right pick, plus room for a slow CI. */
 const AFTER_PAUSE = { timeout: 3000 }
 
 /** The real page on the real repository (in-memory IndexedDB): UI and storage tested together. */
-async function setUp(terms: { word: string; meaning: string; example?: string }[]) {
+async function setUp(terms: TermInput[]) {
   const repository = new DexieRepository(new VocabDb({ indexedDB: new IDBFactory(), IDBKeyRange }))
   const folder = await repository.createFolder({ name: 'IELTS' })
   const file = await repository.createFile(folder.id, { name: 'Unit 1' })
@@ -182,6 +183,16 @@ describe('Learn', () => {
     await waitFor(() => expect(buttons[0]).toBeDisabled())
     await screen.findByText(/Correct!|Not quite\./)
     expect(record).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows the part of speech after the meaning (#61)', async () => {
+    const { repository, file } = await setUp([
+      { word: 'big', partOfSpeech: 'adjective', meaning: 'to' },
+    ])
+    renderAt(repository, `/files/${file.id}/learn`)
+    await asked()
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('to adj.')
+    expect(screen.getByTitle('adjective')).toHaveTextContent('adj.')
   })
 
   it('a written answer graded wrong can be counted right with "I was right"', async () => {
