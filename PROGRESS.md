@@ -4,7 +4,7 @@
 
 ## Đang ở đâu
 - **Giai đoạn:** 3 (Learn), đã deploy và người dùng dùng thử. Đang làm đợt 1 cải tiến theo góp ý (#56–#60).
-- **Việc tiếp theo:** đợt 1 cải tiến theo góp ý của người dùng (checklist giai đoạn 3), bắt đầu từ đan xen câu viết + thanh hai màu. Thiết kế đã ghi ở learn-algorithm.md và ui.md.
+- **Việc tiếp theo:** đợt 1, phần tiếp theo: ví dụ trong trắc nghiệm (#57). Đan xen câu viết + thanh hai màu đã xong (06351c2, chưa push). Thiết kế ở learn-algorithm.md và ui.md.
 - **Đang vướng:** không. Build có cảnh báo chunk > 500 kB (supabase-js), chưa xử lý. 🔊 không kêu trong Simple Browser của VS Code. `npm run build` ở máy cần `VITE_SUPABASE_*` (xem cloud-sync.md). iPhone iOS cũ của người dùng tạo folder bị lỗi chưa rõ nguyên nhân (cloud-sync.md#iphone); người dùng sẽ cập nhật máy.
 
 ## Kế hoạch
@@ -33,7 +33,7 @@ Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn 
   - [x] `recordAnswer` + `getLearnData` (Dexie + bộ hợp đồng, `progressAfter` ở domain); `record_answer`/`get_learn_data` trong `learn.sql` + pgTAP; qua `reviewer` (2 điểm, đã sửa). Commit ở máy, **chưa push**
   - [x] Màn Learn + tóm tắt vòng/phiên + phím 1–4 (#55), `learnFlow.ts` thuần; qua `reviewer` (6 điểm đã sửa, 1 chấp nhận). Commit ở máy, **chưa push**
   - [x] Deploy (`db push` trước, `min_client_version` 2), người dùng dùng thử: "khá mượt"
-  - [ ] **Đợt 1** theo góp ý (#56–#60, không đổi dữ liệu): đan xen câu viết + thanh hai màu → ví dụ trong trắc nghiệm → chạm từ để nghe ở màn tóm tắt + dòng giải thích mastered → học tiếp sau Stop (`localStorage`, nhờ `challenger` soát trước, `reviewer` sau) → gạch đỏ chính tả ở form từ → menu ⋯ ở mỗi hàng
+  - [ ] **Đợt 1** theo góp ý (#56–#60, không đổi dữ liệu): ~~đan xen câu viết + thanh hai màu~~ (xong) → ví dụ trong trắc nghiệm → chạm từ để nghe ở màn tóm tắt + dòng giải thích mastered → học tiếp sau Stop (`localStorage`, nhờ `challenger` soát trước, `reviewer` sau) → gạch đỏ chính tả ở form từ → menu ⋯ ở mỗi hàng
 - [ ] **3b. Ghi chú file + phiên âm** (đợt 2, [scope.md](docs/scope.md)): thiết kế → `challenger` → đổi cấu trúc dữ liệu một lần → deploy
 - [ ] **4. Streak** — đủ các test trong [streak.md](docs/streak.md)
 - [ ] **5. Sao lưu** — khôi phục toàn bộ dữ liệu từ file backup
