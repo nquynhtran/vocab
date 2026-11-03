@@ -27,6 +27,7 @@ Nhiều người dùng, flashcard, Match, Test, chia sẻ bộ từ, file ghi â
 ## Có thể làm sau (chưa cam kết)
 - Dán nhanh danh sách từ (mỗi dòng `từ<TAB>nghĩa<TAB>ví dụ`).
 - Học gộp nhiều file / cả folder.
+- Ôn riêng các từ hay sai.
 
 ## Luồng người dùng
 ```

@@ -28,22 +28,28 @@ export function RoundSummary({
   )
 }
 
-/** Shown when every term is learned, and after Stop. */
+/**
+ * Shown when every term is learned, and after Stop (#64). Both reload the page: a learned file
+ * then starts a new session, a stopped one goes on unless its saved copy was cleared first.
+ */
 export function SessionSummary({
   session,
   fileId,
-  onStudyAgain,
+  onReload,
+  onStartOver,
 }: {
   session: LearnSession
   fileId: string
-  onStudyAgain: () => void
+  onReload: () => void
+  onStartOver: () => void
 }) {
   const { correct, wrong } = sessionTotals(session)
   const missed = mostMissed(session)
+  const learnedAll = isSessionOver(session)
   return (
     <div className="summary">
       <h2>
-        {isSessionOver(session)
+        {learnedAll
           ? `You learned all ${plural(session.terms.length, 'term')}!`
           : 'Session stopped'}
       </h2>
@@ -54,9 +60,14 @@ export function SessionSummary({
       {/* "learned" above is this session only; without this, it reads like the folder's "% mastered". */}
       <p className="muted">Terms count as mastered once you get them right on 2 different days.</p>
       <div className="summary__actions">
-        <button type="button" className="button button--primary" onClick={onStudyAgain} autoFocus>
-          Study again
+        <button type="button" className="button button--primary" onClick={onReload} autoFocus>
+          {learnedAll ? 'Study again' : 'Continue'}
         </button>
+        {!learnedAll && (
+          <button type="button" className="button" onClick={onStartOver}>
+            Start over
+          </button>
+        )}
         <Link className="button" to={`/files/${fileId}`}>
           Back to list
         </Link>

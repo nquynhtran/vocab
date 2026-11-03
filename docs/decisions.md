@@ -67,3 +67,4 @@ Mỗi dòng: ngày · quyết định · lý do ngắn. Đổi quyết định c
 | 61 | 2026-11-03 | Câu hỏi Learn (trắc nghiệm và câu viết) hiện loại từ viết tắt sau nghĩa (chữ nghiêng nhỏ như trang File); thay #53 | Người dùng yêu cầu sau khi dùng thử |
 | 62 | 2026-11-03 | Học tiếp (#58), sau `challenger`: phiên dở không tự hết hạn, ~~câu hỏi Continue ghi đã học cách đây bao lâu (`savedAt`)~~ (#63); "Study again" không xóa bản lưu; ghi hỏng thì xóa bản lưu | Người dùng chọn tự quyết khi thấy ngày. Ghi lỗi mà để bản cũ thì học tiếp từ chỗ cũ không ai biết |
 | 63 | 2026-11-03 | Mở Learn mà có phiên dở thì học tiếp luôn, không hỏi Continue / Start over; thay phần câu hỏi của #58, #62 | Người dùng thấy bước hỏi bất tiện sau khi dùng thử |
+| 64 | 2026-11-04 | Màn sau Stop có Continue / Start over / Back to list; học xong hết mới chúc mừng + Study again | Người dùng chọn. Bỏ câu hỏi lúc mở Learn (#63) thì cần chỗ để bắt đầu lại; màn Stop là lúc chủ động dừng, ở màn câu hỏi dễ bấm nhầm |

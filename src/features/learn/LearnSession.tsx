@@ -35,12 +35,12 @@ export const CORRECT_PAUSE_MS = 800
 export function LearnSession({
   data,
   resumed,
-  onStudyAgain,
+  onReload,
 }: {
   data: LearnData
   /** A session saved on this device, to go on with (#58). */
   resumed?: LearnSession
-  onStudyAgain: () => void
+  onReload: () => void
 }) {
   const repository = useRepository()
   const [state, setState] = useState(() =>
@@ -126,7 +126,7 @@ export function LearnSession({
           session={session}
           onPick={onPick}
           update={update}
-          onStudyAgain={onStudyAgain}
+          onReload={onReload}
           fileId={data.file.id}
         />
       </div>
@@ -139,14 +139,14 @@ function StepView({
   session,
   onPick,
   update,
-  onStudyAgain,
+  onReload,
   fileId,
 }: {
   step: Step
   session: LearnSession
   onPick: (choice: string) => void
   update: (change: (latest: LearnState) => LearnState) => void
-  onStudyAgain: () => void
+  onReload: () => void
   fileId: string
 }) {
   switch (step.kind) {
@@ -169,7 +169,17 @@ function StepView({
         />
       )
     case 'sessionOver':
-      return <SessionSummary session={session} fileId={fileId} onStudyAgain={onStudyAgain} />
+      return (
+        <SessionSummary
+          session={session}
+          fileId={fileId}
+          onReload={onReload}
+          onStartOver={() => {
+            clearSavedSession(fileId)
+            onReload()
+          }}
+        />
+      )
     default: {
       const { answered } = step
       const { question } = answered

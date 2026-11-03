@@ -11,18 +11,18 @@ import { clearSavedSession, readSavedSession } from './sessionStore.ts'
 export function LearnPage() {
   const { fileId = '' } = useParams()
   const [attempt, setAttempt] = useState(0)
-  // "Study again" mounts a fresh loader: new data (progress changed), and the stopped session
-  // if there is one, else a new one.
+  // "Study again", "Continue" and "Start over" mount a fresh loader: new data (progress changed),
+  // and the stopped session if one is saved, else a new one.
   return (
     <LearnLoader
       key={`${fileId}-${attempt}`}
       fileId={fileId}
-      onStudyAgain={() => setAttempt((count) => count + 1)}
+      onReload={() => setAttempt((count) => count + 1)}
     />
   )
 }
 
-function LearnLoader({ fileId, onStudyAgain }: { fileId: string; onStudyAgain: () => void }) {
+function LearnLoader({ fileId, onReload }: { fileId: string; onReload: () => void }) {
   const repository = useRepository()
   const load = useCallback(() => repository.getLearnData(fileId), [repository, fileId])
   const [state] = useAsync(load)
@@ -42,11 +42,11 @@ function LearnLoader({ fileId, onStudyAgain }: { fileId: string; onStudyAgain: (
       </section>
     )
   }
-  return <LearnStart data={data} onStudyAgain={onStudyAgain} />
+  return <LearnStart data={data} onReload={onReload} />
 }
 
 /** Goes on with a session stopped halfway on this device, without asking (#58, #63). */
-function LearnStart({ data, onStudyAgain }: { data: LearnData; onStudyAgain: () => void }) {
+function LearnStart({ data, onReload }: { data: LearnData; onReload: () => void }) {
   const fileId = data.file.id
   const [resumed] = useState(() => {
     const saved = readSavedSession(fileId)
@@ -60,5 +60,5 @@ function LearnStart({ data, onStudyAgain }: { data: LearnData; onStudyAgain: () 
     if (resumed === undefined) clearSavedSession(fileId)
   }, [fileId, resumed])
 
-  return <LearnSession data={data} resumed={resumed} onStudyAgain={onStudyAgain} />
+  return <LearnSession data={data} resumed={resumed} onReload={onReload} />
 }

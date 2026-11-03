@@ -109,6 +109,7 @@ describe('Learn', () => {
     await answerAllRight(wordOf)
 
     expect(await screen.findByRole('heading', { name: 'You learned all 2 terms!' })).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Start over' })).toBeNull()
     // Learned to the end: no session left to continue (#58).
     expect(localStorage.length).toBe(0)
     expect(screen.getByText('4 answers: 4 right, 0 wrong.')).toBeInTheDocument()
@@ -275,6 +276,9 @@ describe('Learn', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Stop' }))
 
     expect(await screen.findByRole('heading', { name: 'Session stopped' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Continue' })).toHaveFocus()
+    expect(screen.getByRole('button', { name: 'Start over' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Study again' })).toBeNull()
     expect(screen.getByText('1 answer: 1 right, 0 wrong.')).toBeInTheDocument()
     expect(screen.queryByRole('list', { name: 'Missed most' })).toBeNull()
     fireEvent.click(screen.getByRole('link', { name: 'Back to list' }))
@@ -336,24 +340,39 @@ describe('Learn', () => {
   })
 
   describe('continuing a stopped session (#58)', () => {
-    /** Stop, then "Study again": the page loads afresh, as when opened later. */
-    async function stopAndStudyAgain() {
+    /** Stop, then "Continue": the page loads afresh, as when opened later. */
+    async function stopAndContinue() {
       await asked()
       fireEvent.click(screen.getByRole('button', { name: 'Stop' }))
-      fireEvent.click(await screen.findByRole('button', { name: 'Study again' }))
+      fireEvent.click(await screen.findByRole('button', { name: 'Continue' }))
     }
 
     it('after Stop, goes on where it stopped without asking (#63)', async () => {
       const { repository, file, wordOf } = await setUp(TWO)
       renderAt(repository, `/files/${file.id}/learn`)
       await answerRight(wordOf)
-      await stopAndStudyAgain()
+      await stopAndContinue()
 
       expect(await screen.findByText('0 learned · 1 familiar / 2')).toBeInTheDocument()
       expect(screen.queryByRole('button', { name: /Continue|Start over/ })).toBeNull()
       await answerAllRight(wordOf)
       // Three more answers: the stopped session went on, it did not start again.
       expect(await screen.findByText('4 answers: 4 right, 0 wrong.')).toBeInTheDocument()
+    })
+
+    it('Start over after Stop forgets the stopped session and opens a new one (#64)', async () => {
+      const { repository, file, wordOf } = await setUp(TWO)
+      renderAt(repository, `/files/${file.id}/learn`)
+      await answerRight(wordOf)
+      await asked()
+      fireEvent.click(screen.getByRole('button', { name: 'Stop' }))
+      fireEvent.click(await screen.findByRole('button', { name: 'Start over' }))
+      expect(await screen.findByText('0 learned · 0 familiar / 2')).toBeInTheDocument()
+      expect(localStorage.length).toBe(0)
+      // What was learned is kept: the answer is still stored.
+      expect(
+        (await repository.getLearnData(file.id))!.progress.some((p) => p.correctCount === 1),
+      ).toBe(true)
     })
 
     it('leaves the saved copy as it was when resumed and stopped without an answer', async () => {
@@ -365,8 +384,8 @@ describe('Learn', () => {
       const longAgo = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
       localStorage.setItem(key, JSON.stringify({ ...saved, savedAt: longAgo }))
 
-      await stopAndStudyAgain()
-      await stopAndStudyAgain()
+      await stopAndContinue()
+      await stopAndContinue()
       expect(await screen.findByText('0 learned · 1 familiar / 2')).toBeInTheDocument()
       expect(JSON.parse(localStorage.getItem(key)!)).toMatchObject({ savedAt: longAgo })
     })
@@ -382,7 +401,7 @@ describe('Learn', () => {
       }
       const gone = data!.terms.find((t) => t.id === answered.answers[0]!.termId)!
       await repository.deleteTerm(gone.id)
-      await stopAndStudyAgain()
+      await stopAndContinue()
       expect(await screen.findByText('0 learned · 0 familiar / 1')).toBeInTheDocument()
       expect(localStorage.length).toBe(0)
     })
@@ -390,7 +409,7 @@ describe('Learn', () => {
     it('keeps nothing when nothing was answered', async () => {
       const { repository, file } = await setUp(TWO)
       renderAt(repository, `/files/${file.id}/learn`)
-      await stopAndStudyAgain()
+      await stopAndContinue()
       expect(await screen.findByText('0 learned · 0 familiar / 2')).toBeInTheDocument()
       expect(localStorage.length).toBe(0)
     })
@@ -405,7 +424,7 @@ describe('Learn', () => {
       const { repository, file, wordOf } = await setUp(TWO)
       renderAt(repository, `/files/${file.id}/learn`)
       await answerRight(wordOf)
-      await stopAndStudyAgain()
+      await stopAndContinue()
       expect(await screen.findByText('0 learned · 0 familiar / 2')).toBeInTheDocument()
     })
 
@@ -419,7 +438,7 @@ describe('Learn', () => {
       })
       await answerRight(wordOf)
       expect(localStorage.length).toBe(0)
-      await stopAndStudyAgain()
+      await stopAndContinue()
       expect(await screen.findByText('0 learned · 0 familiar / 2')).toBeInTheDocument()
     })
   })
