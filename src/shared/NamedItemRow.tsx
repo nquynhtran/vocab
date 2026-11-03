@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { NameForm } from './NameForm.tsx'
+import { RowMenu } from './RowMenu.tsx'
 
 interface NamedItemRowProps {
   kind: 'folder' | 'file'
@@ -11,7 +12,7 @@ interface NamedItemRowProps {
   onDelete: () => void
 }
 
-/** One folder or file in a list: a link, plus rename in place and delete. */
+/** One folder or file in a list: a link, plus rename in place and delete in its ⋯ menu. */
 export function NamedItemRow({ kind, name, to, detail, onRename, onDelete }: NamedItemRowProps) {
   const [editing, setEditing] = useState(false)
 
@@ -39,24 +40,22 @@ export function NamedItemRow({ kind, name, to, detail, onRename, onDelete }: Nam
         <span className="item__name">{name}</span>
         {detail && <span className="item__detail">{detail}</span>}
       </Link>
-      <div className="item__actions">
-        <button
-          type="button"
-          className="button"
-          aria-label={`Rename ${kind} "${name}"`}
-          onClick={() => setEditing(true)}
-        >
-          Rename
-        </button>
-        <button
-          type="button"
-          className="button button--danger"
-          aria-label={`Delete ${kind} "${name}"`}
-          onClick={onDelete}
-        >
-          Delete
-        </button>
-      </div>
+      <RowMenu
+        name={name}
+        actions={[
+          {
+            label: 'Rename',
+            accessibleName: `Rename ${kind} "${name}"`,
+            onSelect: () => setEditing(true),
+          },
+          {
+            label: 'Delete',
+            accessibleName: `Delete ${kind} "${name}"`,
+            danger: true,
+            onSelect: onDelete,
+          },
+        ]}
+      />
     </li>
   )
 }

@@ -20,7 +20,7 @@ Giai đoạn 0–6 ưu tiên máy tính, nhưng CSS **responsive ngay từ đầ
 Đường dẫn (`HashRouter`): `#/` Home · `#/folders/:folderId` Folder · `#/files/:fileId` File · `#/files/:fileId/learn` Learn · đường dẫn khác → "Page not found" kèm link về Home.
 
 ## Thao tác
-- Mỗi hàng folder / file / từ có nút **⋯** (`More actions for "run"`) mở menu nhỏ: Rename (Edit với từ) và Delete (#59). Menu tự viết (không dùng `popover` vì iOS cũ): bấm ra ngoài hoặc `Escape` thì đóng và trả focus về nút ⋯; mở bằng bàn phím thì focus mục đầu, mũi tên lên/xuống để chọn. Một component dùng chung cho cả ba loại hàng. Mục trong menu cao ≥ 44px.
+- Mỗi hàng folder / file / từ có nút **⋯** (`More actions for "run"`) mở menu nhỏ: Rename (Edit với từ) và Delete (#59). Menu tự viết (không dùng `popover` vì iOS cũ): `Escape` thì đóng và trả focus về nút ⋯; bấm ra ngoài hoặc `Tab` thì chỉ đóng (focus đi theo chỗ vừa bấm, không bị kéo về); mở bằng bàn phím (hoặc mũi tên xuống trên nút ⋯) thì focus mục đầu, mũi tên lên/xuống để chọn, quay vòng. Component `shared/RowMenu.tsx`. Trên điện thoại nút ⋯ nằm góc phải trên của thẻ từ. Một component dùng chung cho cả ba loại hàng. Mục trong menu cao ≥ 44px.
 - Xóa folder / file / từ luôn hỏi xác nhận bằng `window.confirm` có sẵn của trình duyệt, ghi rõ sẽ xóa bao nhiêu thứ bên trong (ví dụ `Delete folder "IELTS" and its 3 files (120 terms)?`; folder/file trống thì chỉ `Delete folder "IELTS"?`).
 - Đổi tên folder/file và sửa từ: sửa ngay tại dòng (form thay chỗ dòng đó), `Escape` hoặc "Cancel" để hủy.
 - Thêm từ: thêm xong thì xóa form và đưa con trỏ về ô Term để nhập liên tục.

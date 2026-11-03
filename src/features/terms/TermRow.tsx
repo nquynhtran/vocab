@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Term, TermInput } from '../../domain/schemas.ts'
 import { ListenButton } from '../../shared/ListenButton.tsx'
 import { PartOfSpeechLabel } from '../../shared/PartOfSpeechLabel.tsx'
+import { RowMenu } from '../../shared/RowMenu.tsx'
 import { TermForm } from './TermForm.tsx'
 
 interface TermRowProps {
@@ -41,22 +42,22 @@ export function TermRow({ term, onUpdate, onDelete }: TermRowProps) {
       <span className="term__meaning">{term.meaning}</span>
       <span className="term__example">{term.example}</span>
       <div className="term__actions">
-        <button
-          type="button"
-          className="button"
-          aria-label={`Edit "${term.word}"`}
-          onClick={() => setEditing(true)}
-        >
-          Edit
-        </button>
-        <button
-          type="button"
-          className="button button--danger"
-          aria-label={`Delete "${term.word}"`}
-          onClick={onDelete}
-        >
-          Delete
-        </button>
+        <RowMenu
+          name={term.word}
+          actions={[
+            {
+              label: 'Edit',
+              accessibleName: `Edit "${term.word}"`,
+              onSelect: () => setEditing(true),
+            },
+            {
+              label: 'Delete',
+              accessibleName: `Delete "${term.word}"`,
+              danger: true,
+              onSelect: onDelete,
+            },
+          ]}
+        />
       </div>
     </li>
   )

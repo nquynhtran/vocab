@@ -1,0 +1,114 @@
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
+
+export interface RowMenuAction {
+  /** Shown in the menu. */
+  label: string
+  /** Names the row too, e.g. `Delete folder "IELTS"`, for screen readers and tests. */
+  accessibleName: string
+  danger?: boolean
+  onSelect: () => void
+}
+
+/**
+ * The ⋯ button of a row and its small menu (#59). Hand-written: `popover` needs iOS 17.
+ * Escape or a click outside closes it; Escape also gives the focus back to ⋯. Opened from the
+ * keyboard, the first item gets the focus and the arrow keys move between items.
+ */
+export function RowMenu({ name, actions }: { name: string; actions: readonly RowMenuAction[] }) {
+  const [open, setOpen] = useState<false | 'pointer' | 'keyboard'>(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLUListElement>(null)
+  const menuId = useId()
+
+  useEffect(() => {
+    if (!open) return
+    if (open === 'keyboard') items(menuRef.current)[0]?.focus()
+    function handlePointerDown(event: PointerEvent) {
+      if (!containerRef.current?.contains(event.target as Node)) setOpen(false)
+    }
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => document.removeEventListener('pointerdown', handlePointerDown)
+  }, [open])
+
+  function close() {
+    setOpen(false)
+    triggerRef.current?.focus()
+  }
+
+  function handleMenuKey(event: KeyboardEvent) {
+    const list = items(menuRef.current)
+    const at = list.indexOf(document.activeElement as HTMLButtonElement)
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      close()
+    } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault()
+      const step = event.key === 'ArrowDown' ? 1 : -1
+      list[(at + step + list.length) % list.length]?.focus()
+    } else if (event.key === 'Tab') {
+      setOpen(false)
+    }
+  }
+
+  return (
+    <div ref={containerRef} className="row-menu">
+      <button
+        ref={triggerRef}
+        type="button"
+        className="button icon-button"
+        aria-label={`More actions for "${name}"`}
+        aria-haspopup="menu"
+        aria-expanded={open !== false}
+        aria-controls={open ? menuId : undefined}
+        // A click from Enter or Space has no pointer position: `detail` is 0.
+        onClick={(event) => setOpen(open ? false : event.detail === 0 ? 'keyboard' : 'pointer')}
+        // Opened with the pointer, the focus is still here.
+        onKeyDown={(event) => {
+          if (event.key === 'Escape' && open) {
+            event.preventDefault()
+            setOpen(false)
+          } else if (event.key === 'ArrowDown') {
+            event.preventDefault()
+            if (open) items(menuRef.current)[0]?.focus()
+            else setOpen('keyboard')
+          }
+        }}
+      >
+        <span aria-hidden="true">⋯</span>
+      </button>
+      {open && (
+        <ul
+          ref={menuRef}
+          id={menuId}
+          className="row-menu__list"
+          role="menu"
+          aria-label={`Actions for "${name}"`}
+          onKeyDown={handleMenuKey}
+        >
+          {actions.map((action) => (
+            <li key={action.label} role="none">
+              <button
+                type="button"
+                role="menuitem"
+                tabIndex={-1}
+                className={action.danger ? 'row-menu__item button--danger' : 'row-menu__item'}
+                aria-label={action.accessibleName}
+                onClick={() => {
+                  close()
+                  action.onSelect()
+                }}
+              >
+                {action.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function items(menu: HTMLUListElement | null): HTMLButtonElement[] {
+  return menu ? [...menu.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')] : []
+}

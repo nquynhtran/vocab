@@ -25,9 +25,15 @@ function typeInto(label: string | RegExp, value: string) {
   fireEvent.change(screen.getByLabelText(label), { target: { value } })
 }
 
+/** Opens the ⋯ menu of the row named `name` and picks `action` in it. */
+async function chooseFromMenu(name: string, action: string) {
+  fireEvent.click(await screen.findByRole('button', { name: `More actions for "${name}"` }))
+  fireEvent.click(screen.getByRole('menuitem', { name: action }))
+}
+
 /** Opens the in-place edit form of a term and returns queries scoped to it. */
-function startEditing(word: string) {
-  fireEvent.click(screen.getByRole('button', { name: `Edit "${word}"` }))
+async function startEditing(word: string) {
+  await chooseFromMenu(word, `Edit "${word}"`)
   const row = screen.getByRole('button', { name: 'Save' }).closest('li')
   if (!row) throw new Error(`edit form for "${word}" not found`)
   return within(row)
@@ -104,9 +110,9 @@ describe('folders', () => {
     await openRepository(indexedDB).createFolder({ name: 'IELTS' })
     const { repository } = renderApp('/', indexedDB)
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Rename folder "IELTS"' }))
+    await chooseFromMenu('IELTS', 'Rename folder "IELTS"')
     fireEvent.keyDown(screen.getByLabelText('Rename folder "IELTS"'), { key: 'Escape' })
-    fireEvent.click(await screen.findByRole('button', { name: 'Rename folder "IELTS"' }))
+    await chooseFromMenu('IELTS', 'Rename folder "IELTS"')
     typeInto('Rename folder "IELTS"', 'IELTS Writing')
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
@@ -124,13 +130,13 @@ describe('folders', () => {
     const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true)
     const { repository } = renderApp('/', indexedDB)
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Delete folder "IELTS"' }))
+    await chooseFromMenu('IELTS', 'Delete folder "IELTS"')
     await waitFor(() =>
       expect(confirm).toHaveBeenCalledWith('Delete folder "IELTS" and its 2 files (1 term)?'),
     )
     expect(await repository.listFolders()).toHaveLength(1)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Delete folder "IELTS"' }))
+    await chooseFromMenu('IELTS', 'Delete folder "IELTS"')
     expect(await screen.findByText(/No folders yet/)).toBeInTheDocument()
     expect(await repository.listFolders()).toEqual([])
   })
@@ -190,7 +196,7 @@ describe('terms', () => {
 
     const [walk] = await repository.listTerms(unit2.id)
     const lookup = vi.spyOn(repository, 'findTermsByWord')
-    const editRow = startEditing('walk')
+    const editRow = await startEditing('walk')
     fireEvent.change(editRow.getByLabelText('Meaning'), { target: { value: 'đi dạo' } })
     // Wait for the edit form's own lookup to finish rather than a fixed delay.
     await waitFor(() => expect(lookup).toHaveBeenCalledWith('walk', walk?.id))
@@ -209,7 +215,7 @@ describe('terms', () => {
     await addTerm('walk', 'đi bộ')
 
     for (const cancel of ['escape', 'button'] as const) {
-      const editRow = startEditing('walk')
+      const editRow = await startEditing('walk')
       fireEvent.change(editRow.getByLabelText('Meaning'), {
         target: { value: 'changed' },
       })
@@ -232,7 +238,7 @@ describe('terms', () => {
     // Reset for the next term.
     expect(screen.getByLabelText('Part of speech')).toHaveValue('')
 
-    const editRow = startEditing('give up')
+    const editRow = await startEditing('give up')
     const select = editRow.getByLabelText('Part of speech')
     expect(select).toHaveValue('phrasal verb')
     fireEvent.change(select, { target: { value: '' } })
@@ -286,7 +292,7 @@ describe('terms', () => {
     await addTerm('walk', 'đi bộ')
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Delete "walk"' }))
+    await chooseFromMenu('walk', 'Delete "walk"')
 
     expect(confirm).toHaveBeenCalledWith('Delete "walk"?')
     await waitFor(() => expect(screen.queryByText('walk')).not.toBeInTheDocument())
@@ -305,10 +311,10 @@ describe('files', () => {
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
     const { repository } = renderApp(`/folders/${folder.id}`, indexedDB)
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Rename file "Unit 1"' }))
+    await chooseFromMenu('Unit 1', 'Rename file "Unit 1"')
     typeInto('Rename file "Unit 1"', 'Unit 01')
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
-    fireEvent.click(await screen.findByRole('button', { name: 'Delete file "Unit 01"' }))
+    await chooseFromMenu('Unit 01', 'Delete file "Unit 01"')
 
     await waitFor(() =>
       expect(confirm).toHaveBeenCalledWith('Delete file "Unit 01" and its 2 terms?'),

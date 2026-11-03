@@ -242,16 +242,53 @@ label {
   font-size: 0.9rem;
 }
 
-.item__actions,
-.term__actions {
-  display: flex;
-  gap: 8px;
+.row-menu {
+  position: relative;
+}
+
+.row-menu__list {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 10;
+  min-width: 10rem;
+  margin: 0;
+  padding: 4px 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 12%);
+  list-style: none;
+}
+
+.row-menu__item {
+  display: block;
+  width: 100%;
+  min-height: var(--tap-size);
+  padding: 0 16px;
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.row-menu__item:hover,
+.row-menu__item:focus-visible {
+  background: var(--color-bg);
+}
+
+.row-menu__item.button--danger {
+  color: var(--color-danger);
 }
 
 /* ---- Terms: stacked cards on phones, a three-column table on wider screens ---- */
 
 .term {
   display: grid;
+  /* Phones: the ⋯ menu sits top right, beside the stacked word, meaning and example. */
+  grid-template-columns: 1fr auto;
   gap: 4px;
   padding: 12px 0;
   border-bottom: 1px solid var(--color-border);
@@ -260,6 +297,16 @@ label {
 
 .term--header {
   display: none;
+}
+
+.term > :not(.term__actions) {
+  grid-column: 1;
+}
+
+.term__actions {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: start;
 }
 
 .term__head {
@@ -300,6 +347,13 @@ label {
     grid-template-columns: 1fr 1fr 1.5fr auto;
     align-items: center;
     gap: 12px;
+  }
+
+  .term > :not(.term__actions),
+  .term__actions {
+    grid-column: auto;
+    grid-row: auto;
+    align-self: auto;
   }
 
   .term--header {
