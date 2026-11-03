@@ -343,24 +343,20 @@ describe('Learn', () => {
       fireEvent.click(await screen.findByRole('button', { name: 'Study again' }))
     }
 
-    it('after Stop, asks to continue and goes on where it stopped', async () => {
+    it('after Stop, goes on where it stopped without asking (#63)', async () => {
       const { repository, file, wordOf } = await setUp(TWO)
       renderAt(repository, `/files/${file.id}/learn`)
       await answerRight(wordOf)
       await stopAndStudyAgain()
 
-      expect(
-        await screen.findByRole('heading', { name: 'Continue where you left off?' }),
-      ).toBeVisible()
-      expect(screen.getByText('0 / 2 learned, last studied today.')).toBeInTheDocument()
-      fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
       expect(await screen.findByText('0 learned · 1 familiar / 2')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /Continue|Start over/ })).toBeNull()
       await answerAllRight(wordOf)
       // Three more answers: the stopped session went on, it did not start again.
       expect(await screen.findByText('4 answers: 4 right, 0 wrong.')).toBeInTheDocument()
     })
 
-    it('keeps "last studied" when continuing and stopping without an answer', async () => {
+    it('leaves the saved copy as it was when resumed and stopped without an answer', async () => {
       const { repository, file, wordOf } = await setUp(TWO)
       renderAt(repository, `/files/${file.id}/learn`)
       await answerRight(wordOf)
@@ -370,9 +366,9 @@ describe('Learn', () => {
       localStorage.setItem(key, JSON.stringify({ ...saved, savedAt: longAgo }))
 
       await stopAndStudyAgain()
-      fireEvent.click(await screen.findByRole('button', { name: 'Continue' }))
       await stopAndStudyAgain()
-      expect(await screen.findByText(/last studied 5 days ago/)).toBeInTheDocument()
+      expect(await screen.findByText('0 learned · 1 familiar / 2')).toBeInTheDocument()
+      expect(JSON.parse(localStorage.getItem(key)!)).toMatchObject({ savedAt: longAgo })
     })
 
     it('forgets a copy with nothing left to continue, so adding a term cannot revive it', async () => {
@@ -391,25 +387,12 @@ describe('Learn', () => {
       expect(localStorage.length).toBe(0)
     })
 
-    it('Start over opens a new session and forgets the stopped one', async () => {
-      const { repository, file, wordOf } = await setUp(TWO)
-      renderAt(repository, `/files/${file.id}/learn`)
-      await answerRight(wordOf)
-      await stopAndStudyAgain()
-      fireEvent.click(await screen.findByRole('button', { name: 'Start over' }))
-      expect(await screen.findByText('0 learned · 0 familiar / 2')).toBeInTheDocument()
-
-      await stopAndStudyAgain()
-      expect(await screen.findByText('0 learned · 0 familiar / 2')).toBeInTheDocument()
-      expect(screen.queryByRole('button', { name: 'Continue' })).toBeNull()
-    })
-
-    it('does not ask when nothing was answered', async () => {
+    it('keeps nothing when nothing was answered', async () => {
       const { repository, file } = await setUp(TWO)
       renderAt(repository, `/files/${file.id}/learn`)
       await stopAndStudyAgain()
       expect(await screen.findByText('0 learned · 0 familiar / 2')).toBeInTheDocument()
-      expect(screen.queryByRole('button', { name: 'Continue' })).toBeNull()
+      expect(localStorage.length).toBe(0)
     })
 
     it('learns as before when storage cannot be used', async () => {

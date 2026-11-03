@@ -16,7 +16,7 @@ import {
  */
 const SavedSessionShape = z.object({
   version: z.literal(1),
-  /** Shown as "last studied 5 days ago" (#62). */
+  /** Time of the last answer. Not shown since #63, kept so old copies stay valid. */
   savedAt: TimestampSchema,
   round: z.number().int().min(1),
   queue: z.array(IdSchema),

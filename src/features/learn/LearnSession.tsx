@@ -52,7 +52,7 @@ export function LearnSession({
   // The one place that keeps the saved copy in step (docs/learn-algorithm.md#học-tiếp-sau-khi-dừng-58).
   // The session only changes once an answer is stored, or at a new round, so the copy never runs
   // ahead of the database. The session as opened is never written: a new one has no answer yet,
-  // and rewriting a resumed one would make "last studied" say today.
+  // and a resumed one is already saved, with `savedAt` still the time of its last answer.
   const [opened] = useState(session)
   useEffect(() => {
     if (isSessionOver(session)) clearSavedSession(fileId)
