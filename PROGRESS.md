@@ -4,7 +4,7 @@
 
 ## Đang ở đâu
 - **Giai đoạn:** 3 (Learn), đã deploy và người dùng dùng thử. Đang làm đợt 1 cải tiến theo góp ý (#56–#62).
-- **Việc tiếp theo:** đợt 1 đã deploy, chờ người dùng dùng thử và góp ý. Sau đó: 3b (ghi chú file + phiên âm, cần `challenger` trước).
+- **Việc tiếp theo:** đợt 1 xong, người dùng dùng thử OK. Tiếp: 3b (ghi chú file + phiên âm, cần `challenger` trước).
 - **Đang vướng:** không. Build có cảnh báo chunk > 500 kB (supabase-js), chưa xử lý. 🔊 không kêu trong Simple Browser của VS Code. `npm run build` ở máy cần `VITE_SUPABASE_*` (xem cloud-sync.md). iPhone iOS cũ của người dùng tạo folder bị lỗi chưa rõ nguyên nhân (cloud-sync.md#iphone); người dùng sẽ cập nhật máy.
 
 ## Kế hoạch
@@ -35,15 +35,15 @@ Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn 
   - [x] Deploy (`db push` trước, `min_client_version` 2), người dùng dùng thử: "khá mượt"
   - [x] Đợt 1 phần A: đan xen câu viết + thanh hai màu (#56), loại từ trong câu hỏi (#61, thay #53), ví dụ trong trắc nghiệm (#57), chạm từ để nghe ở màn tóm tắt + dòng giải thích mastered, gạch đỏ chính tả ở form từ (#60). Commit ở máy, **chưa push**
   - [x] Đợt 1 phần B: học tiếp sau Stop (#58, #62, qua `challenger` 7 điểm + `reviewer` 5 điểm, đã sửa hết), menu ⋯ (#59); deploy
-  - [ ] Người dùng dùng thử đợt 1 OK
+  - [x] Người dùng dùng thử đợt 1 trên điện thoại: bình thường, giao diện không tràn lề
 - [ ] **3b. Ghi chú file + phiên âm** (đợt 2, [scope.md](docs/scope.md)): thiết kế → `challenger` → đổi cấu trúc dữ liệu một lần → deploy
 - [ ] **4. Streak** — đủ các test trong [streak.md](docs/streak.md)
 - [ ] **5. Sao lưu** — khôi phục toàn bộ dữ liệu từ file backup
 - [ ] **6. Hoàn thiện** — phím tắt còn lại (nếu cần; 1–4 và Enter đã có, #55), dark mode, README; dùng thử 1 tuần
 
 ## Nhật ký (5 mục gần nhất, mới nhất trên cùng)
+- 2026-11-03 — Tự soát đợt 1: `reviewer` soát bù #56 (không lỗi) và #59 (Tab không đóng menu mở bằng chuột; Safari không focus nút nên Escape không tới → đóng theo `onBlur` có `relatedTarget`, bấm thì focus ⋯; đã sửa, thử thêm trên Firefox thật); chạy app thật qua geckodriver + Supabase local; người dùng thử trên điện thoại OK; 377 test, đã deploy.
 - 2026-11-03 — Đợt 1 phần B: menu ⋯ tự viết (`shared/RowMenu.tsx`, bấm ra ngoài chỉ đóng, không kéo focus); học tiếp sau Stop (`domain/learn/resume.ts` + `sessionStore.ts`, một effect ghi/xóa, ghi hỏng thì xóa bản cũ, bản vô dụng cũng xóa); người dùng chọn luôn hỏi kèm "last studied N days ago" (#62); `challenger` 7 điểm (chính: "Study again" sau Stop xóa mất phiên), `reviewer` 5 điểm (chính: test xóa-khi-xong bị lớp khác che, ghi LESSONS); 375 test. Deploy cả đợt 1.
 - 2026-11-03 — Đợt 1 phần A: từ đúng trắc nghiệm quay lại thành câu viết sau 3–4 câu trong cùng vòng, vòng xong khi 7 từ đều thuộc; thanh tiến độ SVG hai màu (CSP chặn style nội tuyến); loại từ sau nghĩa (người dùng đổi ý, #61 thay #53; `PartOfSpeechLabel` sang `shared/`); ví dụ che từ ở cả trắc nghiệm (gom vào `Prompt`); chạm từ ở màn tóm tắt để nghe; `spellcheck` ở Term/Example. Không gọi `reviewer` (thay đổi nhỏ, phá code thử 5 chỗ đều đỏ). `git checkout` khi phá code thử xóa mất phần sửa chưa commit (ghi LESSONS). 341 test. Commit ở máy, **chưa push**.
 - 2026-10-25 — Giai đoạn 3 bước 4: màn Learn (`features/learn/`: `learnFlow.ts` thuần, câu hỏi, phản hồi + I was right, lưu + Retry/Stop, tóm tắt vòng/phiên, phím 1–4), `summary.ts` ở domain, nút Learn ở trang File, `ListenButton` sang `shared/` (#55: Stop → màn kết thúc, 🔊 ở phản hồi, phím làm ngay); `reviewer`: phím lọt qua lớp phủ đăng nhập (`inert`), test mất phiên trên app thật, focus sau I was right, chữ Saving… (đã sửa, ghi LESSONS); 331 test. Commit ở máy, **chưa push**.
 - 2026-10-25 — Giai đoạn 3 bước 3: `progressAfter` (domain) + `LearnRepository` (`getLearnData`, `recordAnswer`) cho Dexie và Supabase; `record_answer` (một câu upsert, bắt lỗi từ bị xóa giữa chừng) + `get_learn_data` thêm vào `learn.sql`; phá code thử 8 chỗ đều đỏ; `reviewer`: thiếu test nhánh "đúng, không lên hộp" phía cloud + `answeredAt` phải đúng 3 số lẻ (đã sửa, ghi LESSONS); sửa tài liệu lệch Dexie v3→v4; 296 test + 117 pgTAP + 69 test cloud. Commit ở máy, **chưa push**.
-- 2026-10-25 — Giai đoạn 3 bước 1–2: `challenger` 6 điểm → #50–#54 (người dùng chọn: lên hộp tối đa 1 lần/ngày, trắc nghiệm ghi ngay, không hiện loại từ); `lastPromotedDay` + Dexie v4 + backup v2 + migration `learn.sql` (chưa `db push`); `domain/learn/` thuần + `day.ts`, test cố định TZ UTC+7; `reviewer`: regex `\-` với cờ `u` làm vỡ từ có gạch nối (đã sửa, ghi LESSONS) + 5 điểm nhỏ đã sửa; 277 test + 81 pgTAP + 59 test cloud. Commit ở máy, **chưa push**.
