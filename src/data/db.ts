@@ -75,6 +75,17 @@ export class VocabDb extends Dexie {
       meta: 'key',
     })
 
+    // Same indexes. Bumped when files gained `notes` and terms `pronunciation` (stage 3b, #67):
+    // a tab still on v4 code must reload rather than rebuild those rows without them.
+    this.version(5).stores({
+      folders: 'id, &nameKey',
+      files: 'id, folderId, &[folderId+nameKey]',
+      terms: 'id, fileId, wordKey',
+      progress: 'termId',
+      studyDays: 'date',
+      meta: 'key',
+    })
+
     // Dexie's default handler closes but allows auto-reopening, which would let this tab's old
     // code write rows in the old shape into the upgraded database. Returning false skips it.
     this.on('versionchange', () => {

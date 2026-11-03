@@ -155,7 +155,7 @@ describe('version 2', () => {
     const db = new VocabDb({ indexedDB, IDBKeyRange })
     await db.open()
 
-    expect(db.verno).toBe(4)
+    expect(db.verno).toBe(5)
     expect(await db.folders.toArray()).toMatchObject([folder])
     expect(await db.terms.toArray()).toStrictEqual([term])
     db.close()
@@ -202,7 +202,7 @@ describe('version 3', () => {
     await db.open()
 
     expect(onOldTabVersionChange).toHaveBeenCalledOnce()
-    expect(db.verno).toBe(4)
+    expect(db.verno).toBe(5)
     db.close()
   })
 })
@@ -228,7 +228,31 @@ describe('version 4', () => {
     await db.open()
 
     expect(onOldTabVersionChange).toHaveBeenCalledOnce()
-    expect(db.verno).toBe(4)
+    expect(db.verno).toBe(5)
+    db.close()
+  })
+})
+
+describe('version 5', () => {
+  it('makes a tab still on v4 reload, so it cannot rebuild rows without notes or pronunciation', async () => {
+    const indexedDB = new IDBFactory()
+    const onOldTabVersionChange = vi.fn()
+    const oldTab = new Dexie(DB_NAME, { indexedDB, IDBKeyRange })
+    // Exactly the released v4 schema, v1 to v3 included.
+    for (const version of [1, 2, 3, 4]) oldTab.version(version).stores(V1_STORES)
+    oldTab.on('versionchange', () => {
+      onOldTabVersionChange()
+      oldTab.close({ disableAutoOpen: true })
+      return false
+    })
+    await oldTab.open()
+    expect(oldTab.verno).toBe(4)
+
+    const db = new VocabDb({ indexedDB, IDBKeyRange })
+    await db.open()
+
+    expect(onOldTabVersionChange).toHaveBeenCalledOnce()
+    expect(db.verno).toBe(5)
     db.close()
   })
 })

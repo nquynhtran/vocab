@@ -7,7 +7,13 @@ import {
   ValidationError,
 } from '../domain/errors.ts'
 import {
+  FolderSchema,
+  NOTES_MAX_LENGTH,
   PARTS_OF_SPEECH,
+  StudyDaySchema,
+  TermProgressSchema,
+  TermSchema,
+  VocabFileSchema,
   type StudyDay,
   type TermInput,
   type TermProgress,
@@ -251,6 +257,87 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
       expect(await repo.getFile(unit1.id)).toMatchObject({ name: 'UNIT 1' })
     })
 
+    it('edits notes alone, keeping line breaks, blank lines and indents', async () => {
+      const { repo } = await setup()
+      const folder = await repo.createFolder({ name: 'IELTS' })
+      const file = await repo.createFile(folder.id, { name: 'Unit 1' })
+
+      const edited = await repo.updateFileNotes(file.id, {
+        notes: '\r\nReading:\r\n\r\n  The river runs.\n',
+      })
+
+      expect(edited).toStrictEqual({
+        ...file,
+        notes: 'Reading:\n\n  The river runs.',
+        updatedAt: '2026-10-22T08:00:02.000Z',
+      })
+      expect(await repo.getFile(file.id)).toStrictEqual(edited)
+      expect(await repo.listFiles(folder.id)).toStrictEqual([edited])
+    })
+
+    it('never lets a rename and a notes edit undo each other (#65)', async () => {
+      const { repo } = await setup()
+      const folder = await repo.createFolder({ name: 'IELTS' })
+      const file = await repo.createFile(folder.id, { name: 'Unit 1' })
+      await repo.updateFileNotes(file.id, { notes: 'Notes' })
+
+      await repo.renameFile(file.id, { name: 'Unit 1a' })
+      expect(await repo.getFile(file.id)).toMatchObject({ name: 'Unit 1a', notes: 'Notes' })
+
+      await repo.updateFileNotes(file.id, { notes: 'New notes' })
+      expect(await repo.getFile(file.id)).toMatchObject({ name: 'Unit 1a', notes: 'New notes' })
+    })
+
+    it('removes blank notes instead of storing them', async () => {
+      const { repo } = await setup()
+      const folder = await repo.createFolder({ name: 'IELTS' })
+      const file = await repo.createFile(folder.id, { name: 'Unit 1' })
+      await repo.updateFileNotes(file.id, { notes: 'Notes' })
+
+      const cleared = await repo.updateFileNotes(file.id, { notes: ' \n\n ' })
+
+      expect(cleared).not.toHaveProperty('notes')
+      expect(await repo.getFile(file.id)).toStrictEqual(cleared)
+    })
+
+    it(`stores notes of ${NOTES_MAX_LENGTH} characters, Vietnamese and emoji included`, async () => {
+      const { repo } = await setup()
+      const folder = await repo.createFolder({ name: 'IELTS' })
+      const file = await repo.createFile(folder.id, { name: 'Unit 1' })
+      for (const notes of [
+        'ệ'.repeat(NOTES_MAX_LENGTH),
+        '😀'.repeat(NOTES_MAX_LENGTH / 2),
+        `${'a'.repeat(NOTES_MAX_LENGTH - 2)}\n\n`.slice(0, NOTES_MAX_LENGTH - 2) + '\nb',
+      ]) {
+        await repo.updateFileNotes(file.id, { notes })
+        expect((await repo.getFile(file.id))?.notes).toBe(notes)
+      }
+    })
+
+    it('rejects notes over the limit without writing anything', async () => {
+      const { repo } = await setup()
+      const folder = await repo.createFolder({ name: 'IELTS' })
+      const file = await repo.createFile(folder.id, { name: 'Unit 1' })
+      await expect(
+        repo.updateFileNotes(file.id, { notes: 'a'.repeat(NOTES_MAX_LENGTH + 1) }),
+      ).rejects.toBeInstanceOf(ValidationError)
+      expect(await repo.getFile(file.id)).toStrictEqual(file)
+    })
+
+    it('throws EntityNotFoundError for notes of a missing or deleted file, recreating nothing', async () => {
+      const { repo } = await setup()
+      const { folder, file } = await seedTerm(repo)
+      await expect(repo.updateFileNotes(MISSING_ID, { notes: 'x' })).rejects.toMatchObject({
+        constructor: EntityNotFoundError,
+        kind: 'file',
+      })
+      await repo.deleteFolder(folder.id)
+      await expect(repo.updateFileNotes(file.id, { notes: 'x' })).rejects.toBeInstanceOf(
+        EntityNotFoundError,
+      )
+      expect((await repo.exportBackup()).files).toEqual([])
+    })
+
     it('deletes a file with its terms and progress only', async () => {
       const { repo, addProgress } = await setup()
       const { folder, file, term } = await seedTerm(repo)
@@ -339,6 +426,32 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
       expect(await repo.listTerms(file.id)).toStrictEqual([unset, ...created.toReversed(), term])
     })
 
+    it('stores a pronunciation as typed, and omits a blank one', async () => {
+      const { repo } = await setup()
+      const { file } = await seedTerm(repo)
+      const withSlashes = await repo.createTerm(file.id, {
+        word: 'schedule',
+        pronunciation: ' /ˈʃedʒ.uːl/ ',
+        meaning: 'lịch trình',
+      })
+      const bare = await repo.createTerm(file.id, {
+        word: 'walk',
+        pronunciation: 'wɔːk',
+        meaning: 'đi bộ',
+      })
+      const blank = await repo.createTerm(file.id, {
+        word: 'go',
+        pronunciation: '  ',
+        meaning: 'đi',
+      })
+      expect(withSlashes.pronunciation).toBe('/ˈʃedʒ.uːl/')
+      expect(bare.pronunciation).toBe('wɔːk')
+      expect(blank).not.toHaveProperty('pronunciation')
+      expect(await repo.listTerms(file.id)).toEqual(
+        expect.arrayContaining([withSlashes, bare, blank]),
+      )
+    })
+
     it('omits a blank example instead of storing it', async () => {
       const { repo } = await setup()
       const { file } = await seedTerm(repo)
@@ -376,9 +489,14 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
         word: 'run',
         meaning: 'chạy',
         partOfSpeech: 'verb',
+        pronunciation: '/rʌn/',
         example: 'I run.',
       })
-      expect(term).toMatchObject({ partOfSpeech: 'verb', example: 'I run.' })
+      expect(term).toMatchObject({
+        partOfSpeech: 'verb',
+        pronunciation: '/rʌn/',
+        example: 'I run.',
+      })
       const progress = { termId: term.id, box: 3, correctCount: 4, wrongCount: 1 }
       await addProgress([progress])
 
@@ -779,7 +897,15 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
         exportedAt: '2026-10-20T00:00:00.000Z',
         folders: [{ id: testId(101), name: 'IELTS', createdAt: at, updatedAt: at }],
         files: [
-          { id: testId(201), folderId: testId(101), name: 'Unit 1', createdAt: at, updatedAt: at },
+          {
+            id: testId(201),
+            folderId: testId(101),
+            name: 'Unit 1',
+            notes: 'Reading:\n\n  The river runs.',
+            createdAt: at,
+            updatedAt: at,
+          },
+          { id: testId(202), folderId: testId(101), name: 'Unit 2', createdAt: at, updatedAt: at },
         ],
         terms: [
           {
@@ -787,6 +913,7 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
             fileId: testId(201),
             word: 'Run',
             partOfSpeech: PARTS_OF_SPEECH[0],
+            pronunciation: '/rʌn/',
             meaning: 'chạy',
             example: 'I run.',
             createdAt: at,
@@ -821,6 +948,27 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
       const { exportedAt: _exportedAt, ...rest } = backup
       return rest
     }
+
+    // Repositories copy fields one by one; a new field missing from the sample would pass the
+    // round trip below even when a repository drops it.
+    it('uses a sample that sets every field of every table', () => {
+      const backup = sampleBackup()
+      const shapes = {
+        folders: FolderSchema.shape,
+        files: VocabFileSchema.shape,
+        terms: TermSchema.shape,
+        progress: TermProgressSchema.shape,
+        studyDays: StudyDaySchema.shape,
+      }
+      for (const [table, shape] of Object.entries(shapes)) {
+        const rows: readonly object[] = backup[table as keyof typeof shapes]
+        const present = new Set(rows.flatMap((row) => Object.keys(row)))
+        expect({ table, missing: Object.keys(shape).filter((key) => !present.has(key)) }).toEqual({
+          table,
+          missing: [],
+        })
+      }
+    })
 
     it('stores the backup exactly, keeping ids and timestamps', async () => {
       const { repo } = await setup()

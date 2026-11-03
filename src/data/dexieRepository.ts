@@ -9,9 +9,11 @@ import { AnswerRecordSchema, type AnswerRecord } from '../domain/learn/answer.ts
 import { progressAfter } from '../domain/learn/progress.ts'
 import {
   FileInputSchema,
+  FileNotesInputSchema,
   FolderInputSchema,
   TermInputSchema,
   type FileInput,
+  type FileNotesInput,
   type Folder,
   type FolderInput,
   type StudyDay,
@@ -158,6 +160,24 @@ export class DexieRepository implements Repository {
       await this.assertFolderExists(current.folderId)
       await this.assertFileNameFree(current.folderId, nameKey, id)
       const row: FileRow = { ...current, name, nameKey, updatedAt: this.timestamp() }
+      await this.db.files.put(row)
+      return toFile(row)
+    })
+  }
+
+  async updateFileNotes(id: string, input: FileNotesInput): Promise<VocabFile> {
+    const { notes } = parseOrThrow(FileNotesInputSchema, input)
+    return this.db.transaction('rw', [this.db.folders, this.db.files], async () => {
+      const current = await this.db.files.get(id)
+      if (!current) throw new EntityNotFoundError('file', id)
+      await this.assertFolderExists(current.folderId)
+      // Read inside the transaction, so a rename committed just before is kept.
+      const { notes: _old, ...rest } = current
+      const row: FileRow = {
+        ...rest,
+        ...(notes === undefined ? {} : { notes }),
+        updatedAt: this.timestamp(),
+      }
       await this.db.files.put(row)
       return toFile(row)
     })
@@ -367,8 +387,8 @@ function toFolder({ id, name, createdAt, updatedAt }: Folder): Folder {
   return { id, name, createdAt, updatedAt }
 }
 
-function toFile({ id, folderId, name, createdAt, updatedAt }: VocabFile): VocabFile {
-  return { id, folderId, name, createdAt, updatedAt }
+function toFile({ id, folderId, name, notes, createdAt, updatedAt }: VocabFile): VocabFile {
+  return { id, folderId, name, ...(notes !== undefined && { notes }), createdAt, updatedAt }
 }
 
 function toTerm({
@@ -376,6 +396,7 @@ function toTerm({
   fileId,
   word,
   partOfSpeech,
+  pronunciation,
   meaning,
   example,
   createdAt,
@@ -386,6 +407,7 @@ function toTerm({
     fileId,
     word,
     ...(partOfSpeech !== undefined && { partOfSpeech }),
+    ...(pronunciation !== undefined && { pronunciation }),
     meaning,
     ...(example !== undefined && { example }),
     createdAt,
@@ -417,10 +439,13 @@ function toStudyDay({ date, answeredCount }: StudyDay): StudyDay {
   return { date, answeredCount }
 }
 
-type TermContent = Pick<Term, 'word' | 'partOfSpeech' | 'meaning' | 'example'>
+type TermContent = Pick<Term, 'word' | 'partOfSpeech' | 'pronunciation' | 'meaning' | 'example'>
 type TermMeta = Pick<Term, 'id' | 'fileId' | 'createdAt' | 'updatedAt'>
 
-function toTermRow(meta: TermMeta, { word, partOfSpeech, meaning, example }: TermContent): TermRow {
+function toTermRow(
+  meta: TermMeta,
+  { word, partOfSpeech, pronunciation, meaning, example }: TermContent,
+): TermRow {
   return {
     ...meta,
     word,
@@ -428,6 +453,7 @@ function toTermRow(meta: TermMeta, { word, partOfSpeech, meaning, example }: Ter
     // Optional fields are omitted rather than stored as undefined, so stored rows match what a
     // backup contains.
     ...(partOfSpeech !== undefined && { partOfSpeech }),
+    ...(pronunciation !== undefined && { pronunciation }),
     meaning,
     ...(example !== undefined && { example }),
   }

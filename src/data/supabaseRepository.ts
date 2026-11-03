@@ -9,6 +9,7 @@ import {
 import { AnswerRecordSchema, type AnswerRecord } from '../domain/learn/answer.ts'
 import {
   FileInputSchema,
+  FileNotesInputSchema,
   FolderInputSchema,
   FolderSchema,
   IdSchema,
@@ -18,6 +19,7 @@ import {
   TermSchema,
   VocabFileSchema,
   type FileInput,
+  type FileNotesInput,
   type Folder,
   type FolderInput,
   type Term,
@@ -188,6 +190,22 @@ export class SupabaseRepository implements Repository {
         .eq('id', id)
         .select(),
       (constraint) => this.fileConstraintError(constraint, name, id),
+    )
+    const [row] = asArray(rows)
+    if (row === undefined) throw new EntityNotFoundError('file', id)
+    return parseRow(VocabFileSchema, row, `files ${id}`)
+  }
+
+  async updateFileNotes(id: string, input: FileNotesInput): Promise<VocabFile> {
+    const { notes } = parseOrThrow(FileNotesInputSchema, input)
+    if (!isId(id)) throw new EntityNotFoundError('file', id)
+    // Only these columns: a full-row update would undo a rename made on another device.
+    const rows = await this.run(
+      this.client
+        .from('files')
+        .update({ notes: notes ?? null, updated_at: this.timestamp() })
+        .eq('id', id)
+        .select(),
     )
     const [row] = asArray(rows)
     if (row === undefined) throw new EntityNotFoundError('file', id)

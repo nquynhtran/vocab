@@ -10,7 +10,7 @@ import { parseRow } from './supabaseRows.ts'
  * after; meanwhile old clients show a Reload button (reload.ts stops the reload loop).
  * 2: progress.last_promoted_day (decision #50).
  */
-export const CLIENT_VERSION = 2
+export const CLIENT_VERSION = 3
 
 const AppConfigSchema = z.object({ minClientVersion: z.int().min(1) })
 

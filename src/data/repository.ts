@@ -3,6 +3,7 @@ import type { AnswerRecord } from '../domain/learn/answer.ts'
 import type { ChoiceSource } from '../domain/learn/choices.ts'
 import type {
   FileInput,
+  FileNotesInput,
   Folder,
   FolderInput,
   Term,
@@ -64,6 +65,11 @@ export interface FileRepository {
   getFile(id: string): Promise<VocabFile | undefined>
   createFile(folderId: string, input: FileInput): Promise<VocabFile>
   renameFile(id: string, input: FileInput): Promise<VocabFile>
+  /**
+   * Replaces the notes; blank notes remove them. Touches nothing but the notes and `updatedAt`,
+   * so a rename on another device is never undone by it, nor it by a rename (#65).
+   */
+  updateFileNotes(id: string, input: FileNotesInput): Promise<VocabFile>
   /** Also deletes its terms and their progress. */
   deleteFile(id: string): Promise<void>
 }

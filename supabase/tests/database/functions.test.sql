@@ -16,12 +16,13 @@ create function pg_temp.snapshot() returns jsonb language sql as $$
     'files', jsonb_build_array(jsonb_build_object(
       'id', 'a0000000-0000-4000-8000-000000000002',
       'folder_id', 'a0000000-0000-4000-8000-000000000001', 'name', 'Unit 1',
-      'name_key', 'unit 1',
+      'name_key', 'unit 1', 'notes', E'Reading:\n\n  The river runs.',
       'created_at', '2026-10-01T08:00:00.000Z', 'updated_at', '2026-10-01T08:00:00.000Z')),
     'terms', jsonb_build_array(jsonb_build_object(
       'id', 'a0000000-0000-4000-8000-000000000003',
       'file_id', 'a0000000-0000-4000-8000-000000000002', 'word', 'apple', 'word_key', 'apple',
-      'part_of_speech', 'noun', 'meaning', 'quả táo', 'example', null,
+      'part_of_speech', 'noun', 'pronunciation', '/ˈæp.əl/', 'meaning', 'quả táo',
+      'example', null,
       'created_at', '2026-10-01T08:00:00.000Z', 'updated_at', '2026-10-01T08:00:00.000Z')),
     'progress', jsonb_build_array(jsonb_build_object(
       'term_id', 'a0000000-0000-4000-8000-000000000003', 'box', 3, 'correct_count', 4,
@@ -70,6 +71,15 @@ select throws_ok($$
   select public.import_snapshot(jsonb_set(pg_temp.snapshot(), '{folders,0,name_key}', 'null'))
 $$, '23502', null, 'a missing key column fails the import');
 
+select throws_ok($$
+  select public.import_snapshot(jsonb_set(pg_temp.snapshot(), '{files,0}',
+    (pg_temp.snapshot() -> 'files' -> 0) - 'notes'))
+$$, '22023', null, 'a file row without notes (a client older than stage 3b) is rejected');
+select throws_ok($$
+  select public.import_snapshot(jsonb_set(pg_temp.snapshot(), '{terms,0}',
+    (pg_temp.snapshot() -> 'terms' -> 0) - 'pronunciation'))
+$$, '22023', null, 'a term row without pronunciation is rejected');
+
 -- ---- import_snapshot: success ----
 
 select lives_ok($$ select public.import_snapshot(pg_temp.snapshot()) $$, 'the snapshot imports');
@@ -89,6 +99,9 @@ select is(
   'client timestamps are kept, milliseconds included'
 );
 select is((select example from public.terms), null, 'an absent optional field becomes null');
+select is((select notes from public.files), E'Reading:\n\n  The river runs.',
+  'notes keep line breaks, blank lines and indents');
+select is((select pronunciation from public.terms), '/ˈæp.əl/', 'pronunciation is imported');
 select throws_ok($$ select public.import_snapshot(pg_temp.snapshot()) $$,
   'VC001', 'Cloud already has data', 'a second import is refused');
 
@@ -109,6 +122,14 @@ select is(
 select is(
   public.export_backup() -> 'progress' -> 0 -> 'last_promoted_day', '"2026-10-02"'::jsonb,
   'import and export keep last_promoted_day'
+);
+select is(
+  public.export_backup() -> 'files' -> 0 ->> 'notes', E'Reading:\n\n  The river runs.',
+  'export keeps notes'
+);
+select is(
+  public.export_backup() -> 'terms' -> 0 ->> 'pronunciation', '/ˈæp.əl/',
+  'export keeps pronunciation'
 );
 
 -- ---- Another user ----
