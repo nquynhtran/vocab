@@ -85,6 +85,7 @@ async function answerAllRight(wordOf: Map<string, string>) {
 
 afterEach(() => {
   vi.restoreAllMocks()
+  vi.unstubAllGlobals()
   window.location.hash = ''
 })
 
@@ -277,7 +278,18 @@ describe('Learn', () => {
     expect(await screen.findByRole('heading', { name: 'Unit 1' })).toBeInTheDocument()
   })
 
-  it('lists the most missed terms at the end', async () => {
+  it('lists the most missed terms at the end, each word read aloud on a tap', async () => {
+    const speak = vi.fn()
+    vi.stubGlobal('speechSynthesis', { speak, cancel: vi.fn(), getVoices: () => [] })
+    vi.stubGlobal(
+      'SpeechSynthesisUtterance',
+      class {
+        readonly text: string
+        constructor(text: string) {
+          this.text = text
+        }
+      },
+    )
     const { repository, file, wordOf } = await setUp([{ word: 'big', meaning: 'to' }])
     renderAt(repository, `/files/${file.id}/learn`)
     await asked()
@@ -291,6 +303,11 @@ describe('Learn', () => {
     const missed = screen.getByRole('list', { name: 'Missed most' })
     expect(missed).toHaveTextContent('big')
     expect(missed).toHaveTextContent('2 right · 1 wrong')
+    fireEvent.click(within(missed).getByRole('button', { name: 'Listen to "big"' }))
+    expect(speak).toHaveBeenCalledWith(expect.objectContaining({ text: 'big' }))
+    expect(
+      screen.getByText('Terms count as mastered once you get them right on 2 different days.'),
+    ).toBeInTheDocument()
     // Missed this session: no box up.
     expect(await progressOf(repository, file.id, 'big')).toMatchObject({ box: 1, wrongCount: 1 })
   })

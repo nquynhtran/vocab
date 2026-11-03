@@ -597,6 +597,27 @@ label {
   font-weight: 600;
 }
 
+.tally__listen {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--tap-size);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tally__speaker {
+  font-size: 0.8rem;
+  opacity: 0.5;
+}
+
 .tally__meaning,
 .tally__count {
   color: var(--color-muted);

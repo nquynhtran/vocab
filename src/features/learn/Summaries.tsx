@@ -8,6 +8,7 @@ import {
   type TermTally,
 } from '../../domain/learn/summary.ts'
 import { plural } from '../../shared/deleteMessages.ts'
+import { canSpeak, speak } from '../../shared/speech.ts'
 
 export function RoundSummary({
   session,
@@ -50,6 +51,8 @@ export function SessionSummary({
         {plural(correct + wrong, 'answer')}: {correct} right, {wrong} wrong.
       </p>
       {missed.length > 0 && <TallyList label="Missed most" tallies={missed} />}
+      {/* "learned" above is this session only; without this, it reads like the folder's "% mastered". */}
+      <p className="muted">Terms count as mastered once you get them right on 2 different days.</p>
       <div className="summary__actions">
         <button type="button" className="button button--primary" onClick={onStudyAgain} autoFocus>
           Study again
@@ -69,7 +72,7 @@ function TallyList({ label, tallies }: { label: string; tallies: TermTally[] }) 
       <ul className="tally-list" aria-label={label}>
         {tallies.map(({ term, correct, wrong }) => (
           <li key={term.id} className="tally">
-            <span className="tally__word">{term.word}</span>
+            <TallyWord word={term.word} />
             <span className="tally__meaning">{term.meaning}</span>
             <span className={wrong > 0 ? 'tally__count tally__count--wrong' : 'tally__count'}>
               {correct} right · {wrong} wrong
@@ -78,5 +81,23 @@ function TallyList({ label, tallies }: { label: string; tallies: TermTally[] }) 
         ))}
       </ul>
     </>
+  )
+}
+
+/** The whole word is the button, so a phone user taps the word itself to hear it. */
+function TallyWord({ word }: { word: string }) {
+  if (!canSpeak()) return <span className="tally__word">{word}</span>
+  return (
+    <button
+      type="button"
+      className="tally__word tally__listen"
+      aria-label={`Listen to "${word}"`}
+      onClick={() => speak(word)}
+    >
+      {word}
+      <span className="tally__speaker" aria-hidden="true">
+        🔊
+      </span>
+    </button>
   )
 }
