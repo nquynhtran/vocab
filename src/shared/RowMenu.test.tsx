@@ -93,10 +93,34 @@ describe('RowMenu', () => {
     expect(menu()).toBeNull()
   })
 
-  it('Tab leaves the menu and closes it', () => {
+  it('closes when the focus leaves it, from an item or from ⋯', () => {
+    const { trigger } = renderMenu()
+    const elsewhere = screen.getByLabelText('Elsewhere')
+    fireEvent.click(trigger)
+    fireEvent.blur(item('Rename folder "IELTS"'), { relatedTarget: elsewhere })
+    expect(menu()).toBeNull()
+
+    fireEvent.click(trigger, POINTER)
+    fireEvent.blur(trigger, { relatedTarget: elsewhere })
+    expect(menu()).toBeNull()
+  })
+
+  it('stays open while the focus moves inside, or goes nowhere (a press on an item in Safari)', () => {
     const { trigger } = renderMenu()
     fireEvent.click(trigger)
-    fireEvent.keyDown(item('Rename folder "IELTS"'), { key: 'Tab' })
+    fireEvent.blur(item('Rename folder "IELTS"'), {
+      relatedTarget: item('Delete folder "IELTS"'),
+    })
+    fireEvent.blur(item('Delete folder "IELTS"'), { relatedTarget: null })
+    expect(menu()).not.toBeNull()
+  })
+
+  it('takes the focus on a pointer click, which Safari does not give a button', () => {
+    const { trigger } = renderMenu()
+    expect(trigger).not.toHaveFocus()
+    fireEvent.click(trigger, POINTER)
+    expect(trigger).toHaveFocus()
+    fireEvent.keyDown(trigger, { key: 'Escape' })
     expect(menu()).toBeNull()
   })
 })

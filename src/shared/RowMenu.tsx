@@ -11,7 +11,7 @@ export interface RowMenuAction {
 
 /**
  * The ⋯ button of a row and its small menu (#59). Hand-written: `popover` needs iOS 17.
- * Escape or a click outside closes it; Escape also gives the focus back to ⋯. Opened from the
+ * Escape, Tab or a click outside closes it; Escape also gives the focus back to ⋯. Opened from the
  * keyboard, the first item gets the focus and the arrow keys move between items.
  */
 export function RowMenu({ name, actions }: { name: string; actions: readonly RowMenuAction[] }) {
@@ -46,13 +46,21 @@ export function RowMenu({ name, actions }: { name: string; actions: readonly Row
       event.preventDefault()
       const step = event.key === 'ArrowDown' ? 1 : -1
       list[(at + step + list.length) % list.length]?.focus()
-    } else if (event.key === 'Tab') {
-      setOpen(false)
     }
   }
 
   return (
-    <div ref={containerRef} className="row-menu">
+    <div
+      ref={containerRef}
+      className="row-menu"
+      // Tab (from ⋯ or an item) closes it. No `relatedTarget` means a press on something that
+      // takes no focus, Safari's buttons included: closing then would swallow a click on an
+      // item, and a press outside is already handled by the pointerdown listener.
+      onBlur={(event) => {
+        const next = event.relatedTarget
+        if (open && next instanceof Node && !event.currentTarget.contains(next)) setOpen(false)
+      }}
+    >
       <button
         ref={triggerRef}
         type="button"
@@ -62,8 +70,12 @@ export function RowMenu({ name, actions }: { name: string; actions: readonly Row
         aria-expanded={open !== false}
         aria-controls={open ? menuId : undefined}
         // A click from Enter or Space has no pointer position: `detail` is 0.
-        onClick={(event) => setOpen(open ? false : event.detail === 0 ? 'keyboard' : 'pointer')}
-        // Opened with the pointer, the focus is still here.
+        onClick={(event) => {
+          // Safari does not focus a clicked button; without the focus, Escape and the arrows
+          // would never reach the handler below.
+          event.currentTarget.focus()
+          setOpen(open ? false : event.detail === 0 ? 'keyboard' : 'pointer')
+        }}
         onKeyDown={(event) => {
           if (event.key === 'Escape' && open) {
             event.preventDefault()

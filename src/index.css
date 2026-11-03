@@ -338,6 +338,10 @@ label {
   font-style: italic;
 }
 
+.term--editing {
+  grid-template-columns: 1fr;
+}
+
 .term--editing .term-form {
   margin: 0;
 }
@@ -361,10 +365,6 @@ label {
     color: var(--color-muted);
     font-size: 0.85rem;
     font-weight: 600;
-  }
-
-  .term--editing {
-    grid-template-columns: 1fr;
   }
 
   .term-form {
