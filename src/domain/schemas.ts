@@ -30,12 +30,16 @@ function requiredText(label: string, max: number) {
     .pipe(storableText(label, max).min(1, { error: `${label} is required` }))
 }
 
-/** A blank example is stored as "no example", so the field is simply absent. */
-const ExampleSchema = z
-  .string()
-  .optional()
-  .transform((value) => (value === undefined ? undefined : normalizeText(value) || undefined))
-  .pipe(storableText('Example', EXAMPLE_MAX_LENGTH).optional())
+/** Blank text is stored as "not set", so the field is simply absent. */
+function optionalText(label: string, max: number, normalize: (text: string) => string) {
+  return z
+    .string()
+    .optional()
+    .transform((value) => (value === undefined ? undefined : normalize(value) || undefined))
+    .pipe(storableText(label, max).optional())
+}
+
+const ExampleSchema = optionalText('Example', EXAMPLE_MAX_LENGTH, normalizeText)
 
 /**
  * Stored as these full names; abbreviations ("v.") are display only (features/terms).
