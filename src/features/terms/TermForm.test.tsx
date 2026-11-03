@@ -141,6 +141,25 @@ describe('pronunciation', () => {
     expect(lookupStatus()).toBeEmptyDOMElement()
   })
 
+  it('cannot look up while Add is saving, so no result lands in the emptied form', async () => {
+    const { repository } = await openFilePage()
+    let finishSave = () => {}
+    const create = repository.createTerm.bind(repository)
+    vi.spyOn(repository, 'createTerm').mockImplementation(
+      (...args) =>
+        new Promise((resolve) => {
+          finishSave = () => resolve(create(...args))
+        }),
+    )
+    typeInto('Term', 'run')
+    typeInto('Meaning', 'chạy')
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+    expect(lookUpButton()).toBeDisabled()
+    await act(async () => finishSave())
+    await screen.findByText('run', { selector: '.term__word' })
+    expect(lookUpButton()).toBeDisabled() // Term is empty again
+  })
+
   it('keeps the pronunciation when another field of the term is edited', async () => {
     const { repository, file } = await openFilePage([
       { word: 'run', pronunciation: '/rʌn/', meaning: 'chạy' },

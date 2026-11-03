@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { Link, useParams } from 'react-router'
-import type { Term } from '../../domain/schemas.ts'
+import type { Term, VocabFile } from '../../domain/schemas.ts'
 import { deleteTermMessage, plural } from '../../shared/deleteMessages.ts'
 import {
   ActionError,
@@ -62,7 +62,13 @@ export function FilePage() {
       <FileNotes
         key={file.id}
         file={file}
-        onSave={(notes) => write(() => repository.updateFileNotes(file.id, { notes }))}
+        onSave={async (notes) => {
+          let saved: VocabFile | undefined
+          await write(async () => {
+            saved = await repository.updateFileNotes(file.id, { notes })
+          })
+          return saved!
+        }}
       />
       <TermForm
         submitLabel="Add"

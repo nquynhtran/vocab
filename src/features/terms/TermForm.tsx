@@ -97,6 +97,9 @@ export function TermForm({
     setFormError(undefined)
     try {
       await onSubmit({ word, partOfSpeech, pronunciation, meaning, example })
+      // A lookup started while saving belongs to the term just added, not to the empty form.
+      cancelLookup()
+      setLookupStatus('idle')
       setWord(initial.word)
       setPartOfSpeech(initial.partOfSpeech ?? '')
       setPronunciation(initial.pronunciation ?? '')
@@ -205,7 +208,7 @@ export function TermForm({
             type="button"
             className="button"
             onClick={() => void handleLookUp()}
-            disabled={word.trim() === '' || lookupStatus === 'looking'}
+            disabled={word.trim() === '' || lookupStatus === 'looking' || pending}
           >
             {lookupStatus === 'looking' ? 'Looking up…' : 'Look up'}
           </button>

@@ -197,8 +197,9 @@ label {
   overflow-wrap: anywhere;
 }
 
+/* Kept in the layout (not display: none), so screen readers announce what appears in it. */
 .lookup-status:empty {
-  display: none;
+  margin: 0;
 }
 
 /* ---- File notes ---- */

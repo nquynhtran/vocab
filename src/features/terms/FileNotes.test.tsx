@@ -121,6 +121,39 @@ describe('file notes', () => {
     expect(localStorage.getItem(draftKey(file.id))).toBe('{"text":"A long reading"}')
   })
 
+  it('shows the saved notes even when the reload after saving fails, and edits from them', async () => {
+    const { repository, file } = await openFilePage()
+    const read = repository.getFile.bind(repository)
+    fireEvent.click(screen.getByRole('button', { name: 'Add notes' }))
+    typeNotes('New notes')
+    vi.spyOn(repository, 'getFile').mockRejectedValueOnce(new ConnectionError())
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(await screen.findByText(/could not be refreshed/i)).toBeInTheDocument()
+    expect(screen.getByText('New notes', { selector: '.notes__text' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Edit notes' }))
+    expect(notesBox()).toHaveValue('New notes')
+    expect((await read(file.id))?.notes).toBe('New notes')
+  })
+
+  it('locks the box while saving, so nothing typed meanwhile is dropped', async () => {
+    const { repository } = await openFilePage()
+    let finishSave = () => {}
+    const update = repository.updateFileNotes.bind(repository)
+    vi.spyOn(repository, 'updateFileNotes').mockImplementation(
+      (...args) =>
+        new Promise((resolve) => {
+          finishSave = () => resolve(update(...args))
+        }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Add notes' }))
+    typeNotes('Notes')
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    expect(notesBox()).toHaveAttribute('readonly')
+    await act(async () => finishSave())
+    await screen.findByText('Notes', { selector: '.notes__text' })
+  })
+
   it('still edits notes when storage cannot be used', async () => {
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new DOMException('full', 'QuotaExceededError')

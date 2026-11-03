@@ -13,7 +13,11 @@ const run: Term = {
   createdAt: '2026-10-01T00:00:00.000Z',
   updatedAt: '2026-10-01T00:00:00.000Z',
 }
-const at = (level: SessionTerm['level']): SessionTerm => ({ term: run, level, missed: false })
+const at = (level: SessionTerm['level'], term = run): SessionTerm => ({
+  term,
+  level,
+  missed: false,
+})
 const others = [
   { word: 'walk', meaning: 'đi bộ' },
   { word: 'swim', meaning: 'bơi' },
@@ -35,6 +39,16 @@ describe('buildQuestion', () => {
       'swim',
       'walk',
     ])
+  })
+
+  it('carries the pronunciation for the feedback, and leaves it out when there is none', () => {
+    const withIpa = { ...run, pronunciation: '/rʌn/' }
+    expect(buildQuestion(at(0, withIpa), [withIpa, ...others], [], Math.random)).toMatchObject({
+      pronunciation: '/rʌn/',
+    })
+    expect(buildQuestion(at(1), [run, ...others], [], Math.random)).not.toHaveProperty(
+      'pronunciation',
+    )
   })
 
   it('asks written at level 1, with the word hidden in the example', () => {

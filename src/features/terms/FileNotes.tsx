@@ -10,8 +10,8 @@ const formatCount = (count: number) => count.toLocaleString('en')
 
 interface FileNotesProps {
   file: VocabFile
-  /** Throws to show errors, like a form's onSubmit. */
-  onSave: (notes: string) => Promise<void>
+  /** Resolves to the saved file; throws to show errors, like a form's onSubmit. */
+  onSave: (notes: string) => Promise<VocabFile>
 }
 
 /**
@@ -29,7 +29,12 @@ export function FileNotes({ file, onSave }: FileNotesProps) {
   const [pending, setPending] = useState(false)
   const baseId = useId()
   const ids = { text: `${baseId}-text`, count: `${baseId}-count`, error: `${baseId}-error` }
-  const notes = file.notes ?? ''
+  // What this device just saved, shown until the page has reloaded a file at least as new:
+  // otherwise the old notes would show meanwhile, or for good if that reload fails, and the
+  // next Edit would start from them and overwrite what was just saved.
+  const [saved, setSaved] = useState<VocabFile>()
+  const shown = saved !== undefined && saved.updatedAt >= file.updatedAt ? saved : file
+  const notes = shown.notes ?? ''
   const tooLong = text.length > NOTES_MAX_LENGTH
 
   function startEditing() {
@@ -52,7 +57,7 @@ export function FileNotes({ file, onSave }: FileNotesProps) {
     setPending(true)
     setError(undefined)
     try {
-      await onSave(text)
+      setSaved(await onSave(text))
       stopEditing()
     } catch (caught) {
       // The draft stays, so the text survives a reload until a save works.
@@ -92,6 +97,8 @@ export function FileNotes({ file, onSave }: FileNotesProps) {
               writeNotesDraft(file.id, event.target.value)
             }}
             rows={12}
+            // What is typed while saving would be dropped with the draft once the save is done.
+            readOnly={pending}
             // No maxLength: it would silently cut a long paste. Too long shows below instead.
             // Notes may be Vietnamese, and pasted text underlined everywhere is only noise.
             spellCheck={false}
