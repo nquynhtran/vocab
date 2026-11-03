@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { InvalidStoredDataError } from '../domain/errors.ts'
-import { FolderSchema, TermProgressSchema, TermSchema } from '../domain/schemas.ts'
+import { FolderSchema, TermProgressSchema, TermSchema, VocabFileSchema } from '../domain/schemas.ts'
 import {
   convertRow,
   entityToRow,
+  fileToRow,
   folderToRow,
   parseRow,
   termContentToRow,
@@ -91,6 +92,66 @@ describe('parseRow', () => {
     expect(() => parseRow(FolderSchema, 'IELTS', 'folders 0')).toThrow(
       new InvalidStoredDataError('folders 0', 'expected a row'),
     )
+  })
+})
+
+describe('stage 3b columns', () => {
+  const fileRow = {
+    id: FILE_ID,
+    user_id: USER_ID,
+    folder_id: ID,
+    name: 'Unit 1',
+    name_key: 'unit 1',
+    notes: 'Reading:\n\n  The river runs.',
+    created_at: '2026-10-22T08:00:00+00:00',
+    updated_at: '2026-10-22T08:00:00+00:00',
+  }
+  const file = {
+    id: FILE_ID,
+    folderId: ID,
+    name: 'Unit 1',
+    notes: 'Reading:\n\n  The river runs.',
+    createdAt: '2026-10-22T08:00:00.000Z',
+    updatedAt: '2026-10-22T08:00:00.000Z',
+  }
+
+  it('reads multi-line notes, and null notes as absent', () => {
+    expect(parseRow(VocabFileSchema, fileRow, 'files 0')).toStrictEqual(file)
+    const { notes: _notes, ...withoutNotes } = file
+    expect(parseRow(VocabFileSchema, { ...fileRow, notes: null }, 'files 0')).toStrictEqual(
+      withoutNotes,
+    )
+  })
+
+  it('rejects stored notes that are not normalized', () => {
+    expect(() => parseRow(VocabFileSchema, { ...fileRow, notes: 'a\r\nb' }, 'files 0')).toThrow(
+      InvalidStoredDataError,
+    )
+  })
+
+  it('writes notes, null when absent', () => {
+    expect(fileToRow(file)).toStrictEqual({
+      id: FILE_ID,
+      folder_id: ID,
+      name: 'Unit 1',
+      name_key: 'unit 1',
+      notes: 'Reading:\n\n  The river runs.',
+      created_at: file.createdAt,
+      updated_at: file.updatedAt,
+    })
+    const { notes: _notes, ...withoutNotes } = file
+    expect(fileToRow(withoutNotes)).toMatchObject({ notes: null })
+  })
+
+  it('reads and writes a pronunciation', () => {
+    const row = { ...termRow, pronunciation: '/dəʊnt/' }
+    expect(parseRow(TermSchema, row, 'terms 0')).toMatchObject({ pronunciation: '/dəʊnt/' })
+    expect(parseRow(TermSchema, { ...row, pronunciation: null }, 'terms 0')).not.toHaveProperty(
+      'pronunciation',
+    )
+    expect(termContentToRow({ word: 'x', meaning: 'y', pronunciation: '/x/' })).toMatchObject({
+      pronunciation: '/x/',
+    })
   })
 })
 

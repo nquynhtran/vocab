@@ -78,41 +78,44 @@ function isBritish(label: string): boolean {
 }
 
 function ipaCandidates(wikitext: string): Candidate[] {
-  // Comments and references can hold anything, including templates and line breaks.
+  // Comments and references can hold anything, including templates and line breaks. An
+  // unclosed one runs to the end, as in MediaWiki; that also keeps these patterns linear on
+  // broken pages (a lazy match retried from every unclosed "<!--" would be quadratic).
   const text = wikitext
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/<ref\b[^>]*\/>/g, '')
-    .replace(/<ref\b[^>]*>[\s\S]*?<\/ref>/g, '')
+    .replace(/<!--[\s\S]*?(?:-->|$)/g, '')
+    .replace(/<ref\b[^>]{0,500}\/>/g, '')
+    .replace(/<ref\b[^>]{0,500}>[\s\S]*?(?:<\/ref>|$)/g, '')
 
   const candidates: Candidate[] = []
-  // Accent labels set by `{{a|…}}` lines, by list depth: they apply to the deeper lines below.
+  // Accent labels set by `{{a|…}}`, by list depth: they apply to the deeper lines below.
   const labelsByDepth = new Map<number, string[]>()
   for (const line of text.split('\n')) {
     const depth = /^\*+/.exec(line)?.[0].length ?? 0
     for (const d of [...labelsByDepth.keys()]) if (d >= depth) labelsByDepth.delete(d)
     const inherited = [...labelsByDepth.values()].flat()
 
-    const lineLabels = templates(line, /\{\{(?:a|accent)\|([^{}]*)\}\}/g).flatMap((params) =>
-      unnamed(params).filter((param) => param !== 'en'),
-    )
-    if (lineLabels.length > 0) labelsByDepth.set(depth, lineLabels)
-
-    for (const params of templates(line, /\{\{IPA\|en\|([^{}]*)\}\}/g)) {
-      const labels = [...inherited, ...lineLabels, ...named(params, 'a')]
-      for (const value of unnamed(params)) {
+    // In line order: an `{{a}}` labels the `{{IPA}}`s after it, up to the next `{{a}}`
+    // ("{{a|en|US}} {{IPA|…}}, {{a|en|UK}} {{IPA|…}}"). The last one also labels the lines below.
+    let accent: string[] = []
+    for (const match of line.matchAll(/\{\{(a|accent|IPA)\|([^{}]*)\}\}/g)) {
+      const [, name = '', body = ''] = match
+      const params = body.split('|')
+      if (name !== 'IPA') {
+        accent = unnamed(params).filter((param) => param !== 'en')
+        continue
+      }
+      if (params[0]?.trim() !== 'en') continue
+      const labels = [...inherited, ...accent, ...named(params, 'a')]
+      for (const value of unnamed(params.slice(1))) {
         candidates.push({
           value: value.replace(/<[^<>]*>/g, '').trim(),
           labels: [...labels, ...modifiers(value, 'a')],
         })
       }
     }
+    if (accent.length > 0) labelsByDepth.set(depth, accent)
   }
   return candidates
-}
-
-/** The parameter lists of every template the pattern matches on a line, split at `|`. */
-function templates(line: string, pattern: RegExp): string[][] {
-  return [...line.matchAll(pattern)].map((match) => (match[1] ?? '').split('|'))
 }
 
 const NAMED_PARAM = /^\s*[\w-]+\s*=/
@@ -141,11 +144,14 @@ function modifiers(value: string, name: string): string[] {
     .map((label) => label.trim())
 }
 
-const PHONEMIC = /^\/[^/<>{}|[\]]+\/$/
-const PHONETIC = /^\[[^[\]<>{}|/]+\]$/
+// Markup characters never appear in a transcription; `&` would be an entity (`&nbsp;`).
+const PHONEMIC = /^\/[^/<>{}|[\]&]+\/$/
+const PHONETIC = /^\[[^[\]<>{}|/&]+\]$/
 
 /** The patterns keep markup out; the schema adds the length limit and unstorable characters. */
 function isStorable(value: string): boolean {
+  // Two apostrophes are wiki bold/italic (`/k'''æ'''t/`); IPA writes stress as ˈ, not '.
+  if (value.includes("''")) return false
   const parsed = PronunciationSchema.safeParse(value)
   return parsed.success && parsed.data === value
 }

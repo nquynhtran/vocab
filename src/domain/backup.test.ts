@@ -148,12 +148,17 @@ describe('validateBackup', () => {
     })
   })
 
-  it.each([null, 'text', {}, { ...validBackup(), schemaVersion: 0 }])(
-    'rejects something that is not a backup: %j',
-    (value) => {
-      expect(() => validateBackup(value)).toThrow(ValidationError)
-    },
-  )
+  it.each([
+    null,
+    'text',
+    {},
+    { ...validBackup(), schemaVersion: 0 },
+    { ...validBackup(), schemaVersion: '2' },
+    { ...validBackup(), schemaVersion: 1.5 },
+    (({ files: _files, ...rest }) => ({ ...rest, schemaVersion: 2 }))(validBackup()),
+  ])('rejects something that is not a backup: %j', (value) => {
+    expect(() => validateBackup(value)).toThrow(ValidationError)
+  })
 
   it.each([
     ['untrimmed text', (b: Backup) => ({ ...b, folders: [{ ...b.folders[0]!, name: ' IELTS ' }] })],

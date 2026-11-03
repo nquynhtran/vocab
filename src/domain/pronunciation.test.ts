@@ -47,6 +47,20 @@ describe('pickPronunciation on unusual markup', () => {
     expect(pickPronunciation(wikitext)).toBe('/tʃɑːns/')
   })
 
+  it('labels only the IPA after an {{a}} on the same line, up to the next {{a}}', () => {
+    expect(pickPronunciation('* {{IPA|en|/tʃæns/|a=GA}}; {{a|en|UK}} {{IPA|en|/tʃɑːns/}}')).toBe(
+      '/tʃɑːns/',
+    )
+    expect(
+      pickPronunciation('* {{a|en|US}} {{IPA|en|/tʃæns/}}, {{a|en|UK}} {{IPA|en|/tʃɑːns/}}'),
+    ).toBe('/tʃɑːns/')
+  })
+
+  it('passes the last {{a}} of a line down to the lines below it', () => {
+    const wikitext = '* {{a|en|US}} {{IPA|en|/x/}}, {{a|en|UK}}\n** {{IPA|en|/ɡɑːˈrɑːʒ/}}'
+    expect(pickPronunciation(`* {{IPA|en|/ɡəˈrɑːʒ/}}\n${wikitext}`)).toBe('/ɡɑːˈrɑːʒ/')
+  })
+
   it('does not let an accent line apply to its siblings', () => {
     // Inherited, the GA line would count as British and come first.
     const wikitext = '* {{a|en|RP}}\n* {{IPA|en|/ɡəˈrɑːʒ/|a=GA}}\n* {{IPA|en|/ˈɡærɑːʒ/|a=UK}}'
@@ -77,12 +91,30 @@ describe('pickPronunciation on unusual markup', () => {
     ['a template of another language', '* {{IPA|fr|/ʃa/}}'],
     ['a value that is not /…/ or […]', '* {{IPA|en|kæt|a=RP}}'],
     ['a value with leftover markup', '* {{IPA|en|/kæt/ [[x]]|a=RP}}'],
+    ['wiki bold inside a value', "* {{IPA|en|/k'''æ'''t/|a=RP}}"],
+    ['an HTML entity inside a value', '* {{IPA|en|/kæt&nbsp;/|a=RP}}'],
+    ['an unclosed comment before the IPA', '<!-- note\n* {{IPA|en|/kæt/}}'],
     ['a nested template inside IPA', '* {{IPA|en|/kæt/{{q|x}}|a=RP}}'],
     ['a value over the length limit', `* {{IPA|en|/${'ə'.repeat(100)}/}}`],
     ['a character the cloud cannot store', '* {{IPA|en|/kæ\u0000t/}}'],
     ['nothing', ''],
   ])('finds nothing in %s', (_, wikitext) => {
     expect(pickPronunciation(wikitext)).toBeUndefined()
+  })
+
+  // A vandalized page must not freeze the tab: the parsing is synchronous, so the lookup's
+  // timeout cannot interrupt it. 200 KB is the most the lookup accepts.
+  it.each([
+    ['unclosed comments', '<!--'],
+    ['unclosed self-closing refs', '<ref '],
+    ['unclosed refs', '<ref>'],
+    ['unclosed templates', '{{IPA|en|'],
+    ['accent templates', '{{a|en|RP}}'],
+  ])('stays fast on 200 KB of %s', (_, chunk) => {
+    const wikitext = `* ${chunk.repeat(Math.ceil(200_000 / chunk.length))}`.slice(0, 200_000)
+    const start = performance.now()
+    pickPronunciation(wikitext)
+    expect(performance.now() - start).toBeLessThan(500)
   })
 
   it('skips an unusable value and uses the next template', () => {
