@@ -38,9 +38,9 @@ src/
     day.ts     #   ngày địa phương `localDay` (Learn + streak)
     learn/     #   thuật toán học
     streak/    #   tính chuỗi ngày
-  data/        # Repository interface, DexieRepository, SupabaseRepository + mapper, bộ test hợp đồng; Auth, CLIENT_VERSION
+  data/        # Repository interface, DexieRepository, SupabaseRepository + mapper, bộ test hợp đồng; Auth, CLIENT_VERSION; tra Wiktionary (3b)
   features/    # UI theo tính năng: auth/ folders/ files/ terms/ learn/ streak/ backup/
-  shared/      # Component, hook dùng chung; RepositoryContext + useRepository, SignOutContext
+  shared/      # Component, hook dùng chung; RepositoryContext + useRepository, SignOutContext, PronunciationLookupContext (3b)
   app/         # Router, layout, AuthGate, khởi tạo (main.tsx tạo client Supabase + SupabaseRepository, mở VocabDb bản mới nhất)
 ```
 `scripts/make-icons.mjs`: vẽ icon PNG trong `public/` (chạy tay, xem [cloud-sync.md](cloud-sync.md#iphone)). `supabase/` (ngoài `src/`): `migrations/` (SQL, không sửa file đã đẩy lên), `tests/database/` (pgTAP), `config.toml` và `seed.sql` (chỉ cho Supabase local). Chi tiết: [cloud-sync.md](cloud-sync.md#sql-đã-có-supabase).

@@ -3,8 +3,8 @@
 > File này được nạp tự động mỗi phiên. Giữ ngắn: chỉ trạng thái hiện tại, checklist và 5 mục nhật ký gần nhất.
 
 ## Đang ở đâu
-- **Giai đoạn:** 3 xong (2026-11-04). Bắt đầu 3b.
-- **Việc tiếp theo:** 3b: viết thiết kế ghi chú file + phiên âm (data-model.md, ui.md, scope.md đã có ý tưởng), gồm đổi cấu trúc ở Dexie (version mới), backup `schemaVersion` 3, migration Supabase; rồi gọi `challenger` trước khi code.
+- **Giai đoạn:** 3b, đã chốt thiết kế (#65–#67), chưa code.
+- **Việc tiếp theo:** code 3b phần domain: `pronunciation` + `notes` trong `src/domain/schemas.ts`, `normalizeMultilineText` (idempotent) ở `text.ts`, backup v3 ở `backup.ts`, `pickPronunciation` ở `domain/pronunciation.ts` (wikitext thật lưu làm fixture). Sau đó: data (Dexie v5, `updateFileNotes`, migration SQL, `data/wiktionary.ts`) → UI → `reviewer` → `npm run test:supabase` → deploy. Thiết kế: data-model.md, ui.md, pronunciation-lookup.md, cloud-sync.md#giai-đoạn-3b.
 - **Đang vướng:** không. Build có cảnh báo chunk > 500 kB (supabase-js), để giai đoạn 6. 🔊 không kêu trong Simple Browser của VS Code. `npm run build` ở máy cần `VITE_SUPABASE_*` (xem cloud-sync.md). iPhone iOS cũ của người dùng tạo folder bị lỗi chưa rõ nguyên nhân (cloud-sync.md#iphone); người dùng sẽ cập nhật máy.
 
 ## Kế hoạch
@@ -28,13 +28,15 @@ Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn 
   - [x] Manifest + icon (`scripts/make-icons.mjs`), thử trên iPhone (máy khác OK); giữ project bằng việc dùng app (#48); CI xếp hàng trên `main` (#49)
 - [x] **3. Learn** — học một file đến khi thuộc hết ([learn-algorithm.md](docs/learn-algorithm.md)). `challenger` #50–#54; domain, `recordAnswer`/`get_learn_data`, màn Learn, mỗi bước qua `reviewer`; deploy. Đợt 1 theo góp ý (#56–#64): đan xen câu viết, thanh hai màu, loại từ + ví dụ trong câu hỏi, chạm để nghe, gạch đỏ chính tả, menu ⋯, học tiếp sau Stop (Continue / Start over ở màn Stop). Người dùng dùng thử: ổn, sẽ báo lỗi dần khi dùng
 - [ ] **3b. Ghi chú file + phiên âm** (đợt 2, [scope.md](docs/scope.md)): thiết kế → `challenger` → đổi cấu trúc dữ liệu một lần → deploy
+  - [x] Thiết kế + `challenger` (11 điểm, nhận hết); người dùng chốt #65–#67 (10 000 ký tự, Notes đầu trang, nháp trên máy, IPA kiểu Cambridge)
+  - [ ] Domain → data + SQL → UI, mỗi bước qua `reviewer`; deploy
 - [ ] **4. Streak** — đủ các test trong [streak.md](docs/streak.md)
 - [ ] **5. Sao lưu** — khôi phục toàn bộ dữ liệu từ file backup
 - [ ] **6. Hoàn thiện** — phím tắt còn lại (nếu cần; 1–4 và Enter đã có, #55), dark mode + làm lại thiết kế cho đẹp hơn (người dùng muốn, 2026-11-04; có thể gửi ảnh app mẫu; giao diện mới từ giờ chỉ dùng biến màu `--color-*`, bóng đổ menu ⋯ đang viết thẳng màu); dark mode mặc định theo máy (`prefers-color-scheme`); màn Settings chỉ làm khi có ≥ 2–3 thứ người dùng thật sự muốn chỉnh (ứng viên: giao diện tự động/sáng/tối, số từ mỗi vòng, tài khoản + Sign out, gom xuất/khôi phục backup về đây), người dùng ghi lại nhu cầu khi dùng; README; tối ưu gói code (709 kB, nén 208 kB, chủ yếu supabase-js: xem có code bản local như Dexie bị gói vào không, tách phần chưa cần lúc mở app; người dùng nhờ ghi lại 2026-11-04); dùng thử 1 tuần
 
 ## Nhật ký (5 mục gần nhất, mới nhất trên cùng)
+- 2026-11-04 — Thiết kế 3b: thử thật thấy `dictionaryapi.dev` hỏng → chọn Wiktionary (+ link Cambridge); file mới `docs/pronunciation-lookup.md`; `challenger` 11 điểm (chính: lọc rác trong wikitext, nháp ghi chú, chuẩn hóa xuống dòng idempotent); người dùng chốt #65–#67.
 - 2026-11-04 — **Xong giai đoạn 3** (người dùng xác nhận dùng ổn). Dọn PROGRESS.
 - 2026-11-04 — Màn sau Stop: Continue / Start over / Back to list; học xong hết mới chúc mừng + Study again (#64); "ôn riêng từ hay sai" ghi vào scope "có thể làm sau"; 375 test, đã deploy.
 - 2026-11-03 — Theo góp ý: bỏ câu hỏi Continue / Start over, mở Learn là học tiếp phiên dở luôn (#63); bỏ `lastStudied`, giữ `savedAt` trong bản lưu (khỏi lên version 2); 374 test, đã deploy.
 - 2026-11-03 — Tự soát đợt 1: `reviewer` soát bù #56 (không lỗi) và #59 (Tab không đóng menu mở bằng chuột; Safari không focus nút nên Escape không tới → đóng theo `onBlur` có `relatedTarget`, bấm thì focus ⋯; đã sửa, thử thêm trên Firefox thật); chạy app thật qua geckodriver + Supabase local; người dùng thử trên điện thoại OK; 377 test, đã deploy.
-- 2026-11-03 — Đợt 1 phần B: menu ⋯ tự viết (`shared/RowMenu.tsx`, bấm ra ngoài chỉ đóng, không kéo focus); học tiếp sau Stop (`domain/learn/resume.ts` + `sessionStore.ts`, một effect ghi/xóa, ghi hỏng thì xóa bản cũ, bản vô dụng cũng xóa); người dùng chọn luôn hỏi kèm "last studied N days ago" (#62); `challenger` 7 điểm (chính: "Study again" sau Stop xóa mất phiên), `reviewer` 5 điểm (chính: test xóa-khi-xong bị lớp khác che, ghi LESSONS); 375 test. Deploy cả đợt 1.

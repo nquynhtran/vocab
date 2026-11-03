@@ -2,22 +2,23 @@
 
 ```ts
 Folder       { id, name, createdAt, updatedAt }
-VocabFile    { id, folderId, name, createdAt, updatedAt }   // không đặt tên "File" vì trùng kiểu File có sẵn của trình duyệt
-Term         { id, fileId, word, partOfSpeech?, meaning, example?, createdAt, updatedAt }
+VocabFile    { id, folderId, name, notes?, createdAt, updatedAt }   // không đặt tên "File" vì trùng kiểu File có sẵn của trình duyệt
+Term         { id, fileId, word, partOfSpeech?, pronunciation?, meaning, example?, createdAt, updatedAt }
 TermProgress { termId, box, correctCount, wrongCount, lastWrongAt?, lastStudiedAt?, lastPromotedDay? }
 StudyDay     { date /* YYYY-MM-DD */, answeredCount }
 Meta         { key, value }  // lastBackupAt
 ```
 Kiểu và validate định nghĩa bằng Zod ở `src/domain/schemas.ts`; chuẩn hóa chuỗi ở `src/domain/text.ts`.
 - Thời gian (`createdAt`...) lưu dạng ISO string. `id` là UUID v4 (`z.uuid()` kiểm tra chặt theo RFC, nên id giả trong test cũng phải đúng dạng v4).
-- **Chuẩn hóa khi lưu** (`normalizeText`): Unicode **NFC**, trim, gộp mọi khoảng trắng (kể cả xuống dòng) thành một dấu cách. Tiếng Việt gõ trên Mac/iPhone có thể ở dạng NFD, nhìn giống hệt nhưng so sánh sẽ khác. Mọi ô nhập đều một dòng nên gộp xuống dòng không mất gì; nếu sau này có ô nhiều dòng thì phải xem lại.
+- **Chuẩn hóa khi lưu** (`normalizeText`): Unicode **NFC**, trim, gộp mọi khoảng trắng (kể cả xuống dòng) thành một dấu cách. Tiếng Việt gõ trên Mac/iPhone có thể ở dạng NFD, nhìn giống hệt nhưng so sánh sẽ khác. Mọi ô nhập đều một dòng nên gộp xuống dòng không mất gì, trừ ghi chú file.
+- **Chữ nhiều dòng** (`normalizeMultilineText`, chỉ cho `notes`, 3b): NFC, mọi kiểu xuống dòng (`\r\n`, `\r`, U+2028, U+2029 khi dán từ PDF/Word) → `\n` bằng **một** regex `/\r\n?|[\u2028\u2029]/g` (thay `\r` trước rồi mới `\r\n` thì một xuống dòng thành hai), trim hai đầu cả đoạn (mất thụt lề của dòng đầu, chấp nhận); **giữ nguyên** khoảng trắng và dòng trống bên trong (bài đọc có đoạn, có thụt lề). Không dùng cho so trùng, không có key. **Phải idempotent** (`f(f(x)) = f(x)`): nhập backup (`firstDifference`) và đọc cloud (#35) đều so dữ liệu với bản đã qua schema, lệch là từ chối cả file / hỏng cả trang. Test với `\r\r\n`, NFD tiếng Việt, dấu kết hợp và khoảng trắng ở đầu.
 - **Khóa so sánh** (`toKey`): `normalizeText` + chữ thường (`toLowerCase`, không phụ thuộc locale) + nháy cong → nháy thẳng (iPhone tự đổi `'` thành `’`). Giữ dấu tiếng Việt ("ma" ≠ "má"). Đây là hàm chuẩn hóa duy nhất cho so trùng; chấm câu viết dùng lại hàm này.
 - `nameKey`, `wordKey` = `toKey(name)`, `toKey(word)`, chỉ dùng để so trùng và tìm kiếm. **Không có trong kiểu domain**, chỉ có trong bản ghi DB: repository tính khi ghi và bỏ đi khi trả về. Không lưu trong file backup.
 - Sắp xếp: folder và file theo tên (`compareNames` ở domain, mọi repository dùng chung để thứ tự không phụ thuộc DB); từ theo `createdAt` giảm dần, bằng nhau thì theo `id`.
 - Phiên bản schema là version của Dexie (`db.verno`), không lưu riêng.
 - Tên DB: `vocab-app` (hằng số trong `src/data/db.ts`). Không đổi tên: IndexedDB tính theo origin `nquynhtran.github.io`, dùng chung với mọi repo Pages khác của tài khoản, nên tên phải riêng biệt.
 
-Index Dexie (version 1 tạo sẵn đủ bảng cho các giai đoạn sau; version 2 giữ nguyên index, chỉ để báo tab cũ khi thêm `partOfSpeech`, xem #32; version 3 cũng giữ nguyên index, để tab bản local reload sang bản cloud, xem #33/#45; version 4 giữ nguyên index, báo tab cũ khi thêm `lastPromotedDay`, #50):
+Index Dexie (version 1 tạo sẵn đủ bảng cho các giai đoạn sau; version 2 giữ nguyên index, chỉ để báo tab cũ khi thêm `partOfSpeech`, xem #32; version 3 cũng giữ nguyên index, để tab bản local reload sang bản cloud, xem #33/#45; version 4 giữ nguyên index, báo tab cũ khi thêm `lastPromotedDay`, #50; version 5 giữ nguyên index, báo tab cũ khi thêm `notes` và `pronunciation`, giai đoạn 3b, không cần `upgrade` vì hai trường không bắt buộc):
 ```
 folders:   id, &nameKey
 files:     id, folderId, &[folderId+nameKey]
@@ -33,6 +34,8 @@ Không có index `createdAt`: danh sách từ lọc theo `fileId` rồi sắp x�
 IndexedDB không có khóa ngoại nên kiểm tra ở `domain/` (Zod) và trong repository:
 - `id`: UUID.
 - `name`, `word`, `meaning`: bắt buộc, đã trim, 1–200 ký tự. `example`: tối đa 500 ký tự.
+- `pronunciation` (3b): không bắt buộc, `normalizeText` như `example`, tối đa 100 ký tự, ô trống → không lưu trường. Lưu đúng chữ người dùng thấy trong ô (kể cả `/…/` nếu có), không tự thêm hay bỏ dấu `/`: chữ hiện ra luôn là chữ đã gõ. Look up điền sẵn dạng `/…/` ([pronunciation-lookup.md](pronunciation-lookup.md)).
+- `notes` (3b): không bắt buộc, `normalizeMultilineText`, tối đa `NOTES_MAX_LENGTH` = 10 000 ký tự (#65), đếm như Zod (`string.length`, đơn vị UTF-16; CHECK trên cloud đếm theo ký tự nên luôn lỏng hơn hoặc bằng, như các ô khác). Chỉ còn khoảng trắng → không lưu trường. Không có trong `FileInput` (đổi tên không đụng tới ghi chú) mà có schema riêng `FileNotesInputSchema`, ghi bằng `FileRepository.updateFileNotes(id, { notes })`: kiểm tra file và folder còn tồn tại trong cùng transaction như `renameFile`, cập nhật `updatedAt`. Hai thao tác ghi **chỉ đụng cột của mình** (Dexie đọc bản ghi hiện tại trong transaction rồi thay đúng trường; cloud `update` đúng cột), để đổi tên trên máy này không xóa ghi chú vừa sửa trên máy kia. Sửa ghi chú cùng lúc trên hai máy: bản ghi sau thắng (#42).
 - Mọi ô chữ từ chối `\u0000` và surrogate UTF-16 lẻ (Postgres không lưu được, #40), để local và cloud nhận cùng một input.
 - `partOfSpeech`: một giá trị trong `PARTS_OF_SPEECH` (`src/domain/schemas.ts`) hoặc không có. Ô để trống → không lưu trường. Giá trị lưu là tên đầy đủ (`"verb"`), chữ viết tắt (`v.`) chỉ để hiển thị, nên đổi cách hiển thị không cần migration. Bỏ một giá trị khỏi danh sách thì phải migration. Thêm hay bớt giá trị đều phải sửa CHECK `part_of_speech` trên cloud bằng migration SQL.
 - Tên folder không trùng. Tên file không trùng trong cùng folder. So sánh qua `nameKey`: repository tra index trong cùng transaction ghi để báo lỗi `DuplicateNameError` kèm tên, và **unique index của DB là lớp chặn cuối**. IndexedDB chạy tuần tự các transaction rw trên cùng bảng (kể cả giữa các tab), nên khi đã kiểm tra trước thì `ConstraintError` chỉ xảy ra khi có bug; lỗi này **không** bị đổi thành `DuplicateNameError` để khỏi che bug. Không bắt lỗi bên trong callback của transaction: bắt mà không ném lại thì Dexie không hủy transaction.
@@ -46,9 +49,9 @@ IndexedDB không có khóa ngoại nên kiểm tra ở `domain/` (Zod) và trong
 
 ## Sao lưu JSON
 ```json
-{ "schemaVersion": 2, "exportedAt": "...", "folders": [], "files": [], "terms": [], "progress": [], "studyDays": [] }
+{ "schemaVersion": 3, "exportedAt": "...", "folders": [], "files": [], "terms": [], "progress": [], "studyDays": [] }
 ```
-`schemaVersion` 2 thêm `lastPromotedDay` (không bắt buộc) vào `progress`; file version 1 nhập được, chuyển lên 2 không cần đổi gì vì trường mới không bắt buộc. Không xuất `nameKey`/`wordKey` (tính lại khi nhập) và `Meta`. Xuất: `Repository.exportBackup()` đọc mọi bảng trong một transaction, không validate (bản sao an toàn vẫn phải tải được). Validate khi nhập: `validateBackup()` ở `src/domain/backup.ts` (giai đoạn 7 đã có xuất, và nhập vào kho **trống** `importIntoEmpty` (#46); nhập đè "Replace all" chưa có). Dữ liệu mà schema sẽ đổi (chưa chuẩn hóa, trường lạ, ô trống) bị **từ chối** kèm đường dẫn, không lặng lẽ sửa (#35): file backup chỉ do app ghi, khác đi nghĩa là có bug hoặc bị sửa tay.
+`schemaVersion` 2 thêm `lastPromotedDay` (không bắt buộc) vào `progress`; `schemaVersion` 3 (giai đoạn 3b) thêm `files[].notes` và `terms[].pronunciation` (không bắt buộc). File version 1 và 2 nhập được: `migrateBackup` dùng một bảng "trường mới có từ version nào" (`2: progress.lastPromotedDay`, `3: files.notes, terms.pronunciation`); file version *n* có trường của version > *n* là bị sửa tay → từ chối kèm đường dẫn; còn lại chỉ đổi số version (trường mới đều không bắt buộc, không cần đổi dữ liệu). Thêm version sau chỉ cần thêm một dòng vào bảng, không viết hàm mới. Không xuất `nameKey`/`wordKey` (tính lại khi nhập) và `Meta`. Xuất: `Repository.exportBackup()` đọc mọi bảng trong một transaction, không validate (bản sao an toàn vẫn phải tải được). Validate khi nhập: `validateBackup()` ở `src/domain/backup.ts` (giai đoạn 7 đã có xuất, và nhập vào kho **trống** `importIntoEmpty` (#46); nhập đè "Replace all" chưa có). Dữ liệu mà schema sẽ đổi (chưa chuẩn hóa, trường lạ, ô trống) bị **từ chối** kèm đường dẫn, không lặng lẽ sửa (#35): file backup chỉ do app ghi, khác đi nghĩa là có bug hoặc bị sửa tay.
 Nhập: kiểm tra kích thước ≤ 5 MB → parse → migration nếu là bản cũ (`migrateBackup`, trước khi validate vì schema chỉ nhận version hiện tại; file v1 có trường của v2 là bị sửa tay → từ chối) → validate bằng Zod (kể cả ràng buộc tham chiếu, và trùng `toKey` giữa các bản ghi trong chính file, ví dụ "IELTS" và "ielts ") → hỏi xác nhận "Replace all current data?" → ghi trong **một transaction**. Lỗi ở bất kỳ bước nào thì dữ liệu hiện tại giữ nguyên.
 
 ## Migration
