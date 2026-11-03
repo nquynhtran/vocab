@@ -184,6 +184,12 @@ label {
   min-width: 0;
 }
 
+/* The box shrinks instead: "Look up" on two lines reads as two words. */
+.lookup-row .button {
+  flex: none;
+  white-space: nowrap;
+}
+
 .lookup-status {
   margin-top: 4px;
   color: var(--color-muted);
