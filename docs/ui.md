@@ -27,7 +27,7 @@ Giai đoạn 0–6 ưu tiên máy tính, nhưng CSS **responsive ngay từ đầ
 - Cảnh báo từ trùng hiện **ngay khi gõ** ô Term (chờ ~300 ms sau lần gõ cuối, bỏ qua kết quả cũ về muộn), cả khi thêm và khi sửa (khi sửa không so với chính nó). Không chặn nút Add.
 - Lỗi nhập (`ValidationError`, `DuplicateNameError`) hiện cạnh ô nhập. Sau mỗi lần ghi (kể cả lỗi) trang tải lại, nên thứ đang mở đã bị xóa ở tab khác (`EntityNotFoundError`) → trang "no longer exists" kèm link về Home. Lỗi cloud (`ConnectionError`, `SessionExpiredError`, `InvalidStoredDataError`) có câu báo riêng, hiện như lỗi nhập và form giữ nguyên chữ; nếu lần tải lại sau đó cũng hỏng thì trang giữ dữ liệu cũ kèm dòng "This page could not be refreshed…". Lỗi không lường trước → "Something went wrong. Please try again.".
 - Form thêm/sửa từ bật kiểm tra chính tả có sẵn của trình duyệt (gạch đỏ) ở ô **Term** và **Example** (`spellcheck="true" lang="en"`), tắt ở ô **Meaning** vì thường là tiếng Việt (#60). Ô trả lời ở màn Learn vẫn tắt (xem Responsive).
-- Ô **Part of speech** là `<select>` đặt sau ô Term, mặc định trống. Danh sách hiện loại từ dạng viết tắt sau từ, ví dụ `run (v.)`.
+- Ô **Part of speech** là `<select>` đặt sau ô Term, mặc định trống. Danh sách hiện loại từ viết tắt, chữ nghiêng nhỏ sau từ (`run` *v.*), rê chuột thấy tên đầy đủ; ô chọn ghi `verb (v.)`.
 - Nút 🔊 (`Listen to "run"`) đọc từ bằng `speechSynthesis`, `lang = en-GB`. Trình duyệt không hỗ trợ thì ẩn nút. Bấm lần nữa khi đang đọc thì đọc lại từ đầu.
 
 ## Responsive
