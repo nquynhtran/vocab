@@ -25,7 +25,7 @@ Không đăng nhập thì dữ liệu nằm riêng trong trình duyệt của t�
 - `export_backup()`: một câu SQL (một snapshot), trả `{ folders, files, terms, progress, study_days }` gồm cả `user_id`, `name_key`, `null`; mapper bỏ đi, client tự thêm `schemaVersion`, `exportedAt`.
 - Thêm cột về sau: sửa cả danh sách cột trong `import_snapshot` (thiếu thì payload có cột mới bị từ chối, lỗi rõ chứ không mất dữ liệu).
 - `user_id` trỏ `auth.users` với `on delete cascade`: xóa tài khoản trên dashboard là xóa hết dữ liệu. Export JSON trước nếu cần.
-- `app_config`: đúng một dòng, `min_client_version = 1`; chỉ `authenticated` đọc được, nên client kiểm tra version **sau khi đăng nhập** (chưa đăng nhập thì `anon` bị từ chối, không phải lỗi mạng).
+- `app_config`: đúng một dòng, `min_client_version` (khởi tạo 1, các migration sau nâng dần, hiện là 3); chỉ `authenticated` đọc được, nên client kiểm tra version **sau khi đăng nhập** (chưa đăng nhập thì `anon` bị từ chối, không phải lỗi mạng).
 - Giai đoạn 3: xem mục [Giai đoạn 3 (Learn)](#giai-đoạn-3-learn). Chưa có: bảng `meta` (`lastBackupAt` tính ở giai đoạn 5).
 - `list_terms(p_file_id)`, `get_folder_contents(p_folder_id)`: trả `jsonb` (không bị cắt ở `max_rows`, một snapshot). `get_folder_contents` trả `{ folder, files, terms: [{ file_id, box }] }` hoặc `null`; "đã thuộc" do client tính bằng `isMastered`, không lặp lại trong SQL.
 - `supabase/config.toml` (chỉ cho local): tắt đăng ký bằng `[auth] enable_signup = false` như cloud. `[auth.email] enable_signup` phải để `true`: ở local nó bật/tắt cả nhà cung cấp email, `false` thì không đăng nhập được. Tắt realtime, storage, edge functions, analytics cho nhẹ.

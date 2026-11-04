@@ -3,8 +3,8 @@
 > File này được nạp tự động mỗi phiên. Giữ ngắn: chỉ trạng thái hiện tại, checklist và 5 mục nhật ký gần nhất.
 
 ## Đang ở đâu
-- **Giai đoạn:** 3b, đã deploy (cột mới trên cloud, code `1b59a81` trên Pages, CI xanh); `min_client_version` trên cloud vẫn là 2.
-- **Việc tiếp theo:** người dùng thử Look up và Notes trên bản thật (máy tính + iPhone); sau đó, khi người dùng cho phép: thêm migration `min_client_version = 3`, đổi kỳ vọng ở `tables.test.sql`, `npm run test:supabase`, `db push --dry-run`, `db push`, push (#68).
+- **Giai đoạn:** 3b, đã deploy đủ (cột mới + `min_client_version` 3 trên cloud, code mới trên Pages); chỉ còn chờ người dùng xác nhận trên bản thật.
+- **Việc tiếp theo:** người dùng thử lại form Edit trên máy tính và phiên âm ở "This round". OK thì tick mục cuối của 3b, sang giai đoạn 4: gọi `challenger` soát [streak.md](docs/streak.md) trước khi viết code.
 - **Đang vướng:** không. Build có cảnh báo chunk > 500 kB (supabase-js), để giai đoạn 6. 🔊 không kêu trong Simple Browser của VS Code. `npm run build` ở máy cần `VITE_SUPABASE_*` (xem cloud-sync.md). iPhone iOS cũ của người dùng tạo folder bị lỗi chưa rõ nguyên nhân (cloud-sync.md#iphone); người dùng sẽ cập nhật máy.
 
 ## Kế hoạch
@@ -32,15 +32,15 @@ Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn 
   - [x] Domain → data + SQL → UI, qua `reviewer` 3 lượt; chạy app thật trên Firefox + Supabase local, CSP thử trên bản build
   - [x] Sau khi tự soát: tách nâng `min_client_version` (#68), cảnh báo trước khi ghi đè ghi chú (#69), tách phiên âm chạy tuyến tính
   - [x] Deploy: `db push` thêm cột → `git push` + CI xanh
-  - [ ] Migration nâng `min_client_version` 3 (chờ người dùng cho phép)
-  - [ ] Người dùng dùng thử trên máy tính + iPhone
+  - [x] Migration nâng `min_client_version` 3 (`db push`, đọc lại trên cloud ra 3)
+  - [ ] Người dùng dùng thử: điện thoại đã ổn; máy tính chờ xác nhận sau hai lỗi đã sửa (#70)
 - [ ] **4. Streak** — đủ các test trong [streak.md](docs/streak.md)
 - [ ] **5. Sao lưu** — khôi phục toàn bộ dữ liệu từ file backup
 - [ ] **6. Hoàn thiện** — phím tắt còn lại (nếu cần; 1–4 và Enter đã có, #55), dark mode + làm lại thiết kế cho đẹp hơn (người dùng muốn, 2026-11-04; có thể gửi ảnh app mẫu; giao diện mới từ giờ chỉ dùng biến màu `--color-*`, bóng đổ menu ⋯ đang viết thẳng màu); dark mode mặc định theo máy (`prefers-color-scheme`); màn Settings chỉ làm khi có ≥ 2–3 thứ người dùng thật sự muốn chỉnh (ứng viên: giao diện tự động/sáng/tối, số từ mỗi vòng, tài khoản + Sign out, gom xuất/khôi phục backup về đây), người dùng ghi lại nhu cầu khi dùng; README; tối ưu gói code (709 kB, nén 208 kB, chủ yếu supabase-js: xem có code bản local như Dexie bị gói vào không, tách phần chưa cần lúc mở app; người dùng nhờ ghi lại 2026-11-04); dùng thử 1 tuần
 
 ## Nhật ký (5 mục gần nhất, mới nhất trên cùng)
+- 2026-11-04 — Theo #68, sau khi xác nhận Pages đã chạy client 3: migration riêng nâng `min_client_version` lên 3; `check`, 136 pgTAP + 78 hợp đồng cloud trên đúng commit, `db push --dry-run` chỉ một migration, `db push`, đọc lại trên cloud ra 3.
 - 2026-11-04 — Theo góp ý sau khi dùng thử (điện thoại ổn): form sửa từ tại dòng trên máy tính bị bó vào một cột (`.term` 4 cột ghi đè `.term--editing`, có từ trước 3b) → đã sửa; phiên âm hiện ở danh sách tóm tắt (#70). 515 test, thử trên Firefox thật.
 - 2026-11-04 — Deploy 3b theo #68: `db push` chỉ thêm cột, push `1b59a81` (lần đầu GitHub báo lỗi do sự cố, thử lại được), CI xanh, trang thật có Wiktionary trong CSP. Chưa nâng `min_client_version`.
 - 2026-11-04 — Tự soát 3b theo yêu cầu người dùng, phát hiện test tốc độ chập chờn, báo sai tác động `db push`, nguy cơ khóa app, ghi đè ghi chú không báo → sửa (#68, #69), `reviewer` lượt 3 (10 điểm, chính: bản sao nhãn làm hết bộ nhớ) đã sửa; kiểm chứng clone sạch, CSP có đối chứng trên Firefox. Còn để sau: tách hook khỏi `TermForm`, `saved!` ở `FilePage`, so `updatedAt` phụ thuộc đồng hồ máy.
 - 2026-11-04 — Code 3b: domain (`normalizeMultilineText`, backup v3 dạng bảng, `pickPronunciation` thử trên wikitext thật), data (Dexie v5, `updateFileNotes`, migration SQL, `wiktionary.ts`, CSP), UI (Notes đầu trang + nháp, Look up, phiên âm ở danh sách và màn phản hồi). `reviewer`: treo tab với wikitext hỏng (regex bậc hai), nhãn giọng sai thứ tự, kết quả tra lọt vào form trống, ghi chú cũ sau khi lưu → đã sửa. 495 test + 136 pgTAP + 78 hợp đồng cloud.
-- 2026-11-04 — Thiết kế 3b: thử thật thấy `dictionaryapi.dev` hỏng → chọn Wiktionary (+ link Cambridge); file mới `docs/pronunciation-lookup.md`; `challenger` 11 điểm (chính: lọc rác trong wikitext, nháp ghi chú, chuẩn hóa xuống dòng idempotent); người dùng chốt #65–#67.
