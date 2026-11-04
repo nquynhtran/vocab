@@ -59,17 +59,18 @@ interface Candidate {
  * template (`a=`), the value itself (`<a:RP>`), or an `{{a}}` on the line or a line above.
  */
 export function pickPronunciation(wikitext: string): string | undefined {
-  const usable = ipaCandidates(wikitext)
-    .map((candidate) => ({ ...candidate, value: toCambridgeStyle(candidate.value) }))
-    .filter(({ value }) => isStorable(value))
-  const british = usable.filter((candidate) => candidate.labels.some(isBritish))
+  const candidates = ipaCandidates(wikitext).map((candidate) => ({
+    ...candidate,
+    value: toCambridgeStyle(candidate.value),
+  }))
+  const british = candidates.filter((candidate) => candidate.labels.some(isBritish))
   const first = (list: readonly Candidate[], pattern: RegExp) =>
-    list.find(({ value }) => pattern.test(value))?.value
+    list.find(({ value }) => pattern.test(value) && isStorable(value))?.value
   return (
     first(british, PHONEMIC) ??
     first(british, PHONETIC) ??
-    first(usable, PHONEMIC) ??
-    first(usable, PHONETIC)
+    first(candidates, PHONEMIC) ??
+    first(candidates, PHONETIC)
   )
 }
 
@@ -79,12 +80,9 @@ function isBritish(label: string): boolean {
 
 function ipaCandidates(wikitext: string): Candidate[] {
   // Comments and references can hold anything, including templates and line breaks. An
-  // unclosed one runs to the end, as in MediaWiki; that also keeps these patterns linear on
+  // unclosed comment runs to the end, as in MediaWiki; that also keeps the pattern linear on
   // broken pages (a lazy match retried from every unclosed "<!--" would be quadratic).
-  const text = wikitext
-    .replace(/<!--[\s\S]*?(?:-->|$)/g, '')
-    .replace(/<ref\b[^>]{0,500}\/>/g, '')
-    .replace(/<ref\b[^>]{0,500}>[\s\S]*?(?:<\/ref>|$)/g, '')
+  const text = stripRefs(wikitext.replace(/<!--[\s\S]*?(?:-->|$)/g, ''))
 
   const candidates: Candidate[] = []
   // Accent labels set by `{{a|…}}`, by list depth: they apply to the deeper lines below.
@@ -122,6 +120,37 @@ const NAMED_PARAM = /^\s*[\w-]+\s*=/
 
 function unnamed(params: readonly string[]): string[] {
   return params.filter((param) => !NAMED_PARAM.test(param)).map((param) => param.trim())
+}
+
+/**
+ * Removes `<ref …/>` and `<ref …>…</ref>`; an unclosed one runs to the end. A single forward scan
+ * rather than patterns: this runs synchronously on up to 200 KB of possibly vandalized text, and
+ * any pattern looking for the end of a tag retries from every unclosed "<ref ".
+ */
+function stripRefs(text: string): string {
+  let kept = ''
+  let position = 0
+  for (;;) {
+    const open = text.indexOf('<ref', position)
+    if (open === -1) return kept + text.slice(position)
+    const isTag = !/\w/.test(text.charAt(open + 4))
+    const tagEnd = isTag ? text.indexOf('>', open) : open + 3
+    // No ">" left: this is no tag, and neither is anything after it.
+    if (tagEnd === -1) return kept + text.slice(position)
+    if (!isTag) {
+      kept += text.slice(position, open + 4)
+      position = open + 4
+      continue
+    }
+    kept += text.slice(position, open)
+    if (text.charAt(tagEnd - 1) === '/') {
+      position = tagEnd + 1
+      continue
+    }
+    const close = text.indexOf('</ref>', tagEnd)
+    if (close === -1) return kept
+    position = close + '</ref>'.length
+  }
 }
 
 /** The comma-separated values of a named parameter such as `a=GA,RP`. */

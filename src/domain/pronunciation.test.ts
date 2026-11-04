@@ -102,19 +102,44 @@ describe('pickPronunciation on unusual markup', () => {
     expect(pickPronunciation(wikitext)).toBeUndefined()
   })
 
+  it('strips refs but leaves other tags starting the same way', () => {
+    expect(pickPronunciation('<references/>* {{IPA|en|/kæt/}}')).toBe('/kæt/')
+    expect(pickPronunciation('* <ref name="a">{{IPA|en|/wɒŋ/}}</ref>{{IPA|en|/kæt/}}')).toBe(
+      '/kæt/',
+    )
+    expect(pickPronunciation('* <ref name="a"/>{{IPA|en|/kæt/}}')).toBe('/kæt/')
+    expect(pickPronunciation('* {{IPA|en|/kæt/}}<ref>{{IPA|en|/wɒŋ/|a=RP}}')).toBe('/kæt/')
+    expect(pickPronunciation('* <ref {{IPA|en|/kæt/}}')).toBe('/kæt/')
+  })
+
   // A vandalized page must not freeze the tab: the parsing is synchronous, so the lookup's
-  // timeout cannot interrupt it. 200 KB is the most the lookup accepts.
+  // timeout cannot interrupt it. 200 KB is the most the lookup accepts. Compares two sizes on
+  // this machine instead of a fixed time, so a slow or busy machine does not fail it: 8× the
+  // text may take about 8× as long, while quadratic code takes about 64×.
   it.each([
     ['unclosed comments', '<!--'],
-    ['unclosed self-closing refs', '<ref '],
+    ['tag openings without an end', '<ref '],
     ['unclosed refs', '<ref>'],
+    ['self-closed refs', '<ref/>'],
+    ['lookalike tags', '<reference'],
     ['unclosed templates', '{{IPA|en|'],
     ['accent templates', '{{a|en|RP}}'],
-  ])('stays fast on 200 KB of %s', (_, chunk) => {
-    const wikitext = `* ${chunk.repeat(Math.ceil(200_000 / chunk.length))}`.slice(0, 200_000)
-    const start = performance.now()
-    pickPronunciation(wikitext)
-    expect(performance.now() - start).toBeLessThan(500)
+    ['unusable values in one template', 'x|', '* {{IPA|en|'],
+  ])('takes linear time on %s', (_, chunk, start = '* ') => {
+    const textOf = (length: number) =>
+      `${start}${chunk.repeat(Math.ceil(length / chunk.length))}`.slice(0, length - 2) + '}}'
+    const bestTime = (text: string) =>
+      Math.min(
+        ...[1, 2, 3].map(() => {
+          const before = performance.now()
+          pickPronunciation(text)
+          return performance.now() - before
+        }),
+      )
+    const small = bestTime(textOf(25_000))
+    const large = bestTime(textOf(200_000))
+    // The 50 ms floor: at a few ms, a pause of the runtime would decide the ratio.
+    expect(large).toBeLessThan(Math.max(small * 24, 50))
   })
 
   it('skips an unusable value and uses the next template', () => {
