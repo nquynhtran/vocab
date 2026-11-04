@@ -4,11 +4,12 @@ import { runRequest } from './supabaseRequest.ts'
 import { parseRow } from './supabaseRows.ts'
 
 /**
- * Raised together with `app_config.min_client_version` (a SQL migration): tabs and phones still
- * running older code reload instead of writing rows in a shape they no longer understand (#34).
- * When this client needs the migration's columns, push the migration first and deploy right
- * after; meanwhile old clients show a Reload button (reload.ts stops the reload loop).
+ * `app_config.min_client_version` (a SQL migration) makes tabs and phones running older code
+ * reload instead of writing rows in a shape they no longer understand (#34). Order (#68): push
+ * the new nullable columns, deploy this client, and only once it is live raise the minimum, so a
+ * failed deploy never locks out the app still online.
  * 2: progress.last_promoted_day (decision #50).
+ * 3: files.notes, terms.pronunciation (decision #67).
  */
 export const CLIENT_VERSION = 3
 

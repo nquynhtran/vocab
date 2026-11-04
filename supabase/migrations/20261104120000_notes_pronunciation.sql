@@ -10,9 +10,8 @@ alter table public.files add column notes text
 alter table public.terms add column pronunciation text
   check (char_length(pronunciation) between 1 and 100);
 
--- Older clients drop unknown columns when reading, so their Export JSON would silently lose
--- notes and pronunciations; they reload. CLIENT_VERSION is raised in the same release.
-update public.app_config set min_client_version = 3;
+-- min_client_version stays at 2 here: raising it now would lock out the app still deployed until
+-- the new code is live, for good if that deploy fails. A later migration raises it (#68).
 
 -- Same as in the stage 3 migration, with notes and pronunciation added to the key lists and
 -- inserts. `create or replace` keeps the existing grants.
