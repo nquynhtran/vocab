@@ -80,8 +80,11 @@ export function TermForm({
       if (controller.signal.aborted) return
       if (result.kind === 'found') setPronunciation(result.pronunciation)
       setLookupStatus(result.kind === 'found' ? 'idle' : 'not-found')
-    } catch {
-      if (!controller.signal.aborted) setLookupStatus('failed')
+    } catch (error) {
+      if (controller.signal.aborted) return
+      // One message for the user; the console tells a CSP block from a 429 or being offline.
+      console.warn('Pronunciation lookup failed', error)
+      setLookupStatus('failed')
     } finally {
       if (lookupRef.current === controller) lookupRef.current = undefined
     }

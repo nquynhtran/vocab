@@ -39,4 +39,6 @@ Wikitext thật (rút gọn):
 - Code: hàm thuần `wiktionaryTitles(word)`, `findPronunciationSection(sections)`, `pickPronunciation(wikitext)` ở `domain/pronunciation.ts`; gọi mạng ở `data/wiktionary.ts` (nhận `fetch` làm tham số), cài interface `PronunciationLookup` (`lookUp(word, signal)`). UI lấy qua `PronunciationLookupContext` ở `shared/` (như `RepositoryContext`), `main.tsx` tạo bản thật; test UI dùng bản giả. Không qua `Repository` vì không phải dữ liệu của người dùng.
 - CSP: `connect-src` thêm `https://en.wiktionary.org`. Link Cambridge là điều hướng sang tab mới (`target="_blank" rel="noopener noreferrer"`), CSP không chặn.
 - Riêng tư: chỉ gửi chữ trong ô Term, chỉ khi bấm nút. Không gửi gì khác.
-- Bản quyền: nội dung Wiktionary là CC BY-SA; app cá nhân lưu vài phiên âm để học, không phát hành lại.
+- Bản quyền: nội dung Wiktionary là CC BY-SA. App chỉ lưu phiên âm người dùng chọn vào dữ liệu riêng. Vài đoạn wikitext làm dữ liệu test nằm trong repo công khai (`pronunciation.fixtures.ts`), có ghi nguồn và giấy phép ngay đầu file.
+- Giới hạn gọi: Wikimedia trả 429 khi gọi dồn (gặp khi tải dữ liệu mẫu từ máy, ~10 request trong vài giây; chưa đo khi dùng thật). 429 được coi là tra lỗi, người dùng thử lại sau hoặc dùng link Cambridge; không tự thử lại. Mỗi lần tra 2 request (4 nếu chữ hoa phải thử lại), chưa kể preflight.
+- Tra lỗi ghi `console.warn` kèm nguyên nhân: câu báo trên màn hình chỉ có một, console mới phân biệt được CSP chặn, 429 hay mất mạng.

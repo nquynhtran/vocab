@@ -3,7 +3,7 @@
 > Nạp tự động mỗi phiên. Chỉ ghi lỗi thật sự do Claude gây ra. Mỗi mục 1–2 dòng: **lỗi → cách tránh**. Trùng bài học cũ thì đánh dấu `(lặp lại ×n)` thay vì thêm dòng mới.
 
 ## Test
-- Viết test không thể đỏ: schema có `.transform` thì `parse` luôn qua, nên "parse được" không chứng minh gì → so `parse(x)` với chính `x`; với test quan trọng, phá code thử xem test có đỏ không. (lặp lại ×4: test pgTAP "folder của B không chứa từ của A" mà folder rỗng và khóa ngoại đã chặn sẵn; màn Learn: "bấm hai lần" mà nút đã bị khóa, "phím trong hộp đăng nhập" lúc câu hỏi đã khóa, "giữ focus" bằng `fireEvent.click` vốn không chuyển focus; 3b: "nhãn giọng không lan sang dòng cùng cấp" với dữ liệu mà có lan hay không cũng ra cùng đáp án → chọn dữ liệu sao cho code sai cho kết quả khác)
+- Viết test không thể đỏ: schema có `.transform` thì `parse` luôn qua, nên "parse được" không chứng minh gì → so `parse(x)` với chính `x`; với test quan trọng, phá code thử xem test có đỏ không. (lặp lại ×5: test pgTAP "folder của B không chứa từ của A" mà folder rỗng và khóa ngoại đã chặn sẵn; màn Learn: "bấm hai lần" mà nút đã bị khóa, "phím trong hộp đăng nhập" lúc câu hỏi đã khóa, "giữ focus" bằng `fireEvent.click` vốn không chuyển focus; 3b: "nhãn giọng không lan sang dòng cùng cấp" với dữ liệu mà có lan hay không cũng ra cùng đáp án; "không cảnh báo" kiểm bằng chữ cũng nằm trong hộp cảnh báo → chọn dữ liệu sao cho code sai cho kết quả khác)
 - Bỏ sót test cho lớp phòng thủ (unique index, kiểm tra cha khi đổi tên; khóa ngoại kèm `user_id` mới test ở một bảng) vì lớp trước đã chặn → mỗi lớp chặn phải có test riêng đánh thẳng vào nó, ở mọi bảng. (lặp lại ×3: xóa bản lưu khi học xong bị `resumeSession` trả `undefined` che mất; khi phá thử, phá theo mọi cách, không chỉ một)
 - Test quyền theo danh sách object cố định → object do migration sau thêm không được kiểm → duyệt mọi object trong schema.
 - Test lời hứa "giữ chữ trong form khi mất phiên" bằng `FakeApp` tự viết → bỏ sót trang thật thay cả trang bằng `LoadError` khi tải lại hỏng → lời hứa về hành vi của UI phải test trên trang thật (`App` + repository), không chỉ trên bản giả của nó.
@@ -36,6 +36,9 @@
 
 ## Công cụ
 - `a && b; git commit && git push`: `a` hỏng (sed sai dấu phân cách) thì `&&` chỉ bỏ qua tới `;`, commit/push vẫn chạy với nội dung thiếu → lệnh ghi ra ngoài (commit, push, deploy) chạy riêng, sau khi đã thấy bước trước thành công.
+- Báo "xanh" và "vài mili giây" cho test tốc độ khi mới chạy một lần, chưa đo; giới hạn 500 ms sát với thời gian thật 350–460 ms nên test chập chờn → đo trước khi nói con số; test thời gian so tỉ lệ giữa hai kích thước trên cùng máy.
+- Báo `db push` "chỉ thêm hai cột" khi migration còn nâng `min_client_version`, và thử chạy lên cloud thật bằng `yes |` mà chưa hỏi → trước lệnh ghi lên hệ thống thật, đọc lại toàn bộ migration, kể đủ tác động, hỏi người dùng, không tự trả lời câu xác nhận.
+- Nâng `min_client_version` cùng lúc thêm cột, trước khi deploy → app đang chạy bị khóa nếu CI đỏ → với bước khó quay lại, hỏi "nếu bước sau hỏng thì sao" (#68).
 - `pkill -f "<lệnh>"` khớp luôn dòng lệnh của chính shell đang chạy nó (exit 144), các lệnh sau trong cùng shell không chạy → dừng tiến trình nền bằng ID/PID, hoặc chạy `pkill` một mình.
 - Thêm `/// <reference types="node" />` vào một file test trong `src/` → mở kiểu Node cho cả project app (`tsconfig.app.json` cố ý chỉ có `vite/client`) → trước khi thêm kiểu hay cấu hình, xem nó áp dụng cho phạm vi nào; test cần Node thì để ngoài project app.
 - Đưa mật khẩu test công khai vào `seed.sql` và chỉ cấm một lệnh (`db push --include-seed`), sót `db reset --linked` → với file nguy hiểm nếu chạy nhầm chỗ, cho chính file tự kiểm tra môi trường thay vì chỉ dựa vào tài liệu.

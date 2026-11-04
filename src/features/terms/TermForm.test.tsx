@@ -160,6 +160,26 @@ describe('pronunciation', () => {
     expect(lookUpButton()).toBeDisabled() // Term is empty again
   })
 
+  it.each([
+    ['Cancel', () => fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))],
+    [
+      'Escape',
+      () => fireEvent.keyDown(screen.getAllByLabelText('Meaning').at(-1)!, { key: 'Escape' }),
+    ],
+  ])('cancels a pending lookup when %s closes the edit form', async (_, close) => {
+    const { calls } = await openFilePage([{ word: 'run', meaning: 'chạy' }])
+    fireEvent.click(await screen.findByRole('button', { name: 'More actions for "run"' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit "run"' }))
+    const form = within(screen.getByRole('button', { name: 'Save' }).closest('li')!)
+    fireEvent.click(form.getByRole('button', { name: 'Look up' }))
+    expect(calls[0]!.signal?.aborted).toBe(false)
+
+    close()
+
+    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
+    expect(calls[0]!.signal?.aborted).toBe(true)
+  })
+
   it('keeps the pronunciation when another field of the term is edited', async () => {
     const { repository, file } = await openFilePage([
       { word: 'run', pronunciation: '/rʌn/', meaning: 'chạy' },

@@ -62,6 +62,7 @@ export function FilePage() {
       <FileNotes
         key={file.id}
         file={file}
+        loadLatest={() => repository.getFile(file.id)}
         onSave={async (notes) => {
           let saved: VocabFile | undefined
           await write(async () => {

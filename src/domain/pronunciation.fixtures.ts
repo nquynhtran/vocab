@@ -1,6 +1,8 @@
 /**
  * Real Wiktionary Pronunciation sections (en.wiktionary.org, fetched 2026-11-04 at the revids
  * shown), for tests of pickPronunciation. Kept verbatim: the odd parts are the point.
+ * Text from Wiktionary contributors, CC BY-SA 4.0: https://creativecommons.org/licenses/by-sa/4.0/
+ * Page history: https://en.wiktionary.org/w/index.php?title=<title>&action=history
  */
 
 /** `run`, revid 94570453 */
