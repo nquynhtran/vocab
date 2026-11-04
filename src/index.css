@@ -431,8 +431,9 @@ label {
   font-style: italic;
 }
 
-.term--editing {
-  grid-template-columns: 1fr;
+/* Two classes: the wide screens' four columns of .term come later and must not squeeze the form. */
+.term.term--editing {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .term--editing .term-form {
@@ -747,6 +748,15 @@ label {
 
 .tally__word {
   font-weight: 600;
+}
+
+/* The word and its pronunciation share one cell of the row; a long one wraps on a phone. */
+.tally__term {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 8px;
+  min-width: 0;
 }
 
 .tally__listen {

@@ -18,6 +18,8 @@
 
 - Nghe phím ở `window` (phím 1–4) → `inert` của lớp phủ đăng nhập không chặn, gõ trong hộp Sign in chọn luôn đáp án bên dưới → listener toàn cục phải tự bỏ qua khi phần tử của nó nằm trong `[inert]` (và khi đang gõ trong ô nhập).
 
+- Soát giao diện trên màn rộng chỉ chụp form thêm từ, không mở form sửa tại dòng, nên không thấy `.term` 4 cột trong media query ghi đè `.term--editing` → mỗi lần đổi form dùng chung, chụp mọi nơi dùng nó, ở cả hai cỡ màn hình; quy tắc thay đổi bố cục phải kiểm tra thứ tự với media query viết sau.
+
 ## Thư viện
 - Đặt tên lỗi tự định nghĩa là `NotFoundError`: Dexie bọc lại lỗi có `name` trùng tên lỗi DOM của IndexedDB, nên `instanceof` hỏng → không dùng tên lỗi DOM (`NotFound`, `Constraint`, `Data`, `Abort`…) cho lỗi ném trong transaction.
 

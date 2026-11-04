@@ -220,6 +220,27 @@ describe('Learn', () => {
     expect(screen.getByText('/ˈʃedʒuːl/')).toHaveClass('pronunciation')
   })
 
+  it('shows the pronunciation in the round summary, for the terms that have one (#70)', async () => {
+    const terms = Array.from({ length: 8 }, (_, i) => ({
+      word: `w${i}`,
+      meaning: `nghĩa ${i}`,
+      ...(i % 2 === 0 && { pronunciation: `/w${i}/` }),
+    }))
+    const { repository, file, wordOf } = await setUp(terms)
+    await masterAll(repository, file.id)
+    renderAt(repository, `/files/${file.id}/learn`)
+    await answerAllRight(wordOf)
+    await screen.findByRole('heading', { name: 'Round 1 done' })
+
+    const rows = within(screen.getByRole('list', { name: 'This round' })).getAllByRole('listitem')
+    expect(rows).toHaveLength(7)
+    for (const row of rows) {
+      const number = Number(/\d/.exec(row.querySelector('.tally__word')?.textContent ?? '')?.[0])
+      const shown = row.querySelector('.pronunciation')?.textContent
+      expect(shown).toBe(number % 2 === 0 ? `/w${number}/` : undefined)
+    }
+  })
+
   it('shows the part of speech after the meaning (#61)', async () => {
     const { repository, file } = await setUp([
       { word: 'big', partOfSpeech: 'adjective', meaning: 'to' },

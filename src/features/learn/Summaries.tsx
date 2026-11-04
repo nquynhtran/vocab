@@ -83,7 +83,10 @@ function TallyList({ label, tallies }: { label: string; tallies: TermTally[] }) 
       <ul className="tally-list" aria-label={label}>
         {tallies.map(({ term, correct, wrong }) => (
           <li key={term.id} className="tally">
-            <TallyWord word={term.word} />
+            <span className="tally__term">
+              <TallyWord word={term.word} />
+              {term.pronunciation && <span className="pronunciation">{term.pronunciation}</span>}
+            </span>
             <span className="tally__meaning">{term.meaning}</span>
             <span className={wrong > 0 ? 'tally__count tally__count--wrong' : 'tally__count'}>
               {correct} right · {wrong} wrong

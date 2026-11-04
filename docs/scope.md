@@ -23,7 +23,7 @@ Nhiều người dùng, flashcard, Match, Test, chia sẻ bộ từ, file ghi â
 | # | Tính năng | Mô tả |
 |---|-----------|-------|
 | F8 | Ghi chú cho file | Một ô chữ dài (ví dụ bài đọc chứa các từ), mục **Notes** thu gọn được ở **đầu** trang File (#65). Chữ thường (không định dạng, không link), giữ xuống dòng, có bộ đếm và giới hạn ký tự → [ui.md](ui.md#ghi-chú-file-f8), [data-model.md](data-model.md) |
-| F9 | Phiên âm (IPA) | Ô **Pronunciation** không bắt buộc ở form từ, gõ/dán tay được; nút **Look up** tự điền từ Wiktionary (lỗi thì báo nhẹ, không chặn lưu) → [pronunciation-lookup.md](pronunciation-lookup.md). Hiện ở danh sách từ và màn phản hồi Learn, không hiện lúc đang hỏi (lộ đáp án câu viết) |
+| F9 | Phiên âm (IPA) | Ô **Pronunciation** không bắt buộc ở form từ, gõ/dán tay được; nút **Look up** tự điền từ Wiktionary (lỗi thì báo nhẹ, không chặn lưu) → [pronunciation-lookup.md](pronunciation-lookup.md). Hiện ở danh sách từ, màn phản hồi Learn và các danh sách tóm tắt sau vòng/phiên (#70), không hiện lúc đang hỏi (lộ đáp án câu viết) |
 
 Cả hai đổi cấu trúc dữ liệu trong **một lần**: Dexie v5, backup `schemaVersion` 3, migration cloud + `min_client_version` 3 ([cloud-sync.md](cloud-sync.md#giai-đoạn-3b-ghi-chú--phiên-âm)). Không làm: định dạng chữ trong ghi chú, ghi chú cho folder hay cho từng từ, tìm kiếm trong ghi chú, tự tra phiên âm khi gõ (chỉ khi bấm nút), tra hàng loạt cho từ cũ. Đã qua `challenger`, chốt #65–#67.
 
