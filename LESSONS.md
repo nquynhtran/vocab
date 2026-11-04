@@ -36,10 +36,11 @@
 
 ## Công cụ
 - `a && b; git commit && git push`: `a` hỏng (sed sai dấu phân cách) thì `&&` chỉ bỏ qua tới `;`, commit/push vẫn chạy với nội dung thiếu → lệnh ghi ra ngoài (commit, push, deploy) chạy riêng, sau khi đã thấy bước trước thành công.
+- Sửa chỗ chậm mà chỉ đo đúng mẫu đã biết, báo "xử lý triệt để" → `reviewer` tìm ra mẫu khác (nhiều giá trị × nhiều nhãn) làm hết bộ nhớ → với dữ liệu không tin cậy, rà mọi vòng lặp lồng và bản sao mảng, không chỉ regex.
 - Báo "xanh" và "vài mili giây" cho test tốc độ khi mới chạy một lần, chưa đo; giới hạn 500 ms sát với thời gian thật 350–460 ms nên test chập chờn → đo trước khi nói con số; test thời gian so tỉ lệ giữa hai kích thước trên cùng máy.
 - Báo `db push` "chỉ thêm hai cột" khi migration còn nâng `min_client_version`, và thử chạy lên cloud thật bằng `yes |` mà chưa hỏi → trước lệnh ghi lên hệ thống thật, đọc lại toàn bộ migration, kể đủ tác động, hỏi người dùng, không tự trả lời câu xác nhận.
 - Nâng `min_client_version` cùng lúc thêm cột, trước khi deploy → app đang chạy bị khóa nếu CI đỏ → với bước khó quay lại, hỏi "nếu bước sau hỏng thì sao" (#68).
-- `pkill -f "<lệnh>"` khớp luôn dòng lệnh của chính shell đang chạy nó (exit 144), các lệnh sau trong cùng shell không chạy → dừng tiến trình nền bằng ID/PID, hoặc chạy `pkill` một mình.
+- `pkill -f "<lệnh>"` khớp luôn dòng lệnh của chính shell đang chạy nó (exit 144), các lệnh sau trong cùng shell không chạy → dừng tiến trình nền bằng ID/PID, hoặc chạy `pkill` một mình. (lặp lại ×2: dọn worker vitest sau khi phá thử)
 - Thêm `/// <reference types="node" />` vào một file test trong `src/` → mở kiểu Node cho cả project app (`tsconfig.app.json` cố ý chỉ có `vite/client`) → trước khi thêm kiểu hay cấu hình, xem nó áp dụng cho phạm vi nào; test cần Node thì để ngoài project app.
 - Đưa mật khẩu test công khai vào `seed.sql` và chỉ cấm một lệnh (`db push --include-seed`), sót `db reset --linked` → với file nguy hiểm nếu chạy nhầm chỗ, cho chính file tự kiểm tra môi trường thay vì chỉ dựa vào tài liệu.
 - Ghi `config.toml` của Supabase local theo tên tùy chọn mà không chạy thử luồng thật: `[auth.email] enable_signup = false` tắt luôn đăng nhập email, khác cloud → sau khi đổi cấu hình, thử đúng luồng sẽ dùng (đăng nhập thật, `/auth/v1/settings`).

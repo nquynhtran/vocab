@@ -46,10 +46,13 @@ const BRITISH_LABELS = new Set([
   'standard southern british',
 ])
 
-/** One transcription with every accent label that applies to it. */
+/**
+ * One transcription and whether any accent label applying to it is British. A yes/no, not the
+ * labels: copying a vandalized page's label list for each of its values would take gigabytes.
+ */
 interface Candidate {
   value: string
-  labels: string[]
+  british: boolean
 }
 
 /**
@@ -63,7 +66,7 @@ export function pickPronunciation(wikitext: string): string | undefined {
     ...candidate,
     value: toCambridgeStyle(candidate.value),
   }))
-  const british = candidates.filter((candidate) => candidate.labels.some(isBritish))
+  const british = candidates.filter((candidate) => candidate.british)
   const first = (list: readonly Candidate[], pattern: RegExp) =>
     list.find(({ value }) => pattern.test(value) && isStorable(value))?.value
   return (
@@ -85,33 +88,33 @@ function ipaCandidates(wikitext: string): Candidate[] {
   const text = stripRefs(wikitext.replace(/<!--[\s\S]*?(?:-->|$)/g, ''))
 
   const candidates: Candidate[] = []
-  // Accent labels set by `{{a|…}}`, by list depth: they apply to the deeper lines below.
-  const labelsByDepth = new Map<number, string[]>()
+  // Whether `{{a|…}}` said British, by list depth: it applies to the deeper lines below.
+  const britishByDepth = new Map<number, boolean>()
   for (const line of text.split('\n')) {
     const depth = /^\*+/.exec(line)?.[0].length ?? 0
-    for (const d of [...labelsByDepth.keys()]) if (d >= depth) labelsByDepth.delete(d)
-    const inherited = [...labelsByDepth.values()].flat()
+    for (const d of [...britishByDepth.keys()]) if (d >= depth) britishByDepth.delete(d)
+    const inherited = [...britishByDepth.values()].some(Boolean)
 
     // In line order: an `{{a}}` labels the `{{IPA}}`s after it, up to the next `{{a}}`
     // ("{{a|en|US}} {{IPA|…}}, {{a|en|UK}} {{IPA|…}}"). The last one also labels the lines below.
-    let accent: string[] = []
+    let accent: boolean | undefined
     for (const match of line.matchAll(/\{\{(a|accent|IPA)\|([^{}]*)\}\}/g)) {
       const [, name = '', body = ''] = match
       const params = body.split('|')
       if (name !== 'IPA') {
-        accent = unnamed(params).filter((param) => param !== 'en')
+        accent = unnamed(params).some(isBritish)
         continue
       }
       if (params[0]?.trim() !== 'en') continue
-      const labels = [...inherited, ...accent, ...named(params, 'a')]
+      const template = inherited || accent === true || named(params, 'a').some(isBritish)
       for (const value of unnamed(params.slice(1))) {
         candidates.push({
           value: value.replace(/<[^<>]*>/g, '').trim(),
-          labels: [...labels, ...modifiers(value, 'a')],
+          british: template || modifiers(value, 'a').some(isBritish),
         })
       }
     }
-    if (accent.length > 0) labelsByDepth.set(depth, accent)
+    if (accent !== undefined) britishByDepth.set(depth, accent)
   }
   return candidates
 }

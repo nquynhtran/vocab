@@ -118,15 +118,16 @@ describe('file notes', () => {
   it('keeps the text and the draft when saving fails, even after the page reloads', async () => {
     const { repository, file } = await openFilePage()
     vi.spyOn(repository, 'updateFileNotes').mockRejectedValueOnce(new ConnectionError())
-    const reads = vi.spyOn(repository, 'getFile')
     await startEditing()
     typeNotes('A long reading')
+    await repository.renameFile(file.id, { name: 'Renamed' })
 
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/connection|internet|network/i)
-    // Every write reloads the page; that new `file` must not replace what was typed.
-    await waitFor(() => expect(reads).toHaveBeenCalled())
+    // Every write reloads the page; that new `file` must not replace what was typed. The new
+    // name proves the reload is done, and effects run with it.
+    await screen.findByRole('heading', { name: 'Renamed' })
     await act(async () => {})
     expect(notesBox()).toHaveValue('A long reading')
     expect(JSON.parse(localStorage.getItem(draftKey(file.id))!)).toEqual({
@@ -178,12 +179,14 @@ describe('file notes', () => {
   })
 
   it('keeps the text when the session expired while saving', async () => {
-    const { repository } = await openFilePage()
+    const { repository, file } = await openFilePage()
     vi.spyOn(repository, 'updateFileNotes').mockRejectedValueOnce(new SessionExpiredError())
     await startEditing()
     typeNotes('A long reading')
+    await repository.renameFile(file.id, { name: 'Renamed' })
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
     await screen.findByRole('alert')
+    await screen.findByRole('heading', { name: 'Renamed' })
     await act(async () => {})
     expect(notesBox()).toHaveValue('A long reading')
   })
@@ -206,6 +209,35 @@ describe('file notes', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Save anyway' }))
       await screen.findByText('From the phone', { selector: '.notes__text' })
       expect((await repository.getFile(file.id))?.notes).toBe('From the phone')
+    })
+
+    it('shows the newer notes after Cancel, not the ones from before', async () => {
+      const { repository, file } = await openFilePage()
+      await startEditing()
+      typeNotes('From the phone')
+      await repository.updateFileNotes(file.id, { notes: 'From the computer' })
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+      await screen.findByRole('alert')
+
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+
+      expect(
+        screen.getByText('From the computer', { selector: '.notes__text' }),
+      ).toBeInTheDocument()
+      expect(screen.getByText('Notes', { selector: 'summary' })).toHaveTextContent('17 characters')
+    })
+
+    it('warns when they were emptied elsewhere', async () => {
+      const { repository, file } = await openFilePage()
+      await repository.updateFileNotes(file.id, { notes: 'Before' })
+      await startEditing()
+      typeNotes('From the phone')
+      await repository.updateFileNotes(file.id, { notes: '' })
+
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+      expect(within(await screen.findByRole('alert')).getByText('(empty)')).toBeInTheDocument()
+      expect((await repository.getFile(file.id))?.notes).toBeUndefined()
     })
 
     it('warns again when they changed once more after the first warning', async () => {

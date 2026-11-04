@@ -95,6 +95,8 @@ export function FileNotes({ file, onSave, loadLatest }: FileNotesProps) {
       const latest = await loadLatest().catch(() => undefined)
       const changed = latest && changedSince(base, latest.notes ?? '', text)
       if (changed !== undefined && changed !== conflict) {
+        // Also for the view behind it: after Cancel, it must not go back to the older notes.
+        setSaved(latest)
         setConflict(changed)
         return
       }
@@ -184,7 +186,7 @@ export function FileNotes({ file, onSave, loadLatest }: FileNotesProps) {
             onClick={() => void startEditing()}
             disabled={starting}
           >
-            {notes === '' ? 'Add notes' : 'Edit notes'}
+            {starting ? 'Opening…' : notes === '' ? 'Add notes' : 'Edit notes'}
           </button>
         </>
       )}

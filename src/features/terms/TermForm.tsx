@@ -100,9 +100,6 @@ export function TermForm({
     setFormError(undefined)
     try {
       await onSubmit({ word, partOfSpeech, pronunciation, meaning, example })
-      // A lookup started while saving belongs to the term just added, not to the empty form.
-      cancelLookup()
-      setLookupStatus('idle')
       setWord(initial.word)
       setPartOfSpeech(initial.partOfSpeech ?? '')
       setPronunciation(initial.pronunciation ?? '')

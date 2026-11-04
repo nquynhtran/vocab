@@ -103,7 +103,8 @@ describe('pickPronunciation on unusual markup', () => {
   })
 
   it('strips refs but leaves other tags starting the same way', () => {
-    expect(pickPronunciation('<references/>* {{IPA|en|/kæt/}}')).toBe('/kæt/')
+    // Taken for a ref, this one would swallow the rest of the text as an unclosed tag.
+    expect(pickPronunciation('* <references>{{IPA|en|/kæt/}}')).toBe('/kæt/')
     expect(pickPronunciation('* <ref name="a">{{IPA|en|/wɒŋ/}}</ref>{{IPA|en|/kæt/}}')).toBe(
       '/kæt/',
     )
@@ -116,18 +117,35 @@ describe('pickPronunciation on unusual markup', () => {
   // timeout cannot interrupt it. 200 KB is the most the lookup accepts. Compares two sizes on
   // this machine instead of a fixed time, so a slow or busy machine does not fail it: 8× the
   // text may take about 8× as long, while quadratic code takes about 64×.
-  it.each([
-    ['unclosed comments', '<!--'],
-    ['tag openings without an end', '<ref '],
-    ['unclosed refs', '<ref>'],
-    ['self-closed refs', '<ref/>'],
-    ['lookalike tags', '<reference'],
-    ['unclosed templates', '{{IPA|en|'],
-    ['accent templates', '{{a|en|RP}}'],
-    ['unusable values in one template', 'x|', '* {{IPA|en|'],
-  ])('takes linear time on %s', (_, chunk, start = '* ') => {
-    const textOf = (length: number) =>
+  const repeated =
+    (chunk: string, start = '* ') =>
+    (length: number) =>
       `${start}${chunk.repeat(Math.ceil(length / chunk.length))}`.slice(0, length - 2) + '}}'
+  it.each<[string, (length: number) => string]>([
+    ['unclosed comments', repeated('<!--')],
+    ['tag openings without an end', repeated('<ref ')],
+    ['unclosed refs', repeated('<ref>')],
+    ['self-closed refs', repeated('<ref/>')],
+    ['lookalike tags', repeated('<reference')],
+    ['lookalike tags that close', repeated('<references>')],
+    ['unclosed templates', repeated('{{IPA|en|')],
+    ['accent templates', repeated('{{a|en|RP}}')],
+    ['unusable values in one template', repeated('x|', '* {{IPA|en|')],
+    [
+      'many values with many labels',
+      (length) => {
+        const n = Math.floor(length / 4)
+        return `{{IPA|en|${'x|'.repeat(n)}a=${'R,'.repeat(n)}}}`
+      },
+    ],
+    [
+      'many labels inherited by many lines',
+      (length) => {
+        const n = Math.floor(length / 5)
+        return `* {{a|en|${'x|'.repeat(n)}}}\n${'**\n'.repeat(n)}`
+      },
+    ],
+  ])('takes linear time on %s', (_, textOf) => {
     const bestTime = (text: string) =>
       Math.min(
         ...[1, 2, 3].map(() => {
