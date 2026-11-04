@@ -70,8 +70,8 @@ select is(
   'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'::uuid,
   'user_id defaults to the signed-in user'
 );
-select is((select min_client_version from public.app_config), 2,
-  'app_config is readable and requires the Learn client');
+select is((select min_client_version from public.app_config), 3,
+  'app_config is readable and requires the client that knows notes and pronunciation');
 
 -- ---- Constraints (as A) ----
 
