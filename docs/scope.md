@@ -38,6 +38,6 @@ Home (Folder + Streak)
   └─ Folder "IELTS Environment"
        └─ File "Unit 1" ──► Danh sách từ (thêm/sửa/xóa)
                                ├─ Notes (đầu trang, thu gọn được)
-                               └─ [Learn] ──► Phiên học ──► Kết quả ──► ghi nhận ngày học
+                               └─ [Learn] ──► Phiên học (mỗi câu ghi nhận ngày học) ──► Kết quả
 ```
 Chi tiết từng màn hình: [ui.md](ui.md).

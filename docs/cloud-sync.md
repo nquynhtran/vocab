@@ -116,6 +116,9 @@ Hai migration mới (không sửa file cũ), cùng khuôn với giai đoạn 3; 
 - `get_folder_contents`, `get_learn_data`, `listFiles` trả cả `notes` của mọi file (folder 30 file × 10 KB ≈ 300 KB). Chấp nhận lúc này; thấy chậm thì bỏ `notes` khỏi hai RPC danh sách (schema để `notes` không bắt buộc nên mapper vẫn chạy).
 - Thứ tự deploy (#68, khác giai đoạn 3): `npm run test:supabase` trên **đúng commit sẽ deploy** → `db push --dry-run` → `db push` (chỉ thêm cột, app đang chạy không ảnh hưởng) → push code, chờ CI xanh và Pages lên → thêm migration `update app_config set min_client_version = 3`, đổi kỳ vọng trong `tables.test.sql`, `test:supabase`, `db push`. Trong lúc chờ, client cũ vẫn chạy nhưng Export của nó thiếu hai trường mới, chấp nhận vì chưa có dữ liệu mới nào đáng kể.
 
+## Giai đoạn 4 (Streak)
+Một migration thêm RPC `list_study_days()` (`security invoker`, trả `jsonb`, chỉ `date` và `answered_count`), không đổi bảng hay cột (#73). Chi tiết và thứ tự deploy: [streak.md](streak.md#deploy).
+
 ## iPhone
 - Chỉ manifest + icon (không service worker, #36): `public/manifest.webmanifest` (đường dẫn tương đối vì app nằm dưới `/vocab/`), `apple-touch-icon.png` 180 px cho iOS, `icon-192/512.png` cho Android. PNG vẽ bằng `scripts/make-icons.mjs` (Node thuần, cùng hình với `favicon.svg`; đổi hình thì sửa cả hai rồi chạy lại). Ảnh vuông kín nền, không bo góc, không trong suốt: hệ điều hành tự bo. Cài qua Safari → Chia sẻ → *Thêm vào MH chính*. Cần thử trên máy thật. App trên màn hình chính có bộ nhớ riêng nên đăng nhập lại một lần.
 - Kiểm tra trên Safari iOS: bàn phím che ô nhập, safe area (tai thỏ), kích thước chạm.
