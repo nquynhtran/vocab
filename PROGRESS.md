@@ -3,9 +3,9 @@
 > File này được nạp tự động mỗi phiên. Giữ ngắn: chỉ trạng thái hiện tại, checklist và 5 mục nhật ký gần nhất.
 
 ## Đang ở đâu
-- **Giai đoạn:** 4 (Streak), thiết kế đã chốt (#71–#74), chưa viết code.
-- **Việc tiếp theo:** viết code theo [streak.md](docs/streak.md): domain → `listStudyDays` + RPC → ô streak trên Home, mỗi bước có logic hoặc dữ liệu qua `reviewer`.
-- **Đang vướng:** không. Build có cảnh báo chunk > 500 kB (supabase-js), để giai đoạn 6. 🔊 không kêu trong Simple Browser của VS Code. `npm run build` ở máy cần `VITE_SUPABASE_*` (xem cloud-sync.md). iPhone iOS cũ của người dùng tạo folder bị lỗi chưa rõ nguyên nhân (cloud-sync.md#iphone); người dùng sẽ cập nhật máy.
+- **Giai đoạn:** 4 (Streak), đang deploy theo [streak.md](docs/streak.md#deploy).
+- **Việc tiếp theo:** người dùng thử trên máy tính và iPhone (số có tự cập nhật khi mở lại app không).
+- **Đang vướng:** không. Build có cảnh báo chunk > 500 kB (supabase-js), để giai đoạn 6. 🔊 không kêu trong Simple Browser của VS Code. `npm run build` ở máy cần `VITE_SUPABASE_*` (xem cloud-sync.md). iPhone iOS cũ của người dùng tạo folder bị lỗi chưa rõ nguyên nhân (cloud-sync.md#iphone); người dùng sẽ cập nhật máy. Đã thỏa thuận để sau: tách hook khỏi `TermForm`, `saved!` ở `FilePage`, so `updatedAt` phụ thuộc đồng hồ máy.
 
 ## Kế hoạch
 Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn đề nghiêm trọng đã biết, người dùng dùng thử OK. Khi nào gọi agent: xem CLAUDE.md. Thứ tự làm: 0 → 1 → 2 → **7** → 3 → 3b → 4 → 5 → 6.
@@ -36,12 +36,15 @@ Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn 
   - [x] Người dùng dùng thử: điện thoại và máy tính đều ổn, sau khi sửa hai lỗi (#70)
 - [ ] **4. Streak** — đủ các test trong [streak.md](docs/streak.md)
   - [x] Thiết kế + `challenger`; người dùng chọn phần hiển thị (#71–#74)
+  - [x] Domain, `listStudyDays` + RPC, ô streak + lịch; qua `reviewer` (4 điểm nên sửa + 3 điểm nhỏ đã sửa, 2 điểm chấp nhận); 591 test + `test:zone` + 141 pgTAP + 84 hợp đồng xanh
+  - [x] Sửa đăng xuất nhầm do 401 về muộn (#75), theo yêu cầu soát lại; qua `reviewer` 2 lượt
+  - [ ] Deploy, người dùng dùng thử
 - [ ] **5. Sao lưu** — khôi phục toàn bộ dữ liệu từ file backup; quyết hai câu hỏi đang mở (#74)
 - [ ] **6. Hoàn thiện** — phím tắt còn lại (nếu cần; 1–4 và Enter đã có, #55), dark mode + làm lại thiết kế cho đẹp hơn (người dùng muốn, 2026-11-04; có thể gửi ảnh app mẫu; giao diện mới từ giờ chỉ dùng biến màu `--color-*`, bóng đổ menu ⋯ đang viết thẳng màu); dark mode mặc định theo máy (`prefers-color-scheme`); màn Settings chỉ làm khi có ≥ 2–3 thứ người dùng thật sự muốn chỉnh (ứng viên: giao diện tự động/sáng/tối, số từ mỗi vòng, tài khoản + Sign out, gom xuất/khôi phục backup về đây), người dùng ghi lại nhu cầu khi dùng; README; tối ưu gói code (709 kB, nén 208 kB, chủ yếu supabase-js: xem có code bản local như Dexie bị gói vào không, tách phần chưa cần lúc mở app; người dùng nhờ ghi lại 2026-11-04); dùng thử 1 tuần
 
 ## Nhật ký (5 mục gần nhất, mới nhất trên cùng)
+- 2026-11-06 — Người dùng yêu cầu soát lại: rủi ro 401 về muộn đăng xuất luôn phiên mới; chặn ở ô streak là vá triệu chứng nên gỡ, sửa tại `expireSession` (#75, hỏi lại máy chủ, chỉ lỗi Auth 401/403 mới đăng xuất). Tách lại commit chưa push.
+- 2026-11-05 — Viết xong Streak theo #71–#74; `reviewer` nêu cả lệnh kiểm tra múi giờ ghi trong tài liệu không có tác dụng (`TZ` bị cấu hình ghi đè) → thêm `test:zone` vào `check`. Thử trên Firefox thật: màn rộng và khung 375 px. Chưa deploy.
 - 2026-11-04 — Người dùng xác nhận form Edit trên máy tính và phiên âm ở "This round" đã ổn → đóng 3b.
 - 2026-11-04 — Theo #68, sau khi xác nhận Pages đã chạy client 3: migration riêng nâng `min_client_version` lên 3; `check`, 136 pgTAP + 78 hợp đồng cloud trên đúng commit, `db push --dry-run` chỉ một migration, `db push`, đọc lại trên cloud ra 3.
 - 2026-11-04 — Theo góp ý sau khi dùng thử (điện thoại ổn): form sửa từ tại dòng trên máy tính bị bó vào một cột (`.term` 4 cột ghi đè `.term--editing`, có từ trước 3b) → đã sửa; phiên âm hiện ở danh sách tóm tắt (#70). 515 test, thử trên Firefox thật.
-- 2026-11-04 — Deploy 3b theo #68: `db push` chỉ thêm cột, push `1b59a81` (lần đầu GitHub báo lỗi do sự cố, thử lại được), CI xanh, trang thật có Wiktionary trong CSP. Chưa nâng `min_client_version`.
-- 2026-11-04 — Tự soát 3b theo yêu cầu người dùng, phát hiện test tốc độ chập chờn, báo sai tác động `db push`, nguy cơ khóa app, ghi đè ghi chú không báo → sửa (#68, #69), `reviewer` lượt 3 (10 điểm, chính: bản sao nhãn làm hết bộ nhớ) đã sửa; kiểm chứng clone sạch, CSP có đối chứng trên Firefox. Còn để sau: tách hook khỏi `TermForm`, `saved!` ở `FilePage`, so `updatedAt` phụ thuộc đồng hồ máy.
