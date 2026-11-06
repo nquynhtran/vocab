@@ -3,9 +3,9 @@
 > File này được nạp tự động mỗi phiên. Giữ ngắn: chỉ trạng thái hiện tại, checklist và 5 mục nhật ký gần nhất.
 
 ## Đang ở đâu
-- **Giai đoạn:** 4 (Streak), đã deploy (`db push`, push `44aa949`, CI xanh, trang thật đã có code mới), chờ người dùng dùng thử.
-- **Việc tiếp theo:** người dùng thử trên máy tính và iPhone (số có tự cập nhật khi mở lại app không).
-- **Đang vướng:** không. Build có cảnh báo chunk > 500 kB (supabase-js), để giai đoạn 6. 🔊 không kêu trong Simple Browser của VS Code. `npm run build` ở máy cần `VITE_SUPABASE_*` (xem cloud-sync.md). iPhone iOS cũ của người dùng tạo folder bị lỗi chưa rõ nguyên nhân (cloud-sync.md#iphone); người dùng sẽ cập nhật máy. Đã thỏa thuận để sau: tách hook khỏi `TermForm`, `saved!` ở `FilePage`, so `updatedAt` phụ thuộc đồng hồ máy.
+- **Giai đoạn:** 4 xong (người dùng xác nhận trên máy tính + iPhone, 2026-11-06). Sắp vào giai đoạn 5.
+- **Việc tiếp theo:** giai đoạn 5 (Sao lưu): gọi `challenger` soát phần sao lưu trong [data-model.md](docs/data-model.md#sao-lưu-json) và #38, #74 trước khi viết code; hỏi người dùng hai câu ở [streak.md](docs/streak.md#việc-của-giai-đoạn-5-câu-hỏi-đang-mở-74).
+- **Đang vướng:** không. Build có cảnh báo chunk > 500 kB (supabase-js), để giai đoạn 6. 🔊 không kêu trong Simple Browser của VS Code. `npm run build` ở máy cần `VITE_SUPABASE_*` (xem cloud-sync.md). iPhone iOS cũ của người dùng tạo folder bị lỗi chưa rõ nguyên nhân (cloud-sync.md#iphone); người dùng sẽ cập nhật máy. Đã thỏa thuận để sau: tách hook khỏi `TermForm`, `saved!` ở `FilePage`, so `updatedAt` phụ thuộc đồng hồ máy. Test tốc độ ở `pronunciation.test.ts` từng đỏ một lần khi máy rất tải (`reviewer`, 1 lõi); nếu CI đỏ đúng test đó thì nới ngưỡng.
 
 ## Kế hoạch
 Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn đề nghiêm trọng đã biết, người dùng dùng thử OK. Khi nào gọi agent: xem CLAUDE.md. Thứ tự làm: 0 → 1 → 2 → **7** → 3 → 3b → 4 → 5 → 6.
@@ -34,18 +34,13 @@ Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn 
   - [x] Deploy: `db push` thêm cột → `git push` + CI xanh
   - [x] Migration nâng `min_client_version` 3 (`db push`, đọc lại trên cloud ra 3)
   - [x] Người dùng dùng thử: điện thoại và máy tính đều ổn, sau khi sửa hai lỗi (#70)
-- [ ] **4. Streak** — đủ các test trong [streak.md](docs/streak.md)
-  - [x] Thiết kế + `challenger`; người dùng chọn phần hiển thị (#71–#74)
-  - [x] Domain, `listStudyDays` + RPC, ô streak + lịch; qua `reviewer` (4 điểm nên sửa + 3 điểm nhỏ đã sửa, 2 điểm chấp nhận); 591 test + `test:zone` + 141 pgTAP + 84 hợp đồng xanh
-  - [x] Sửa đăng xuất nhầm do 401 về muộn (#75), theo yêu cầu soát lại; qua `reviewer` 2 lượt
-  - [x] Deploy: `db push` một hàm đọc → `git push` + CI xanh
-  - [ ] Người dùng dùng thử
+- [x] **4. Streak** — chuỗi ngày, kỷ lục, lịch tháng trên Home ([streak.md](docs/streak.md)). `challenger` + người dùng chọn hiển thị (#71–#74); đọc qua RPC `list_study_days`; sửa đăng xuất nhầm do 401 về muộn (#75); `reviewer` 3 lượt; deploy; người dùng xác nhận trên máy tính và iPhone
 - [ ] **5. Sao lưu** — khôi phục toàn bộ dữ liệu từ file backup; quyết hai câu hỏi đang mở (#74)
-- [ ] **6. Hoàn thiện** — phím tắt còn lại (nếu cần; 1–4 và Enter đã có, #55), dark mode + làm lại thiết kế cho đẹp hơn (người dùng muốn, 2026-11-04; có thể gửi ảnh app mẫu; giao diện mới từ giờ chỉ dùng biến màu `--color-*`, bóng đổ menu ⋯ đang viết thẳng màu); dark mode mặc định theo máy (`prefers-color-scheme`); màn Settings chỉ làm khi có ≥ 2–3 thứ người dùng thật sự muốn chỉnh (ứng viên: giao diện tự động/sáng/tối, số từ mỗi vòng, tài khoản + Sign out, gom xuất/khôi phục backup về đây), người dùng ghi lại nhu cầu khi dùng; README; tối ưu gói code (709 kB, nén 208 kB, chủ yếu supabase-js: xem có code bản local như Dexie bị gói vào không, tách phần chưa cần lúc mở app; người dùng nhờ ghi lại 2026-11-04); dùng thử 1 tuần
+- [ ] **6. Hoàn thiện** — phím tắt còn lại (nếu cần; 1–4 và Enter đã có, #55), dark mode + làm lại thiết kế cho đẹp hơn (người dùng muốn, 2026-11-04; có thể gửi ảnh app mẫu; giao diện mới từ giờ chỉ dùng biến màu `--color-*`, bóng đổ menu ⋯ đang viết thẳng màu); dark mode mặc định theo máy (`prefers-color-scheme`); màn Settings chỉ làm khi có ≥ 2–3 thứ người dùng thật sự muốn chỉnh (ứng viên: giao diện tự động/sáng/tối, số từ mỗi vòng, tài khoản + Sign out, gom xuất/khôi phục backup về đây), người dùng ghi lại nhu cầu khi dùng; README; tối ưu gói code (724 kB, nén 213 kB, chủ yếu supabase-js: xem có code bản local như Dexie bị gói vào không, tách phần chưa cần lúc mở app; người dùng nhờ ghi lại 2026-11-04); dùng thử 1 tuần
 
 ## Nhật ký (5 mục gần nhất, mới nhất trên cùng)
+- 2026-11-06 — Người dùng xác nhận Streak ổn trên máy tính và iPhone → đóng giai đoạn 4.
 - 2026-11-06 — Người dùng yêu cầu soát lại: rủi ro 401 về muộn đăng xuất luôn phiên mới; chặn ở ô streak là vá triệu chứng nên gỡ, sửa tại `expireSession` (#75, hỏi lại máy chủ, chỉ lỗi Auth 401/403 mới đăng xuất). Tách lại commit chưa push.
 - 2026-11-05 — Viết xong Streak theo #71–#74; `reviewer` nêu cả lệnh kiểm tra múi giờ ghi trong tài liệu không có tác dụng (`TZ` bị cấu hình ghi đè) → thêm `test:zone` vào `check`. Thử trên Firefox thật: màn rộng và khung 375 px. Chưa deploy.
 - 2026-11-04 — Người dùng xác nhận form Edit trên máy tính và phiên âm ở "This round" đã ổn → đóng 3b.
 - 2026-11-04 — Theo #68, sau khi xác nhận Pages đã chạy client 3: migration riêng nâng `min_client_version` lên 3; `check`, 136 pgTAP + 78 hợp đồng cloud trên đúng commit, `db push --dry-run` chỉ một migration, `db push`, đọc lại trên cloud ra 3.
-- 2026-11-04 — Theo góp ý sau khi dùng thử (điện thoại ổn): form sửa từ tại dòng trên máy tính bị bó vào một cột (`.term` 4 cột ghi đè `.term--editing`, có từ trước 3b) → đã sửa; phiên âm hiện ở danh sách tóm tắt (#70). 515 test, thử trên Firefox thật.

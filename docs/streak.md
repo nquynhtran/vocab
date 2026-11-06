@@ -24,7 +24,7 @@
 - Tải lại khi: vào Home (rời Learn về là có), trang hiện lại (`visibilitychange`), cửa sổ được chọn lại (`focus`, vì hai cửa sổ cạnh nhau không có `visibilitychange`), và sau khi nhập backup. Tạo hay đổi tên folder không tải lại streak.
 - Không đặt hẹn giờ nửa đêm (YAGNI): Home mở liên tục qua nửa đêm thì số cũ tới lần quay lại trang sau. Chấp nhận.
 - Hai trường hợp số cũ khác cũng chấp nhận, vì hiếm và tự đúng lại ở lần quay lại trang sau: đăng nhập lại sau khi hết phiên (app giữ nguyên, không tải lại); về Home đúng lúc câu trả lời vừa rồi đang lưu.
-- Việc phải thử trên iPhone thật: app trên màn hình chính có bắn `visibilitychange` khi quay lại không.
+- Đã thử trên iPhone thật (2026-11-06): quay lại app thì số tự cập nhật.
 
 ## Lỗi không được làm hỏng Home (#73)
 - Tải streak **độc lập** với danh sách folder (hai `useAsync` riêng, không `Promise.all`): một dòng `study_days` hỏng hay mất mạng thì folder và các nút vẫn dùng được.
