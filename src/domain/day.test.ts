@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { daysBetween, localDay } from './day.ts'
+import { addDays, daysBetween, localDay } from './day.ts'
 
 describe('localDay', () => {
-  // Tests run at UTC+7 (vite.config.ts), so between midnight and 7 am the UTC day is yesterday.
+  // Runs east of UTC (`test`) and west of it (`test:zone`). In UTC this could not fail, so the
+  // first line makes sure the suite never ends up there.
   it('uses the local day, not the UTC one', () => {
-    const earlyMorning = new Date(2026, 9, 26, 0, 30)
-    expect(earlyMorning.toISOString().slice(0, 10)).toBe('2026-10-25')
-    expect(localDay(earlyMorning)).toBe('2026-10-26')
+    expect(new Date(2026, 9, 26).getTimezoneOffset()).not.toBe(0)
+    expect(localDay(new Date(2026, 9, 26, 0, 30))).toBe('2026-10-26')
+    expect(localDay(new Date(2026, 9, 26, 23, 30))).toBe('2026-10-26')
   })
 
   it('pads month and day', () => {
@@ -26,5 +27,28 @@ describe('daysBetween', () => {
     expect(daysBetween('2026-10-31', '2026-11-01')).toBe(1)
     expect(daysBetween('2026-12-30', '2027-01-02')).toBe(3)
     expect(daysBetween('2026-10-25', '2026-10-20')).toBe(-5)
+  })
+})
+
+describe('addDays', () => {
+  it('moves forward and back', () => {
+    expect(addDays('2026-11-05', 1)).toBe('2026-11-06')
+    expect(addDays('2026-11-05', -1)).toBe('2026-11-04')
+    expect(addDays('2026-11-05', 0)).toBe('2026-11-05')
+  })
+
+  it('crosses months, years and leap days', () => {
+    expect(addDays('2026-11-01', -1)).toBe('2026-10-31')
+    expect(addDays('2026-12-31', 1)).toBe('2027-01-01')
+    expect(addDays('2028-03-01', -1)).toBe('2028-02-29')
+    expect(addDays('2027-03-01', -1)).toBe('2027-02-28')
+  })
+
+  // Only able to fail in `test:zone`: the zone of `test` has no daylight saving.
+  it('does not lose or repeat a day at a daylight-saving change', () => {
+    // New York moves its clocks on these days; the result must not depend on the machine's zone.
+    expect(addDays('2026-03-08', 1)).toBe('2026-03-09')
+    expect(addDays('2026-11-01', 1)).toBe('2026-11-02')
+    expect(addDays('2026-11-02', -1)).toBe('2026-11-01')
   })
 })

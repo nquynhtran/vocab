@@ -797,3 +797,103 @@ label {
     gap: 12px;
   }
 }
+
+/* ---- Streak (Home) ---- */
+
+.streak {
+  margin-bottom: var(--space);
+  padding: 10px var(--space) 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+/* About the height of the loaded panel, so the folder list does not jump when it arrives. */
+.streak--loading {
+  min-height: 6.5rem;
+}
+
+.streak__line {
+  margin: 0;
+  font-weight: 600;
+}
+
+.streak__today,
+.streak__problem {
+  margin: 2px 0 0;
+}
+
+/* The only content when the first load failed: the summary's padding is not there to close it. */
+.streak__problem:last-child {
+  margin-bottom: 10px;
+}
+
+.streak__calendar[open] {
+  padding-bottom: 10px;
+}
+
+.streak__calendar summary {
+  padding: 10px 0;
+  cursor: pointer;
+}
+
+.calendar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  max-width: 24rem;
+  margin: 8px auto 0;
+}
+
+.calendar__title {
+  font-weight: 600;
+}
+
+.calendar__header [aria-disabled='true'] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.calendar {
+  width: 100%;
+  max-width: 24rem;
+  margin: 8px auto 0;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 2px;
+  text-align: center;
+}
+
+.calendar th {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  font-weight: normal;
+}
+
+.calendar td {
+  padding: 6px 0;
+  border-radius: var(--radius);
+}
+
+.calendar__day--studied {
+  background: var(--color-success);
+  color: var(--color-surface);
+  font-weight: 600;
+}
+
+/* Underlined too: on a studied day the outline's colour is about as dark as the background. */
+.calendar__day--today {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+  text-decoration: underline;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

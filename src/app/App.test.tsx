@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { IDBFactory, IDBKeyRange } from 'fake-indexeddb'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { VocabDb } from '../data/db.ts'
@@ -454,6 +454,191 @@ describe('backup', () => {
       folders: [{ name: 'IELTS' }],
       files: [{ name: 'Unit 1' }],
       terms: [{ word: 'run', meaning: 'chạy' }],
+    })
+  })
+})
+
+describe('streak on Home', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  /** Only `Date`: IndexedDB and React still need the real timers. */
+  function setToday(day: string) {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date(`${day}T12:00:00+07:00`) })
+  }
+
+  /** A real answer through the repository, so the study day is what Learn would really write. */
+  async function answerOn(repository: DexieRepository, day: string, count: number) {
+    const folder = await repository.createFolder({ name: `Folder ${day}` })
+    const file = await repository.createFile(folder.id, { name: 'Unit' })
+    for (let i = 0; i < count; i += 1) {
+      const term = await repository.createTerm(file.id, { word: `w${i}`, meaning: 'm' })
+      await repository.recordAnswer({
+        termId: term.id,
+        correct: true,
+        promote: false,
+        answeredAt: `${day}T05:00:00.${String(i).padStart(3, '0')}Z`,
+        day,
+      })
+    }
+  }
+
+  async function backupWithStudyDay(day: string) {
+    const source = openRepository(new IDBFactory())
+    await answerOn(source, day, 10)
+    const backup = await source.exportBackup()
+    return new File([JSON.stringify(backup)], 'vocab-backup.json')
+  }
+
+  it('shows the answers stored for today', async () => {
+    setToday('2026-11-05')
+    const indexedDB = new IDBFactory()
+    const seeded = openRepository(indexedDB)
+    await answerOn(seeded, '2026-11-04', 10)
+    await answerOn(seeded, '2026-11-05', 4)
+
+    renderApp('/', indexedDB)
+
+    expect(await screen.findByText('🔥 1-day streak · Best 1')).toBeInTheDocument()
+    expect(screen.getByText('Today: 4/10 answers')).toBeInTheDocument()
+  })
+
+  it('keeps the folders usable when the study days cannot be read', async () => {
+    const indexedDB = new IDBFactory()
+    const seeded = openRepository(indexedDB)
+    await seeded.createFolder({ name: 'IELTS' })
+    const repository = openRepository(indexedDB)
+    vi.spyOn(repository, 'listStudyDays').mockRejectedValue(new ConnectionError())
+    window.location.hash = '#/'
+    render(<App repository={repository} lookup={unusedLookup} />)
+
+    expect(await screen.findByRole('link', { name: 'IELTS' })).toBeInTheDocument()
+    expect(await screen.findByText('Streak could not be loaded.')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('keeps the streak usable when the folders cannot be read', async () => {
+    const repository = openRepository(new IDBFactory())
+    vi.spyOn(repository, 'listFolders').mockRejectedValue(new ConnectionError())
+    window.location.hash = '#/'
+    render(<App repository={repository} lookup={unusedLookup} />)
+
+    expect(await screen.findByRole('alert')).toBeInTheDocument()
+    expect(await screen.findByText('Start a streak today')).toBeInTheDocument()
+  })
+
+  it('updates after importing a backup that holds study days', async () => {
+    setToday('2026-11-05')
+    const file = await backupWithStudyDay('2026-11-05')
+    const { repository } = renderApp()
+    await screen.findByText('Start a streak today')
+    const list = vi.spyOn(repository, 'listStudyDays')
+
+    chooseFile(file)
+    fireEvent.click(await screen.findByRole('button', { name: /^Import/ }))
+
+    expect(await screen.findByText('🔥 1-day streak · Best 1')).toBeInTheDocument()
+    expect(screen.getByText('Today: 10 answers ✓')).toBeInTheDocument()
+    expect(list).toHaveBeenCalledTimes(1)
+  })
+
+  it('updates when an import went through but its answer was lost', async () => {
+    setToday('2026-11-05')
+    const file = await backupWithStudyDay('2026-11-05')
+    const { repository } = renderApp()
+    await screen.findByText('Start a streak today')
+    const importIntoEmpty = repository.importIntoEmpty.bind(repository)
+    vi.spyOn(repository, 'importIntoEmpty').mockImplementation(async (backup) => {
+      await importIntoEmpty(backup)
+      throw new ConnectionError()
+    })
+
+    chooseFile(file)
+    fireEvent.click(await screen.findByRole('button', { name: /^Import/ }))
+
+    expect(await screen.findByText('🔥 1-day streak · Best 1')).toBeInTheDocument()
+  })
+
+  it('does not load the streak again for a new folder', async () => {
+    const { repository } = renderApp()
+    await screen.findByText('Start a streak today')
+    const list = vi.spyOn(repository, 'listStudyDays')
+
+    typeInto('New folder', 'IELTS')
+    fireEvent.click(screen.getByRole('button', { name: 'Create' }))
+
+    await screen.findByRole('link', { name: 'IELTS' })
+    expect(list).not.toHaveBeenCalled()
+  })
+
+  describe('coming back to the page', () => {
+    async function renderHomeOnNov5() {
+      setToday('2026-11-05')
+      const view = renderApp()
+      await screen.findByText('Today: 0/10 answers')
+      // The listeners are added in an effect, which may run after the text appears.
+      await act(async () => {})
+      return view
+    }
+
+    function setVisibility(state: DocumentVisibilityState) {
+      vi.spyOn(document, 'visibilityState', 'get').mockReturnValue(state)
+    }
+
+    it('shows answers given elsewhere when the page becomes visible', async () => {
+      const { repository } = await renderHomeOnNov5()
+      await answerOn(repository, '2026-11-05', 2)
+
+      setVisibility('visible')
+      fireEvent(document, new Event('visibilitychange'))
+
+      expect(await screen.findByText('Today: 2/10 answers')).toBeInTheDocument()
+    })
+
+    it('does nothing when the page becomes hidden', async () => {
+      const { repository } = await renderHomeOnNov5()
+      const list = vi.spyOn(repository, 'listStudyDays')
+
+      setVisibility('hidden')
+      fireEvent(document, new Event('visibilitychange'))
+      await act(async () => {})
+
+      expect(list).not.toHaveBeenCalled()
+    })
+
+    it('shows answers given elsewhere when the window gets focus', async () => {
+      const { repository } = await renderHomeOnNov5()
+      await answerOn(repository, '2026-11-05', 3)
+
+      fireEvent(window, new Event('focus'))
+
+      expect(await screen.findByText('Today: 3/10 answers')).toBeInTheDocument()
+    })
+
+    it('starts counting the new day when coming back after midnight', async () => {
+      const { repository } = await renderHomeOnNov5()
+      await answerOn(repository, '2026-11-05', 10)
+      fireEvent(window, new Event('focus'))
+      await screen.findByText('Today: 10 answers ✓')
+
+      setToday('2026-11-06')
+      fireEvent(window, new Event('focus'))
+
+      expect(await screen.findByText('Today: 0/10 answers')).toBeInTheDocument()
+      expect(screen.getByText('🔥 1-day streak · Best 1')).toBeInTheDocument()
+    })
+
+    it('keeps the numbers and a quiet note when reloading fails', async () => {
+      const { repository } = await renderHomeOnNov5()
+      vi.spyOn(repository, 'listStudyDays').mockRejectedValue(new ConnectionError())
+
+      fireEvent(window, new Event('focus'))
+
+      expect(await screen.findByText('Streak may be out of date.')).toBeInTheDocument()
+      expect(screen.getByText('Today: 0/10 answers')).toBeInTheDocument()
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     })
   })
 })

@@ -107,6 +107,26 @@ describe('SupabaseRepository errors', () => {
     )
   })
 
+  it('fails the study days on one bad row instead of skipping it', async () => {
+    const repo = fakeRepository(() =>
+      json([
+        { date: '2026-11-01', answered_count: 10 },
+        { date: '2026-13-01', answered_count: 10 },
+      ]),
+    )
+    await expect(repo.listStudyDays()).rejects.toBeInstanceOf(InvalidStoredDataError)
+  })
+
+  it('accepts study days past max_rows: they come from an RPC, which is not cut', async () => {
+    const rows = Array.from({ length: MAX_ROWS + 1 }, () => ({
+      date: '2026-11-01',
+      answered_count: 10,
+    }))
+    await expect(fakeRepository(() => json(rows)).listStudyDays()).resolves.toHaveLength(
+      MAX_ROWS + 1,
+    )
+  })
+
   it.each([
     ['folders', (repo: SupabaseRepository) => repo.listFolders()],
     ['files', (repo: SupabaseRepository) => repo.listFiles(testId(1))],

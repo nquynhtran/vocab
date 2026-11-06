@@ -6,6 +6,7 @@ import type {
   FileNotesInput,
   Folder,
   FolderInput,
+  StudyDay,
   Term,
   TermInput,
   TermProgress,
@@ -45,7 +46,13 @@ export interface FolderContents {
  * Deleting something that no longer exists is a no-op.
  */
 export interface Repository
-  extends FolderRepository, FileRepository, TermRepository, LearnRepository, BackupRepository {}
+  extends
+    FolderRepository,
+    FileRepository,
+    TermRepository,
+    LearnRepository,
+    StudyDayRepository,
+    BackupRepository {}
 
 export interface FolderRepository {
   /** Sorted by `compareNames`. */
@@ -111,6 +118,11 @@ export interface LearnRepository {
    * `ValidationError` for an invalid record, e.g. a wrong answer that promotes.
    */
   recordAnswer(answer: AnswerRecord): Promise<void>
+}
+
+export interface StudyDayRepository {
+  /** Every study day, oldest first. Never cut at the cloud's row limit (decision #73). */
+  listStudyDays(): Promise<StudyDay[]>
 }
 
 export interface BackupRepository {

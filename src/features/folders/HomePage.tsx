@@ -2,6 +2,8 @@ import { useCallback } from 'react'
 import type { Folder } from '../../domain/schemas.ts'
 import { ExportButton } from '../backup/ExportButton.tsx'
 import { ImportBackup } from '../backup/ImportBackup.tsx'
+import { StreakPanel } from '../streak/StreakPanel.tsx'
+import { useStreak } from '../streak/useStreak.ts'
 import { deleteFolderMessage } from '../../shared/deleteMessages.ts'
 import { NamedItemRow } from '../../shared/NamedItemRow.tsx'
 import { NameForm } from '../../shared/NameForm.tsx'
@@ -15,6 +17,9 @@ export function HomePage() {
   const load = useCallback(() => repository.listFolders(), [repository])
   const [state, reload] = useAsync(load)
   const { write, run, actionError } = usePageWrites(reload)
+  // Loaded apart from the folders: a study day that cannot be read must not cost the whole page
+  // (decision #73). Only an import changes it among the writes here.
+  const [streak, reloadStreak] = useStreak()
 
   function handleDelete(folder: Folder) {
     void run(async () => {
@@ -29,6 +34,7 @@ export function HomePage() {
   return (
     <section>
       <h1>Your folders</h1>
+      <StreakPanel state={streak} />
       <NameForm
         label="New folder"
         submitLabel="Create"
@@ -43,7 +49,16 @@ export function HomePage() {
           <>
             <p className="muted">No folders yet. Create one to start adding terms.</p>
             <ImportBackup
-              onImport={(backup) => run(() => write(() => repository.importIntoEmpty(backup)))}
+              onImport={(backup) =>
+                run(async () => {
+                  try {
+                    await write(() => repository.importIntoEmpty(backup))
+                  } finally {
+                    // Also on failure: an import can succeed and only lose its answer.
+                    reloadStreak()
+                  }
+                })
+              }
             />
           </>
         ) : (

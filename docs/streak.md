@@ -20,19 +20,20 @@
 
 ## Đọc dữ liệu và làm mới (#73)
 - `listStudyDays()` ở interface riêng trong `Repository`, Supabase đọc qua RPC `list_study_days()` trả `jsonb`, validate từng dòng bằng `StudyDaySchema` (#35). **Không** dùng select thường: mỗi ngày học thêm một dòng và không xóa được, nên sau khoảng 2,7 năm sẽ chạm giới hạn 1000 dòng (#39), ô streak hỏng hẳn.
-- Hàm tải trả `{ days, today }`: `today` lấy ngay lúc tải, để dữ liệu và ngày luôn cùng một thời điểm. Không gọi `new Date()` lúc render.
+- Hàm tải trả `{ summary, today }`: `today` lấy ngay sau khi có dữ liệu, để số và ngày luôn cùng một thời điểm. Không gọi `new Date()` lúc render.
 - Tải lại khi: vào Home (rời Learn về là có), trang hiện lại (`visibilitychange`), cửa sổ được chọn lại (`focus`, vì hai cửa sổ cạnh nhau không có `visibilitychange`), và sau khi nhập backup. Tạo hay đổi tên folder không tải lại streak.
 - Không đặt hẹn giờ nửa đêm (YAGNI): Home mở liên tục qua nửa đêm thì số cũ tới lần quay lại trang sau. Chấp nhận.
+- Hai trường hợp số cũ khác cũng chấp nhận, vì hiếm và tự đúng lại ở lần quay lại trang sau: đăng nhập lại sau khi hết phiên (app giữ nguyên, không tải lại); về Home đúng lúc câu trả lời vừa rồi đang lưu.
 - Việc phải thử trên iPhone thật: app trên màn hình chính có bắn `visibilitychange` khi quay lại không.
 
 ## Lỗi không được làm hỏng Home (#73)
 - Tải streak **độc lập** với danh sách folder (hai `useAsync` riêng, không `Promise.all`): một dòng `study_days` hỏng hay mất mạng thì folder và các nút vẫn dùng được.
-- Lỗi của ô streak chỉ hiện một dòng nhỏ, **không** `role="alert"`: người dùng không bấm gì, và mất mạng thì không báo lỗi lặp hai lần. Lần tải đầu hỏng: "Streak could not be loaded."; tải lại hỏng: giữ số cũ, kèm "may be out of date".
+- Lỗi của ô streak chỉ hiện một dòng nhỏ, **không** `role="alert"`: người dùng không bấm gì, và mất mạng thì không báo lỗi lặp hai lần. Lần tải đầu hỏng: "Streak could not be loaded."; tải lại hỏng: giữ số cũ, kèm "Streak may be out of date.". Riêng dữ liệu đã lưu bị hỏng (`InvalidStoredDataError`) thì thêm câu báo chỗ hỏng và cách sửa, vì không chỗ nào khác trên trang cho biết.
 
 ## Test bắt buộc
 - **Tính streak:** chưa học ngày nào · chỉ học hôm nay · học hôm qua chưa học hôm nay · bỏ một ngày · chuỗi qua cuối tháng / cuối năm / 29-2 · biên 9 và 10 câu · `answeredCount` 0 · hôm nay đạt, hôm qua không · hôm nay có 4 câu, chuỗi vẫn giữ · hôm qua chỉ 9 câu, hôm nay chưa học → 0 · đầu vào không sắp xếp · ngày tương lai, kể cả chỉ có ngày tương lai · kỷ lục lớn hơn và bằng chuỗi hiện tại.
 - **Lịch:** tháng có 4, 5, 6 hàng · tháng bắt đầu vào thứ Hai và Chủ nhật · tháng 2 năm nhuận · không đi quá tháng hiện tại.
-- **Múi giờ:** bộ test luôn chạy ở giờ Việt Nam (`vite.config.ts`). Trước khi xong, chạy thêm test ngày và streak ở một múi giờ âm có đổi giờ mùa hè (`America/New_York`).
+- **Múi giờ:** bộ test chạy ở giờ Việt Nam (`vite.config.ts`); `npm run check` (cả CI) chạy thêm test ngày và streak ở `America/New_York` (`npm run test:zone`), múi giờ phía tây UTC và có đổi giờ mùa hè. Không chạy cả `src/domain`: vài test Learn ghi dữ liệu cố định theo giờ Việt Nam. Đặt biến `TZ` trực tiếp không có tác dụng vì cấu hình ghi đè nó.
 - **Repository:** bộ hợp đồng đọc 1001 dòng trên cả hai kho, dòng hỏng báo lỗi; pgTAP: người dùng B không thấy ngày của A.
 - **UI trên `App` thật:** `Today` đúng số của hôm nay, không lấy nhầm dòng gần nhất · `listStudyDays` hỏng thì folder vẫn hiện · nhập backup xong ô đổi số · quay lại trang thì số mới.
 

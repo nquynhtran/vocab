@@ -18,6 +18,7 @@ import {
   type TermInput,
   type TermProgress,
 } from '../domain/schemas.ts'
+import { addDays } from '../domain/day.ts'
 import type { AnswerRecord } from '../domain/learn/answer.ts'
 import type { RepositoryDeps } from './deps.ts'
 import type { Repository } from './repository.ts'
@@ -838,6 +839,54 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
       )
 
       expect(await stored(repo)).toStrictEqual({ progress: [], studyDays: [] })
+    })
+  })
+
+  describe('listStudyDays', () => {
+    it('is empty when nothing was studied', async () => {
+      const { repo } = await setup()
+      expect(await repo.listStudyDays()).toStrictEqual([])
+    })
+
+    it('lists every day oldest first, whatever order they were written in', async () => {
+      const { repo, addStudyDays } = await setup()
+      await addStudyDays([
+        { date: '2026-11-02', answeredCount: 4 },
+        { date: '2026-10-31', answeredCount: 12 },
+        { date: '2026-11-01', answeredCount: 10 },
+      ])
+
+      expect(await repo.listStudyDays()).toStrictEqual([
+        { date: '2026-10-31', answeredCount: 12 },
+        { date: '2026-11-01', answeredCount: 10 },
+        { date: '2026-11-02', answeredCount: 4 },
+      ])
+    })
+
+    it('includes what recordAnswer counted', async () => {
+      const { repo } = await setup()
+      const { term } = await seedTerm(repo)
+
+      await repo.recordAnswer({
+        termId: term.id,
+        correct: false,
+        promote: false,
+        answeredAt: '2026-10-25T09:00:00.123Z',
+        day: '2026-10-25',
+      })
+
+      expect(await repo.listStudyDays()).toStrictEqual([{ date: '2026-10-25', answeredCount: 1 }])
+    })
+
+    it(`lists more than ${MORE_THAN_MAX_ROWS - 1} days without truncating`, async () => {
+      const { repo, addStudyDays } = await setup()
+      const rows = Array.from({ length: MORE_THAN_MAX_ROWS }, (_, i) => ({
+        date: addDays('2020-01-01', i),
+        answeredCount: 10,
+      }))
+      await addStudyDays(rows)
+
+      expect(await repo.listStudyDays()).toStrictEqual(rows)
     })
   })
 

@@ -22,6 +22,7 @@ import {
   type FileNotesInput,
   type Folder,
   type FolderInput,
+  type StudyDay,
   type Term,
   type TermInput,
   type VocabFile,
@@ -321,6 +322,15 @@ export class SupabaseRepository implements Repository {
         p_day: answer.day,
       }),
     )
+  }
+
+  // ---- Study days ----
+
+  async listStudyDays(): Promise<StudyDay[]> {
+    // An RPC, not a select: one row per studied day, none ever deleted, so a select would reach
+    // MAX_ROWS after ~2.7 years and break the streak for good (decision #73).
+    const rows = await this.run(this.client.rpc('list_study_days'))
+    return asArray(rows).map((row, i) => parseRow(StudyDaySchema, row, `study_days ${i}`))
   }
 
   // ---- Backup ----

@@ -309,6 +309,13 @@ export class DexieRepository implements Repository {
     })
   }
 
+  // ---- Study days ----
+
+  async listStudyDays(): Promise<StudyDay[]> {
+    // The primary key is the date, so this is oldest first.
+    return (await this.db.studyDays.toArray()).map(toStudyDay)
+  }
+
   // ---- Backup ----
 
   async exportBackup(): Promise<Backup> {

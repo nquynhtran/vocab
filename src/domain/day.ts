@@ -18,3 +18,12 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000
 export function daysBetween(from: string, to: string): number {
   return Math.round((Date.parse(to) - Date.parse(from)) / MS_PER_DAY)
 }
+
+/**
+ * The calendar day `days` after `day` (before it when negative), both `YYYY-MM-DD`.
+ * `toISOString()` is right here, unlike in `localDay`: the value is a UTC midnight, so its UTC
+ * date is the day itself in every time zone, and a daylight-saving change cannot shift it.
+ */
+export function addDays(day: string, days: number): string {
+  return new Date(Date.parse(day) + days * MS_PER_DAY).toISOString().slice(0, 10)
+}
