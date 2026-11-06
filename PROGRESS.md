@@ -3,7 +3,7 @@
 > File này được nạp tự động mỗi phiên. Giữ ngắn: chỉ trạng thái hiện tại, checklist và 5 mục nhật ký gần nhất.
 
 ## Đang ở đâu
-- **Giai đoạn:** 4 (Streak), đang deploy theo [streak.md](docs/streak.md#deploy).
+- **Giai đoạn:** 4 (Streak), đã deploy (`db push`, push `44aa949`, CI xanh, trang thật đã có code mới), chờ người dùng dùng thử.
 - **Việc tiếp theo:** người dùng thử trên máy tính và iPhone (số có tự cập nhật khi mở lại app không).
 - **Đang vướng:** không. Build có cảnh báo chunk > 500 kB (supabase-js), để giai đoạn 6. 🔊 không kêu trong Simple Browser của VS Code. `npm run build` ở máy cần `VITE_SUPABASE_*` (xem cloud-sync.md). iPhone iOS cũ của người dùng tạo folder bị lỗi chưa rõ nguyên nhân (cloud-sync.md#iphone); người dùng sẽ cập nhật máy. Đã thỏa thuận để sau: tách hook khỏi `TermForm`, `saved!` ở `FilePage`, so `updatedAt` phụ thuộc đồng hồ máy.
 
@@ -38,7 +38,8 @@ Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn 
   - [x] Thiết kế + `challenger`; người dùng chọn phần hiển thị (#71–#74)
   - [x] Domain, `listStudyDays` + RPC, ô streak + lịch; qua `reviewer` (4 điểm nên sửa + 3 điểm nhỏ đã sửa, 2 điểm chấp nhận); 591 test + `test:zone` + 141 pgTAP + 84 hợp đồng xanh
   - [x] Sửa đăng xuất nhầm do 401 về muộn (#75), theo yêu cầu soát lại; qua `reviewer` 2 lượt
-  - [ ] Deploy, người dùng dùng thử
+  - [x] Deploy: `db push` một hàm đọc → `git push` + CI xanh
+  - [ ] Người dùng dùng thử
 - [ ] **5. Sao lưu** — khôi phục toàn bộ dữ liệu từ file backup; quyết hai câu hỏi đang mở (#74)
 - [ ] **6. Hoàn thiện** — phím tắt còn lại (nếu cần; 1–4 và Enter đã có, #55), dark mode + làm lại thiết kế cho đẹp hơn (người dùng muốn, 2026-11-04; có thể gửi ảnh app mẫu; giao diện mới từ giờ chỉ dùng biến màu `--color-*`, bóng đổ menu ⋯ đang viết thẳng màu); dark mode mặc định theo máy (`prefers-color-scheme`); màn Settings chỉ làm khi có ≥ 2–3 thứ người dùng thật sự muốn chỉnh (ứng viên: giao diện tự động/sáng/tối, số từ mỗi vòng, tài khoản + Sign out, gom xuất/khôi phục backup về đây), người dùng ghi lại nhu cầu khi dùng; README; tối ưu gói code (709 kB, nén 208 kB, chủ yếu supabase-js: xem có code bản local như Dexie bị gói vào không, tách phần chưa cần lúc mở app; người dùng nhờ ghi lại 2026-11-04); dùng thử 1 tuần
 
