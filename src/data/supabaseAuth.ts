@@ -8,6 +8,7 @@ import { SignInInputSchema, type Auth, type AuthListener, type SignInInput } fro
 
 export class SupabaseAuth implements Auth {
   private readonly client: SupabaseClient
+  private expiring: Promise<void> | undefined
 
   constructor(client: SupabaseClient) {
     this.client = client
@@ -35,9 +36,29 @@ export class SupabaseAuth implements Auth {
       throw authenticationError(error, 'Cannot sign out')
   }
 
-  async expireSession(): Promise<void> {
-    // Drops the local session whatever the server answers (401 for the rejected token, or no
-    // answer at all), so listeners hear null.
+  /**
+   * A 401 says nothing about which session the request carried: one sent earlier, or while
+   * signed out, can arrive just after the user signed in again, and must not end the new session
+   * (decision #75). So the current session is what gets checked, once for a burst of 401s: the
+   * sign-in dialog only appears after the first check, so a later one could not be about a
+   * session signed in meanwhile.
+   */
+  expireSession(): Promise<void> {
+    this.expiring ??= this.endRejectedSession().finally(() => {
+      this.expiring = undefined
+    })
+    return this.expiring
+  }
+
+  private async endRejectedSession(): Promise<void> {
+    const { data } = await this.client.auth.getSession()
+    // Nothing to end, and signing out now could wipe a sign-in that lands at the same moment.
+    if (data.session === null) return
+    const { error } = await this.client.auth.getUser()
+    // Only the server rejecting this session ends it. Offline, 429, a proxy's error page: cannot
+    // tell, and the next request that gets through will show.
+    if (!isAuthApiError(error) || (error.status !== 401 && error.status !== 403)) return
+    // Drops the session whatever signOut's own request answers, so listeners hear null.
     await this.client.auth.signOut({ scope: 'local' })
   }
 }

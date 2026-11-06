@@ -245,6 +245,26 @@ describe.runIf(import.meta.env.VOCAB_SUPABASE_TESTS === '1')('on local Supabase'
       unsubscribe()
     })
 
+    it('keeps a working session on a late 401, and ends one the server revoked', async () => {
+      const own = createClient(LOCAL_URL, LOCAL_PUBLISHABLE_KEY, { auth: NO_SESSION })
+      const auth = new SupabaseAuth(own)
+      await auth.signIn(TEST_USER)
+
+      await auth.expireSession()
+      expect((await own.auth.getSession()).data.session).not.toBeNull()
+
+      // Signing out everywhere from another device revokes this session on the server. Done with
+      // a separate login: a global sign-out also revokes the session the shared client uses, so
+      // that client signs in again for the tests after this one.
+      const other = createClient(LOCAL_URL, LOCAL_PUBLISHABLE_KEY, { auth: NO_SESSION })
+      await other.auth.signInWithPassword(TEST_USER)
+      await other.auth.signOut({ scope: 'global' })
+      await client.auth.signInWithPassword(TEST_USER)
+
+      await auth.expireSession()
+      expect((await own.auth.getSession()).data.session).toBeNull()
+    })
+
     it('reads app_config only when signed in', async () => {
       expect(await isClientOutdated(client)).toBe(false)
       const signedOut = createClient(LOCAL_URL, LOCAL_PUBLISHABLE_KEY, { auth: NO_SESSION })
