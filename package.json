@@ -16,7 +16,8 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "npm run lint && npm run format:check && npm run typecheck && npm run test",
+    "test:zone": "VOCAB_TEST_TZ=America/New_York vitest run src/domain/day.test.ts src/domain/streak",
+    "check": "npm run lint && npm run format:check && npm run typecheck && npm run test && npm run test:zone",
     "test:supabase": "supabase test db && VOCAB_SUPABASE_TESTS=1 vitest run src/data/supabaseRepository.test.ts"
   },
   "dependencies": {
