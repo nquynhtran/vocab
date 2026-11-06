@@ -26,6 +26,10 @@ function typeInto(label: string | RegExp, value: string) {
   fireEvent.change(screen.getByLabelText(label), { target: { value } })
 }
 
+function chooseFile(file: File) {
+  fireEvent.change(screen.getByLabelText('Backup file'), { target: { files: [file] } })
+}
+
 /** Opens the ⋯ menu of the row named `name` and picks `action` in it. */
 async function chooseFromMenu(name: string, action: string) {
   fireEvent.click(await screen.findByRole('button', { name: `More actions for "${name}"` }))
@@ -463,10 +467,6 @@ describe('import a backup', () => {
     await source.createTerm(file.id, { word: 'run', meaning: 'chạy' })
     const backup = await source.exportBackup()
     return new File([JSON.stringify(backup, null, 2)], 'vocab-backup.json')
-  }
-
-  function chooseFile(file: File) {
-    fireEvent.change(screen.getByLabelText('Backup file'), { target: { files: [file] } })
   }
 
   it('imports a file made with Export JSON into an empty account', async () => {
