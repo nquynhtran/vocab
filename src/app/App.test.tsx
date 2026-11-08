@@ -529,7 +529,7 @@ describe('streak on Home', () => {
     expect(await screen.findByText('Start a streak today')).toBeInTheDocument()
   })
 
-  it('updates after importing a backup that holds study days', async () => {
+  it('updates after restoring a backup that holds study days', async () => {
     setToday('2026-11-05')
     const file = await backupWithStudyDay('2026-11-05')
     const { repository } = renderApp()
@@ -537,26 +537,26 @@ describe('streak on Home', () => {
     const list = vi.spyOn(repository, 'listStudyDays')
 
     chooseFile(file)
-    fireEvent.click(await screen.findByRole('button', { name: /^Import/ }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Restore' }))
 
     expect(await screen.findByText('🔥 1-day streak · Best 1')).toBeInTheDocument()
     expect(screen.getByText('Today: 10 answers ✓')).toBeInTheDocument()
     expect(list).toHaveBeenCalledTimes(1)
   })
 
-  it('updates when an import went through but its answer was lost', async () => {
+  it('updates when a restore went through but its answer was lost', async () => {
     setToday('2026-11-05')
     const file = await backupWithStudyDay('2026-11-05')
     const { repository } = renderApp()
     await screen.findByText('Start a streak today')
-    const importIntoEmpty = repository.importIntoEmpty.bind(repository)
-    vi.spyOn(repository, 'importIntoEmpty').mockImplementation(async (backup) => {
-      await importIntoEmpty(backup)
+    const replaceAll = repository.replaceAll.bind(repository)
+    vi.spyOn(repository, 'replaceAll').mockImplementation(async (backup) => {
+      await replaceAll(backup)
       throw new ConnectionError()
     })
 
     chooseFile(file)
-    fireEvent.click(await screen.findByRole('button', { name: /^Import/ }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Restore' }))
 
     expect(await screen.findByText('🔥 1-day streak · Best 1')).toBeInTheDocument()
   })
@@ -643,67 +643,259 @@ describe('streak on Home', () => {
   })
 })
 
-describe('import a backup', () => {
+describe('restore from backup', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   /** What Export JSON downloads, made through another browser's repository. */
-  async function exportedFile() {
+  async function exportedBackup() {
     const source = openRepository(new IDBFactory())
     const folder = await source.createFolder({ name: 'IELTS' })
     const file = await source.createFile(folder.id, { name: 'Unit 1' })
     await source.createTerm(file.id, { word: 'run', meaning: 'chạy' })
-    const backup = await source.exportBackup()
-    return new File([JSON.stringify(backup, null, 2)], 'vocab-backup.json')
+    return source.exportBackup()
   }
 
-  it('imports a file made with Export JSON into an empty account', async () => {
+  const asFile = (backup: unknown, name = 'vocab-backup.json') =>
+    new File([JSON.stringify(backup, null, 2)], name)
+
+  const backupSection = () => within(screen.getByRole('region', { name: 'Backup' }))
+
+  /** As a keyboard user would: fireEvent.click alone does not move focus. */
+  async function pressButton(name: string) {
+    const button = await screen.findByRole('button', { name })
+    button.focus()
+    fireEvent.click(button)
+  }
+
+  /** Focus left the removed button for an element holding `text`, not for the whole page. */
+  function expectFocusOn(text: string) {
+    expect(document.activeElement).not.toBe(document.body)
+    expect(document.activeElement).toHaveTextContent(text)
+  }
+
+  /** Current data the file does not have: a folder, and a study day (which a restore removes). */
+  async function renderWithCurrentData() {
+    const indexedDB = new IDBFactory()
+    const seed = openRepository(indexedDB)
+    const folder = await seed.createFolder({ name: 'Old' })
+    const file = await seed.createFile(folder.id, { name: 'Old unit' })
+    const term = await seed.createTerm(file.id, { word: 'walk', meaning: 'đi bộ' })
+    // Ten answers: the daily goal, so the day counts in the streak.
+    for (let i = 0; i < 10; i += 1) {
+      await seed.recordAnswer({
+        termId: term.id,
+        correct: true,
+        promote: false,
+        answeredAt: `2026-11-01T05:00:00.${String(i).padStart(3, '0')}Z`,
+        day: '2026-11-01',
+      })
+    }
+    const view = renderApp('/', indexedDB)
+    await screen.findByRole('link', { name: 'Old' })
+    return view
+  }
+
+  it('restores into an empty account without warnings', async () => {
+    const file = asFile(await exportedBackup())
     renderApp()
     await screen.findByText(/No folders yet/)
 
-    chooseFile(await exportedFile())
-    fireEvent.click(await screen.findByRole('button', { name: 'Import 1 folder, 1 file, 1 term' }))
+    chooseFile(file)
 
+    expect(await screen.findByText('This file has 1 folder, 1 file and 1 term.')).toBeVisible()
+    expect(screen.queryByText('Close the app on other devices first.')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Replace all' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Restore' }))
+
+    expect(await backupSection().findByText('Restored 1 folder, 1 file and 1 term.')).toBeVisible()
     fireEvent.click(await screen.findByRole('link', { name: 'IELTS' }))
     expect(await screen.findByText('1 term · 0% mastered')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('link', { name: /Unit 1/ }))
     expect(await screen.findByText('chạy')).toBeInTheDocument()
   })
 
+  it('compares current data with the file and warns about what will be lost', async () => {
+    const file = asFile(await exportedBackup())
+    await renderWithCurrentData()
+
+    chooseFile(file)
+
+    const table = await screen.findByRole('table', { name: /Replace your current data/ })
+    const cells = (row: string) =>
+      within(within(table).getByRole('row', { name: new RegExp(`^${row}`) }))
+        .getAllByRole('cell')
+        .map((cell) => cell.textContent)
+    expect(cells('Folders')).toStrictEqual(['1', '1'])
+    expect(cells('Terms')).toStrictEqual(['1', '1'])
+    expect(cells('Last study day')).toStrictEqual(['1 Nov 2026', '—'])
+    // Current data was made after the file, so its edits are newer.
+    expect(
+      screen.getByText(
+        'Your current data is newer than this backup. Changes made since then will be lost.',
+      ),
+    ).toBeVisible()
+    expect(
+      screen.getByText(
+        '1 study day not in the backup will be removed, so your streak may go down.',
+      ),
+    ).toBeVisible()
+    expect(screen.getByText('Close the app on other devices first.')).toBeVisible()
+    expect(screen.queryByText(/has a problem/)).not.toBeInTheDocument()
+  })
+
+  it('replaces folders, terms and the streak with the file', async () => {
+    const file = asFile(await exportedBackup())
+    // Only `Date`: IndexedDB and React still need the real timers.
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-11-01T12:00:00+07:00') })
+    const { repository } = await renderWithCurrentData()
+    expect(await screen.findByText('🔥 1-day streak · Best 1')).toBeInTheDocument()
+
+    chooseFile(file)
+    await pressButton('Replace all')
+
+    expect(await screen.findByRole('link', { name: 'IELTS' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Old' })).not.toBeInTheDocument()
+    // Focus follows the outcome, not the button that just disappeared.
+    expectFocusOn('Restored 1 folder')
+    expect(await screen.findByText('Start a streak today')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('table', { name: /Replace your current data/ }),
+    ).not.toBeInTheDocument()
+    expect(await repository.listStudyDays()).toStrictEqual([])
+  })
+
+  it('writes nothing on Cancel', async () => {
+    const file = asFile(await exportedBackup())
+    const { repository } = await renderWithCurrentData()
+    const replaceAll = vi.spyOn(repository, 'replaceAll')
+
+    chooseFile(file)
+    await pressButton('Cancel')
+
+    expect(
+      screen.queryByRole('table', { name: /Replace your current data/ }),
+    ).not.toBeInTheDocument()
+    expect(document.activeElement).toBe(screen.getByLabelText('Backup file'))
+    expect(replaceAll).not.toHaveBeenCalled()
+    expect(screen.getByRole('link', { name: 'Old' })).toBeInTheDocument()
+  })
+
+  it('downloads the current data it compared, without writing', async () => {
+    const file = asFile(await exportedBackup())
+    const { repository } = await renderWithCurrentData()
+    const replaceAll = vi.spyOn(repository, 'replaceAll')
+    const blobs: Blob[] = []
+    vi.spyOn(URL, 'createObjectURL').mockImplementation((blob) => {
+      blobs.push(blob as Blob)
+      return 'blob:backup'
+    })
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+    chooseFile(file)
+    fireEvent.click(await screen.findByRole('button', { name: 'Download current data first' }))
+
+    expect(click).toHaveBeenCalledOnce()
+    const copy = JSON.parse(await blobs[0]!.text())
+    expect(copy).toMatchObject({ folders: [{ name: 'Old' }], terms: [{ word: 'walk' }] })
+    const { exportedAt: _, ...stored } = await repository.exportBackup()
+    expect(copy).toStrictEqual({
+      ...JSON.parse(JSON.stringify(stored)),
+      exportedAt: copy.exportedAt,
+    })
+    expect(replaceAll).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Replace all' })).toBeEnabled()
+  })
+
+  it('warns when a copy of current data could not be restored as is', async () => {
+    const file = asFile(await exportedBackup())
+    const { repository } = await renderWithCurrentData()
+    const exportBackup = repository.exportBackup.bind(repository)
+    // A stored row the schema would reject: exportBackup returns it as is (#41).
+    vi.spyOn(repository, 'exportBackup').mockImplementation(async () => {
+      const current = await exportBackup()
+      return { ...current, folders: current.folders.map((f) => ({ ...f, name: ' Old' })) }
+    })
+
+    chooseFile(file)
+
+    expect(
+      await screen.findByText(/^Your current data has a problem \(folders\.0\.name/),
+    ).toHaveTextContent(/a copy taken now cannot be restored as is\.$/)
+    expect(screen.getByRole('button', { name: 'Replace all' })).toBeEnabled()
+  })
+
+  it('says a restore may have finished when its answer was lost, and shows the result', async () => {
+    const file = asFile(await exportedBackup())
+    const { repository } = await renderWithCurrentData()
+    const replaceAll = repository.replaceAll.bind(repository)
+    vi.spyOn(repository, 'replaceAll').mockImplementation(async (backup) => {
+      await replaceAll(backup)
+      throw new ConnectionError()
+    })
+
+    chooseFile(file)
+    await pressButton('Replace all')
+
+    expect(await backupSection().findByRole('alert')).toHaveTextContent(
+      'The restore may or may not have finished. Check your folders above; restoring the same ' +
+        'file again is safe.',
+    )
+    expect(await screen.findByRole('link', { name: 'IELTS' })).toBeInTheDocument()
+    expect(await screen.findByText('Start a streak today')).toBeInTheDocument()
+    // The comparison was of data that may have changed since.
+    expect(
+      screen.queryByRole('table', { name: /Replace your current data/ }),
+    ).not.toBeInTheDocument()
+  })
+
+  it.each([
+    ['a rolled-back error', () => new Error('statement timeout'), 'Something went wrong.'],
+    ['an expired session', () => new SessionExpiredError(), 'Your session has expired.'],
+  ])('keeps the comparison to try again after %s', async (_, failure, message) => {
+    const file = asFile(await exportedBackup())
+    const { repository } = await renderWithCurrentData()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const replaceAll = vi.spyOn(repository, 'replaceAll').mockRejectedValueOnce(failure())
+
+    chooseFile(file)
+    await pressButton('Replace all')
+
+    expect(await backupSection().findByRole('alert')).toHaveTextContent(message)
+    expectFocusOn(message)
+    expect(screen.getByRole('link', { name: 'Old' })).toBeInTheDocument()
+    await pressButton('Replace all')
+    expect(await screen.findByRole('link', { name: 'IELTS' })).toBeInTheDocument()
+    expect(replaceAll).toHaveBeenCalledTimes(2)
+    expect(backupSection().queryByRole('alert')).not.toBeInTheDocument()
+  })
+
   it('lists the first problems of an invalid file with where they are', async () => {
+    const backup = await exportedBackup()
     renderApp()
     await screen.findByText(/No folders yet/)
-    const backup = JSON.parse(await (await exportedFile()).text()) as { terms: object[] }
     const broken = { ...backup, terms: backup.terms.map((t) => ({ ...t, word: '' })) }
 
-    chooseFile(new File([JSON.stringify(broken)], 'broken.json'))
+    chooseFile(asFile(broken, 'broken.json'))
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/^terms\.0\.word: /)
-    expect(screen.queryByRole('button', { name: /^Import/ })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /^Restore$|^Replace all$/ }),
+    ).not.toBeInTheDocument()
   })
 
   it('refuses a file too big to be a backup without reading it', async () => {
+    const file = asFile(await exportedBackup())
     renderApp()
     await screen.findByText(/No folders yet/)
-    const file = await exportedFile()
     Object.defineProperty(file, 'size', { value: MAX_BACKUP_FILE_BYTES + 1 })
+    const text = vi.spyOn(file, 'text')
 
     chooseFile(file)
 
     expect(await screen.findByRole('alert')).toHaveTextContent('larger than 5 MB')
-  })
-
-  it('keeps the error in view when the account got data in the meantime', async () => {
-    const { repository } = renderApp()
-    await screen.findByText(/No folders yet/)
-    chooseFile(await exportedFile())
-    const importButton = await screen.findByRole('button', { name: /^Import/ })
-    // Another device writes first; this page has not reloaded yet.
-    await repository.createFolder({ name: 'Elsewhere' })
-
-    fireEvent.click(importButton)
-
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Your account already has data, so this file was not imported again.',
-    )
-    expect(await screen.findByRole('link', { name: 'Elsewhere' })).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: 'IELTS' })).not.toBeInTheDocument()
+    expect(text).not.toHaveBeenCalled()
   })
 })

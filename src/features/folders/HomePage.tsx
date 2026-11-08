@@ -1,7 +1,6 @@
 import { useCallback } from 'react'
 import type { Folder } from '../../domain/schemas.ts'
-import { ExportButton } from '../backup/ExportButton.tsx'
-import { ImportBackup } from '../backup/ImportBackup.tsx'
+import { BackupSection } from '../backup/BackupSection.tsx'
 import { StreakPanel } from '../streak/StreakPanel.tsx'
 import { useStreak } from '../streak/useStreak.ts'
 import { deleteFolderMessage } from '../../shared/deleteMessages.ts'
@@ -18,7 +17,7 @@ export function HomePage() {
   const [state, reload] = useAsync(load)
   const { write, run, actionError } = usePageWrites(reload)
   // Loaded apart from the folders: a study day that cannot be read must not cost the whole page
-  // (decision #73). Only an import changes it among the writes here.
+  // (decision #73). Only a restore changes it among the writes here.
   const [streak, reloadStreak] = useStreak()
 
   function handleDelete(folder: Folder) {
@@ -46,21 +45,9 @@ export function HomePage() {
       {state.status === 'ready' && <RefreshError error={state.refreshError} />}
       {state.status === 'ready' &&
         (state.data.length === 0 ? (
-          <>
-            <p className="muted">No folders yet. Create one to start adding terms.</p>
-            <ImportBackup
-              onImport={(backup) =>
-                run(async () => {
-                  try {
-                    await write(() => repository.importIntoEmpty(backup))
-                  } finally {
-                    // Also on failure: an import can succeed and only lose its answer.
-                    reloadStreak()
-                  }
-                })
-              }
-            />
-          </>
+          <p className="muted">
+            No folders yet. Create one to start adding terms, or restore a backup below.
+          </p>
         ) : (
           <ul className="item-list" aria-label="Folders">
             {state.data.map((folder) => (
@@ -75,7 +62,12 @@ export function HomePage() {
             ))}
           </ul>
         ))}
-      <ExportButton />
+      <BackupSection
+        onRestored={() => {
+          reload()
+          reloadStreak()
+        }}
+      />
     </section>
   )
 }

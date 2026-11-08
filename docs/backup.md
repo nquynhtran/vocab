@@ -1,6 +1,6 @@
 # Khôi phục backup (giai đoạn 5)
 
-> Trạng thái: đã thiết kế, qua `challenger`, người dùng chốt #76–#79 (2026-11-08). Tầng dữ liệu đã có (`replaceAll`, RPC `replace_all`, test `supabase/tests/database/replace_all.test.sql`); **giao diện chưa có**.
+> Trạng thái: đã thiết kế, qua `challenger`, người dùng chốt #76–#79 (2026-11-08). Tầng dữ liệu đã có (`replaceAll`, RPC `replace_all`, test `supabase/tests/database/replace_all.test.sql`); giao diện: `features/backup/BackupSection.tsx`, so sánh ở `domain/restoreComparison.ts`.
 > Định dạng file, validate, `migrateBackup`: [data-model.md](data-model.md#sao-lưu-json). Nhập vào kho trống hiện có: [cloud-sync.md](cloud-sync.md#chuyển-dữ-liệu-local-lên-cloud-33-46).
 
 ## Hành vi
@@ -30,8 +30,8 @@ Một mục duy nhất, luôn hiện: nút Export JSON (đã có) + "Restore fro
    - Nút **Download current data first** (#79): tải snapshot ở bước 2, không bắt buộc, không tự tải (Safari/iPhone có thể chặn tải sau `await` mà app không biết, như #46). Chạy thử `validateBackup` trên snapshot; hỏng → cảnh báo "Your current data has a problem at …; a copy taken now cannot be restored as is". Chỉ cảnh báo, không chặn (`exportBackup` cố ý không validate, #41).
    - Nút đỏ **Replace all** và Cancel. Không thêm `window.confirm`: màn này đã là bước xác nhận.
    - Kho trống (0 folder, 0 ngày học): bỏ cảnh báo đỏ, chỉ hiện số lượng của file và nút "Restore". Có ngày học mà không có folder (lỗi #74 cũ) vẫn nêu số ngày sẽ bị thay.
-4. Xong → tải lại danh sách folder và ô streak (#73).
-- Lỗi file và lỗi lúc ghi hiện ở ô lỗi chung của trang. Trên Supabase, lỗi không có mã (trang lỗi HTML 502/504 của proxy, có thể đến sau khi đã commit) là `ConnectionError` như mọi request ([cloud-sync.md](cloud-sync.md)); lỗi có mã Postgres nghĩa là đã rollback. `ConnectionError`: "The restore may or may not have finished. Check your folders below; restoring the same file again is safe." và tải lại Home. Không bao giờ báo "nothing was replaced" khi lỗi mạng.
+4. Xong → tải lại danh sách folder và ô streak (#73), đóng màn so sánh, hiện "Restored N folders, N files and N terms.". Tải lại cả khi lỗi (có thể đã ghi).
+- Lỗi file và lỗi lúc ghi hiện **ngay trong mục Backup**, không ở ô lỗi chung đầu trang: mục ở cuối trang, danh sách dài thì lỗi ở đầu trang nằm ngoài màn hình. Mục Backup luôn hiện nên lỗi không biến mất khi trang tải lại (khác mục Import cũ). Lỗi đã rollback (có mã, hết phiên) → giữ màn so sánh để bấm lại; `ConnectionError` → đóng màn so sánh (dữ liệu hiện tại có thể đã đổi), chọn lại file. Bấm xong (thành công hay lỗi) con trỏ bàn phím chuyển tới câu kết quả; Cancel → về ô chọn file. Trên Supabase, lỗi không có mã (trang lỗi HTML 502/504 của proxy, có thể đến sau khi đã commit) là `ConnectionError` như mọi request ([cloud-sync.md](cloud-sync.md)); lỗi có mã Postgres nghĩa là đã rollback. `ConnectionError`: "The restore may or may not have finished. Check your folders above; restoring the same file again is safe." và tải lại Home. Không bao giờ báo "nothing was replaced" khi lỗi mạng.
 
 ## Trường hợp chấp nhận (không làm)
 - **Thiết bị khác đang mở:** từ không còn trong file → `record_answer` không làm gì, không đếm ngày học, không báo lỗi; từ còn cùng id → cộng lên tiến độ vừa khôi phục. Phiên Learn dở (#58) mở lại thì `resumeSession` bỏ id đã mất, nhưng level trong phiên vẫn là level cũ. Nháp ghi chú đã so với `base` (#69).
