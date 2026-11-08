@@ -938,66 +938,6 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
   })
 
   describe('importIntoEmpty', () => {
-    /** Every table, optional fields both set and absent, timestamps with milliseconds. */
-    function sampleBackup(): Backup {
-      const at = '2026-10-01T07:30:00.250Z'
-      return {
-        schemaVersion: 3,
-        exportedAt: '2026-10-20T00:00:00.000Z',
-        folders: [{ id: testId(101), name: 'IELTS', createdAt: at, updatedAt: at }],
-        files: [
-          {
-            id: testId(201),
-            folderId: testId(101),
-            name: 'Unit 1',
-            notes: 'Reading:\n\n  The river runs.',
-            createdAt: at,
-            updatedAt: at,
-          },
-          { id: testId(202), folderId: testId(101), name: 'Unit 2', createdAt: at, updatedAt: at },
-        ],
-        terms: [
-          {
-            id: testId(301),
-            fileId: testId(201),
-            word: 'Run',
-            partOfSpeech: PARTS_OF_SPEECH[0],
-            pronunciation: '/rʌn/',
-            meaning: 'chạy',
-            example: 'I run.',
-            createdAt: at,
-            updatedAt: '2026-10-02T08:00:00.000Z',
-          },
-          {
-            id: testId(302),
-            fileId: testId(201),
-            word: 'walk',
-            meaning: 'đi bộ',
-            createdAt: at,
-            updatedAt: at,
-          },
-        ],
-        progress: [
-          {
-            termId: testId(301),
-            box: 3,
-            correctCount: 4,
-            wrongCount: 1,
-            lastWrongAt: at,
-            lastStudiedAt: at,
-            lastPromotedDay: '2026-09-30',
-          },
-          { termId: testId(302), box: 1, correctCount: 0, wrongCount: 0 },
-        ],
-        studyDays: [{ date: '2026-10-01', answeredCount: 12 }],
-      }
-    }
-
-    const withoutExportTime = (backup: Backup): Omit<Backup, 'exportedAt'> => {
-      const { exportedAt: _exportedAt, ...rest } = backup
-      return rest
-    }
-
     // Repositories copy fields one by one; a new field missing from the sample would pass the
     // round trip below even when a repository drops it.
     it('uses a sample that sets every field of every table', () => {
@@ -1082,3 +1022,63 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
 
 const byWord = (a: { word: string }, b: { word: string }) => (a.word < b.word ? -1 : 1)
 const byDate = (a: StudyDay, b: StudyDay) => (a.date < b.date ? -1 : 1)
+
+/** Every table, optional fields both set and absent, timestamps with milliseconds. */
+function sampleBackup(): Backup {
+  const at = '2026-10-01T07:30:00.250Z'
+  return {
+    schemaVersion: 3,
+    exportedAt: '2026-10-20T00:00:00.000Z',
+    folders: [{ id: testId(101), name: 'IELTS', createdAt: at, updatedAt: at }],
+    files: [
+      {
+        id: testId(201),
+        folderId: testId(101),
+        name: 'Unit 1',
+        notes: 'Reading:\n\n  The river runs.',
+        createdAt: at,
+        updatedAt: at,
+      },
+      { id: testId(202), folderId: testId(101), name: 'Unit 2', createdAt: at, updatedAt: at },
+    ],
+    terms: [
+      {
+        id: testId(301),
+        fileId: testId(201),
+        word: 'Run',
+        partOfSpeech: PARTS_OF_SPEECH[0],
+        pronunciation: '/rʌn/',
+        meaning: 'chạy',
+        example: 'I run.',
+        createdAt: at,
+        updatedAt: '2026-10-02T08:00:00.000Z',
+      },
+      {
+        id: testId(302),
+        fileId: testId(201),
+        word: 'walk',
+        meaning: 'đi bộ',
+        createdAt: at,
+        updatedAt: at,
+      },
+    ],
+    progress: [
+      {
+        termId: testId(301),
+        box: 3,
+        correctCount: 4,
+        wrongCount: 1,
+        lastWrongAt: at,
+        lastStudiedAt: at,
+        lastPromotedDay: '2026-09-30',
+      },
+      { termId: testId(302), box: 1, correctCount: 0, wrongCount: 0 },
+    ],
+    studyDays: [{ date: '2026-10-01', answeredCount: 12 }],
+  }
+}
+
+const withoutExportTime = (backup: Backup): Omit<Backup, 'exportedAt'> => {
+  const { exportedAt: _exportedAt, ...rest } = backup
+  return rest
+}

@@ -354,14 +354,7 @@ export class SupabaseRepository implements Repository {
   }
 
   async importIntoEmpty(backup: Backup): Promise<void> {
-    const valid = validateBackup(backup)
-    const payload = {
-      folders: valid.folders.map(folderToRow),
-      files: valid.files.map(fileToRow),
-      terms: valid.terms.map(termToRow),
-      progress: valid.progress.map((p) => entityToRow(TermProgressSchema, p)),
-      study_days: valid.studyDays.map((d) => entityToRow(StudyDaySchema, d)),
-    }
+    const payload = toSnapshotPayload(validateBackup(backup))
     await runRequest(this.client.rpc('import_snapshot', { payload }), {
       onSessionExpired: this.onSessionExpired,
       // Raised when the account has any folder or study day (supabase/migrations).
@@ -447,4 +440,15 @@ function limited(data: unknown, what: string): unknown[] {
 function existingName(row: unknown, fallback: string): string {
   const name = (row as { name?: unknown } | null)?.name
   return typeof name === 'string' ? name : fallback
+}
+
+/** The payload of import_snapshot (supabase/migrations): every column of every row. */
+function toSnapshotPayload(valid: Backup) {
+  return {
+    folders: valid.folders.map(folderToRow),
+    files: valid.files.map(fileToRow),
+    terms: valid.terms.map(termToRow),
+    progress: valid.progress.map((p) => entityToRow(TermProgressSchema, p)),
+    study_days: valid.studyDays.map((d) => entityToRow(StudyDaySchema, d)),
+  }
 }

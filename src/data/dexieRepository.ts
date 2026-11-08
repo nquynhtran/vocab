@@ -340,22 +340,28 @@ export class DexieRepository implements Repository {
       if ((await folders.count()) > 0 || (await studyDays.count()) > 0) {
         throw new DataAlreadyExistsError()
       }
-      await folders.bulkAdd(valid.folders.map((f) => ({ ...toFolder(f), nameKey: toKey(f.name) })))
-      await files.bulkAdd(valid.files.map((f) => ({ ...toFile(f), nameKey: toKey(f.name) })))
-      await terms.bulkAdd(
-        valid.terms.map((t) =>
-          toTermRow(
-            { id: t.id, fileId: t.fileId, createdAt: t.createdAt, updatedAt: t.updatedAt },
-            t,
-          ),
-        ),
-      )
-      await progress.bulkAdd(valid.progress.map(toProgress))
-      await studyDays.bulkAdd(valid.studyDays.map(toStudyDay))
+      await this.insertBackup(valid)
     })
   }
 
   // ---- Helpers (must run inside the caller's transaction) ----
+
+  /** Adds every row of a validated backup; comparison keys are computed with today's `toKey`. */
+  private async insertBackup(valid: Backup): Promise<void> {
+    const { folders, files, terms, progress, studyDays } = this.db
+    await folders.bulkAdd(valid.folders.map((f) => ({ ...toFolder(f), nameKey: toKey(f.name) })))
+    await files.bulkAdd(valid.files.map((f) => ({ ...toFile(f), nameKey: toKey(f.name) })))
+    await terms.bulkAdd(
+      valid.terms.map((t) =>
+        toTermRow(
+          { id: t.id, fileId: t.fileId, createdAt: t.createdAt, updatedAt: t.updatedAt },
+          t,
+        ),
+      ),
+    )
+    await progress.bulkAdd(valid.progress.map(toProgress))
+    await studyDays.bulkAdd(valid.studyDays.map(toStudyDay))
+  }
 
   private timestamp(): string {
     return this.deps.now().toISOString()
