@@ -38,8 +38,8 @@ Một mục duy nhất, luôn hiện: nút Export JSON (đã có) + "Restore fro
 - **Khe giữa lúc xem so sánh và lúc bấm:** máy khác thêm từ trong khoảng đó thì bị xóa theo. Chặn được bằng mốc `updatedAt` gửi kèm, nhưng thêm nhánh lỗi; một người dùng thì không đáng.
 - **Nhắc sao lưu định kỳ** (`lastBackupAt`): không làm, ứng viên của Settings ở giai đoạn 6.
 
-## Cần đo trước khi hứa "khôi phục toàn bộ"
-Giới hạn của cloud với payload gần 5 MB (`statement_timeout` của role `authenticated`, giới hạn body ở cổng API): đo trên Supabase local, rồi một lần trên cloud. Quá giới hạn → hạ `MAX_BACKUP_FILE_BYTES` hoặc báo lỗi rõ.
+## Giới hạn payload (đã đo trên local, 2026-11-08)
+Role `authenticated` có `statement_timeout` 8 s (cả local lẫn mặc định cloud). `import_snapshot` trên Supabase local, dữ liệu giả có ghi chú, ví dụ, phiên âm, tiến độ và 1000 ngày học: 2 000 từ (2,1 MB) 0,4 s · 8 000 từ (6,0 MB) 1,4 s · 12 000 từ (8,6 MB) 2,1 s. Giới hạn 5 MB còn dư nhiều. Chưa đo trên cloud: phải dùng tài khoản riêng vì thao tác xóa sạch dữ liệu, mà cloud đã tắt đăng ký; dữ liệu thật còn nhỏ hơn nhiều nên để lúc deploy, thử khôi phục bằng chính file Export của người dùng.
 
 ## Test
 - **Bộ hợp đồng (cả hai kho):** thay xong `exportBackup` đúng bằng file (`toStrictEqual`); chạy hai lần cùng file ra cùng kết quả; kho trống; kho chỉ có ngày học; file có id trùng dữ liệu hiện tại; file không hợp lệ → dữ liệu cũ nguyên vẹn, so cả bản ghi.
