@@ -4,7 +4,7 @@
 
 ## Đang ở đâu
 - **Giai đoạn:** 4 xong (người dùng xác nhận trên máy tính + iPhone, 2026-11-06). Sắp vào giai đoạn 5.
-- **Việc tiếp theo:** giai đoạn 5: thiết kế đã chốt ở [backup.md](docs/backup.md) (#76–#79). Bắt đầu code: đo giới hạn payload 5 MB trên Supabase local → `replaceAll` (domain/Dexie + RPC `replace_all` + pgTAP + hợp đồng) → UI, mỗi bước qua `reviewer`.
+- **Việc tiếp theo:** giai đoạn 5, giao diện: mục "Restore from backup" trên Home theo [backup.md](docs/backup.md#giao-diện-home-mục-backup-cuối-trang-77) (thay mục Import trong `src/features/folders/HomePage.tsx`, dùng `repository.replaceAll`), UI test trên `App` thật, `reviewer`, thử Firefox (rộng + iframe 375 px).
 - **Đang vướng:** không. Build có cảnh báo chunk > 500 kB (supabase-js), để giai đoạn 6. 🔊 không kêu trong Simple Browser của VS Code. `npm run build` ở máy cần `VITE_SUPABASE_*` (xem cloud-sync.md). iPhone iOS cũ của người dùng tạo folder bị lỗi chưa rõ nguyên nhân (cloud-sync.md#iphone); người dùng sẽ cập nhật máy. Đã thỏa thuận để sau: tách hook khỏi `TermForm`, `saved!` ở `FilePage`, so `updatedAt` phụ thuộc đồng hồ máy. Test tốc độ ở `pronunciation.test.ts` từng đỏ một lần khi máy rất tải (`reviewer`, 1 lõi); nếu CI đỏ đúng test đó thì nới ngưỡng.
 
 ## Kế hoạch
@@ -37,11 +37,14 @@ Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn 
 - [x] **4. Streak** — chuỗi ngày, kỷ lục, lịch tháng trên Home ([streak.md](docs/streak.md)). `challenger` + người dùng chọn hiển thị (#71–#74); đọc qua RPC `list_study_days`; sửa đăng xuất nhầm do 401 về muộn (#75); `reviewer` 3 lượt; deploy; người dùng xác nhận trên máy tính và iPhone
 - [ ] **5. Sao lưu** — khôi phục toàn bộ dữ liệu từ file backup ([backup.md](docs/backup.md))
   - [x] `challenger` (10 điểm, đã kiểm trong code); người dùng chốt #76–#79: ghi đè ngày học, nút tải bản sao, gộp Import thành một mục Restore, chưa nhắc sao lưu
+  - [x] Đo payload: 6 MB nhập 1,4 s trên local (giới hạn 8 s); chưa đo cloud
+  - [x] Tầng dữ liệu: `replaceAll` (Dexie + RPC `replace_all` dùng lại `import_snapshot`), hợp đồng + pgTAP, phá thử, `reviewer` (3 điểm, đã sửa: lỗi 502 không mã → `ConnectionError`)
+  - [ ] Giao diện Restore → deploy (`db push` trước, xem backup.md#deploy) → người dùng thử
 - [ ] **6. Hoàn thiện** — phím tắt còn lại (nếu cần; 1–4 và Enter đã có, #55), dark mode + làm lại thiết kế cho đẹp hơn (người dùng muốn, 2026-11-04; có thể gửi ảnh app mẫu; giao diện mới từ giờ chỉ dùng biến màu `--color-*`, bóng đổ menu ⋯ đang viết thẳng màu); dark mode mặc định theo máy (`prefers-color-scheme`); màn Settings chỉ làm khi có ≥ 2–3 thứ người dùng thật sự muốn chỉnh (ứng viên: giao diện tự động/sáng/tối, số từ mỗi vòng, tài khoản + Sign out, gom xuất/khôi phục backup về đây), người dùng ghi lại nhu cầu khi dùng; README; tối ưu gói code (724 kB, nén 213 kB, chủ yếu supabase-js: xem có code bản local như Dexie bị gói vào không, tách phần chưa cần lúc mở app; người dùng nhờ ghi lại 2026-11-04); dùng thử 1 tuần
 
 ## Nhật ký (5 mục gần nhất, mới nhất trên cùng)
+- 2026-11-08 — Viết tầng dữ liệu khôi phục backup (`replaceAll`, migration `replace_all` chưa `db push`); `reviewer` 3 điểm đã sửa; check + 156 pgTAP + 94 hợp đồng cloud xanh. 6 commit chưa push (4 ghi chú + refactor + feat), đi cùng lần deploy giai đoạn 5.
 - 2026-11-08 — Thiết kế giai đoạn 5 qua `challenger`; người dùng chọn cả 4 phương án gợi ý (#76–#79). Tài liệu mới `docs/backup.md`. Chưa có code.
 - 2026-11-06 — Người dùng xác nhận Streak ổn trên máy tính và iPhone → đóng giai đoạn 4.
 - 2026-11-06 — Người dùng yêu cầu soát lại: rủi ro 401 về muộn đăng xuất luôn phiên mới; chặn ở ô streak là vá triệu chứng nên gỡ, sửa tại `expireSession` (#75, hỏi lại máy chủ, chỉ lỗi Auth 401/403 mới đăng xuất). Tách lại commit chưa push.
 - 2026-11-05 — Viết xong Streak theo #71–#74; `reviewer` nêu cả lệnh kiểm tra múi giờ ghi trong tài liệu không có tác dụng (`TZ` bị cấu hình ghi đè) → thêm `test:zone` vào `check`. Thử trên Firefox thật: màn rộng và khung 375 px. Chưa deploy.
-- 2026-11-04 — Người dùng xác nhận form Edit trên máy tính và phiên âm ở "This round" đã ổn → đóng 3b.

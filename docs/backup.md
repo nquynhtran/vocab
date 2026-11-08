@@ -42,6 +42,9 @@ Một mục duy nhất, luôn hiện: nút Export JSON (đã có) + "Restore fro
 ## Giới hạn payload (đã đo trên local, 2026-11-08)
 Role `authenticated` có `statement_timeout` 8 s (cả local lẫn mặc định cloud). `import_snapshot` trên Supabase local, dữ liệu giả có ghi chú, ví dụ, phiên âm, tiến độ và 1000 ngày học: 2 000 từ (2,1 MB) 0,4 s · 8 000 từ (6,0 MB) 1,4 s · 12 000 từ (8,6 MB) 2,1 s. Giới hạn 5 MB còn dư nhiều. Chưa đo trên cloud: phải dùng tài khoản riêng vì thao tác xóa sạch dữ liệu, mà cloud đã tắt đăng ký; dữ liệu thật còn nhỏ hơn nhiều nên để lúc deploy, thử khôi phục bằng chính file Export của người dùng.
 
+## Deploy
+Không đổi bảng hay cột, không nâng `min_client_version`; client cũ không gọi RPC mới. Thứ tự: `npm run test:supabase` trên đúng commit sẽ deploy → `db push --dry-run` (chỉ `20261108120000_replace_all.sql`) → hỏi người dùng → `db push` → push code. Làm ngược lại thì nút Replace all lỗi tới khi `db push`. Sau deploy: người dùng Export rồi khôi phục chính file đó trên cloud (vừa thử thật vừa đo payload thật).
+
 ## Test
 - **Bộ hợp đồng (cả hai kho):** thay xong `exportBackup` đúng bằng file (`toStrictEqual`); chạy hai lần cùng file ra cùng kết quả; kho trống; kho chỉ có ngày học; file có id trùng dữ liệu hiện tại; file không hợp lệ → dữ liệu cũ nguyên vẹn, so cả bản ghi.
 - **pgTAP:** payload sai bộ key (lỗi xảy ra *sau* bước xóa) → dữ liệu cũ còn nguyên; không đụng dữ liệu người B; không dùng khóa advisory thứ hai ngoài key của `import_snapshot` (đọc `pg_locks`; không chứng minh được thứ tự khóa, mà thứ tự cũng không ảnh hưởng tính đúng); quyền `anon` và `security invoker` đã có test chung cho mọi hàm ở `tables.test.sql`.
