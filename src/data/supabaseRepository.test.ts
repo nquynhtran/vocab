@@ -100,6 +100,24 @@ describe('SupabaseRepository errors', () => {
     await expect(repo.importIntoEmpty(EMPTY_BACKUP)).rejects.toBeInstanceOf(DataAlreadyExistsError)
   })
 
+  // The restore may have committed before a proxy answered with an error page (docs/backup.md).
+  it('reports a replace_all failure without a database code as maybe applied', async () => {
+    const page = new Response('<html>502 Bad Gateway</html>', {
+      status: 502,
+      headers: { 'Content-Type': 'text/html' },
+    })
+    await expect(fakeRepository(() => page).replaceAll(EMPTY_BACKUP)).rejects.toBeInstanceOf(
+      ConnectionError,
+    )
+  })
+
+  it('keeps a replace_all failure with a database code as a plain error', async () => {
+    const repo = fakeRepository(() => json({ code: '57014', message: 'statement timeout' }, 500))
+    await expect(repo.replaceAll(EMPTY_BACKUP)).rejects.toThrow(
+      'Cloud request failed (57014): statement timeout',
+    )
+  })
+
   it('fails the whole read on one bad row instead of skipping it', async () => {
     const repo = fakeRepository(() => json([folderRow, { ...folderRow, name: ' IELTS' }]))
     await expect(repo.listFolders()).rejects.toThrow(

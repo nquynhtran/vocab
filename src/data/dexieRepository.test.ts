@@ -55,6 +55,28 @@ describe('orphan rows', () => {
   })
 })
 
+describe('replaceAll', () => {
+  // validateBackup stops a broken file before anything is cleared; this checks the transaction
+  // itself, by failing an add that runs after the clears and after some rows were added.
+  it('keeps the current data when a write fails after the clears', async () => {
+    const source = setup().repo
+    await seedTerm(source)
+    const backup = await source.exportBackup()
+    const { repo, db } = setup()
+    await repo.createFolder({ name: 'Current' })
+    const { exportedAt: _before, ...before } = await repo.exportBackup()
+    db.terms.hook('creating', () => {
+      throw new Error('disk full')
+    })
+
+    await expect(repo.replaceAll(backup)).rejects.toThrow('disk full')
+
+    const { exportedAt: _after, ...after } = await repo.exportBackup()
+    expect(after).toStrictEqual(before)
+    expect(after.folders.map((f) => f.name)).toEqual(['Current'])
+  })
+})
+
 describe('stored data', () => {
   it('reads terms stored before partOfSpeech existed (decision #29: no migration)', async () => {
     const { repo, db } = setup()

@@ -1018,6 +1018,96 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
       expect(withoutExportTime(await repo.exportBackup())).toMatchObject({ folders: [], terms: [] })
     })
   })
+
+  describe('replaceAll', () => {
+    it('replaces every table with the backup, study days included', async () => {
+      const { repo, addStudyDays } = await setup()
+      await seedTerm(repo, 'Old')
+      await addStudyDays([
+        { date: '2026-10-01', answeredCount: 99 },
+        { date: '2026-10-05', answeredCount: 7 },
+      ])
+      const backup = sampleBackup()
+
+      await repo.replaceAll(backup)
+
+      expect(withoutExportTime(await repo.exportBackup())).toStrictEqual(withoutExportTime(backup))
+    })
+
+    it('gives the same data when run twice, so a retry is safe', async () => {
+      const { repo } = await setup()
+      await repo.replaceAll(sampleBackup())
+
+      await repo.replaceAll(sampleBackup())
+
+      expect(withoutExportTime(await repo.exportBackup())).toStrictEqual(
+        withoutExportTime(sampleBackup()),
+      )
+    })
+
+    it('restores rows that share ids with the current data', async () => {
+      const { repo } = await setup()
+      await repo.importIntoEmpty(sampleBackup())
+      await repo.renameFolder(testId(101), { name: 'Renamed' })
+      await repo.deleteTerm(testId(302))
+
+      await repo.replaceAll(sampleBackup())
+
+      expect(withoutExportTime(await repo.exportBackup())).toStrictEqual(
+        withoutExportTime(sampleBackup()),
+      )
+    })
+
+    it('works on empty storage', async () => {
+      const { repo } = await setup()
+
+      await repo.replaceAll(sampleBackup())
+
+      expect(withoutExportTime(await repo.exportBackup())).toStrictEqual(
+        withoutExportTime(sampleBackup()),
+      )
+    })
+
+    // Deleting every folder leaves the study days, and importIntoEmpty refuses that (#74, #77).
+    it('works on storage that has only study days', async () => {
+      const { repo, addStudyDays } = await setup()
+      await addStudyDays([{ date: '2026-09-30', answeredCount: 1 }])
+
+      await repo.replaceAll(sampleBackup())
+
+      expect((await repo.exportBackup()).studyDays).toStrictEqual(sampleBackup().studyDays)
+    })
+
+    it('clears the comparison keys of the old data and stores the new ones', async () => {
+      const { repo } = await setup()
+      await repo.createFolder({ name: 'Old folder' })
+
+      await repo.replaceAll(sampleBackup())
+
+      await expect(repo.createFolder({ name: 'old folder' })).resolves.toMatchObject({
+        name: 'old folder',
+      })
+      await expect(repo.createFolder({ name: 'ielts' })).rejects.toThrow(DuplicateNameError)
+      expect(await repo.findTermsByWord('run')).toStrictEqual([
+        { termId: testId(301), fileId: testId(201), folderName: 'IELTS', fileName: 'Unit 1' },
+      ])
+    })
+
+    it('rejects an invalid backup and keeps the current data', async () => {
+      const { repo, addStudyDays } = await setup()
+      await seedTerm(repo, 'Existing')
+      await addStudyDays([{ date: '2026-10-05', answeredCount: 7 }])
+      const before = withoutExportTime(await repo.exportBackup())
+      const backup = sampleBackup()
+      const orphan = { ...backup.terms[0], id: testId(303), word: 'swim', fileId: MISSING_ID }
+      // The cast stands in for an untrusted file: the type cannot express a dangling reference.
+      const broken = { ...backup, terms: [...backup.terms, orphan] } as Backup
+
+      await expect(repo.replaceAll(broken)).rejects.toThrow(ValidationError)
+
+      expect(withoutExportTime(await repo.exportBackup())).toStrictEqual(before)
+    })
+  })
 }
 
 const byWord = (a: { word: string }, b: { word: string }) => (a.word < b.word ? -1 : 1)

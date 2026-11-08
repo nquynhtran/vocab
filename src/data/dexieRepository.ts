@@ -344,6 +344,16 @@ export class DexieRepository implements Repository {
     })
   }
 
+  async replaceAll(backup: Backup): Promise<void> {
+    const valid = validateBackup(backup)
+    const { folders, files, terms, progress, studyDays } = this.db
+    // One transaction: if any add fails, the clears are rolled back too. Meta is not user data.
+    await this.db.transaction('rw', [folders, files, terms, progress, studyDays], async () => {
+      await Promise.all([folders, files, terms, progress, studyDays].map((t) => t.clear()))
+      await this.insertBackup(valid)
+    })
+  }
+
   // ---- Helpers (must run inside the caller's transaction) ----
 
   /** Adds every row of a validated backup; comparison keys are computed with today's `toKey`. */

@@ -138,4 +138,10 @@ export interface BackupRepository {
    * attempt never duplicates anything. Replacing existing data is a different operation (#38).
    */
   importIntoEmpty(backup: Backup): Promise<void>
+  /**
+   * Replaces everything the user owns with a backup, study days included (decision #76), all or
+   * nothing, keeping its ids and timestamps. Validates it again (`validateBackup`). Running it
+   * twice with the same backup gives the same data, so retrying after a lost response is safe.
+   */
+  replaceAll(backup: Backup): Promise<void>
 }

@@ -1,6 +1,6 @@
 # Khôi phục backup (giai đoạn 5)
 
-> Trạng thái: đã thiết kế, qua `challenger`, người dùng chốt #76–#79 (2026-11-08). **Chưa có code.**
+> Trạng thái: đã thiết kế, qua `challenger`, người dùng chốt #76–#79 (2026-11-08). Tầng dữ liệu đã có (`replaceAll`, RPC `replace_all`, test `supabase/tests/database/replace_all.test.sql`); **giao diện chưa có**.
 > Định dạng file, validate, `migrateBackup`: [data-model.md](data-model.md#sao-lưu-json). Nhập vào kho trống hiện có: [cloud-sync.md](cloud-sync.md#chuyển-dữ-liệu-local-lên-cloud-33-46).
 
 ## Hành vi
@@ -8,10 +8,10 @@
 
 ## Tầng dữ liệu
 - `Repository.replaceAll(backup)`: validate lại (`validateBackup`) rồi ghi.
-- **Dexie:** một transaction rw trên mọi bảng trừ `meta`: xóa hết → chèn như `importIntoEmpty` (dùng lại phần chèn, không viết lại).
+- **Dexie:** một transaction rw trên mọi bảng trừ `meta`: xóa hết → chèn bằng `insertBackup`, hàm chung với `importIntoEmpty`. Test riêng của Dexie: lệnh chèn hỏng sau khi đã xóa thì dữ liệu cũ còn nguyên.
 - **Supabase:** RPC `replace_all(payload)` (#78), `security invoker`, cùng payload với `import_snapshot`:
   1. kiểm tra đăng nhập;
-  2. `pg_advisory_xact_lock` **cùng key** `'import_snapshot:' || uid` (khác key thì một lần Import cũ chạy song song có thể chèn vào giữa lúc kho vừa bị xóa chưa commit);
+  2. `pg_advisory_xact_lock` **cùng key** `'import_snapshot:' || uid`: một lần khôi phục và một lần Import chạy cùng lúc sẽ lần lượt chờ nhau, thay vì một bên hỏng với VC001. Không phải để giữ an toàn dữ liệu: bước xóa chưa commit thì thao tác khác không thấy, và dòng nào được commit trước bước kiểm tra kho trống cũng làm `import_snapshot` ném VC001, rollback cả hàm;
   3. `delete from folders` (cascade xuống files, terms, progress) và `delete from study_days` của user;
   4. `perform public.import_snapshot(payload)`: kho đã trống nên qua bước kiểm tra kho trống, bộ key vẫn được kiểm tra. Khóa xact advisory vào lại được trong cùng phiên.
   Không tách hàm chèn nội bộ: hàm ở `public` mà `authenticated` gọi được thì PostgREST lộ ra `/rpc`. `revoke`/`grant` như các RPC khác.
@@ -31,10 +31,11 @@ Một mục duy nhất, luôn hiện: nút Export JSON (đã có) + "Restore fro
    - Nút đỏ **Replace all** và Cancel. Không thêm `window.confirm`: màn này đã là bước xác nhận.
    - Kho trống (0 folder, 0 ngày học): bỏ cảnh báo đỏ, chỉ hiện số lượng của file và nút "Restore". Có ngày học mà không có folder (lỗi #74 cũ) vẫn nêu số ngày sẽ bị thay.
 4. Xong → tải lại danh sách folder và ô streak (#73).
-- Lỗi file và lỗi lúc ghi hiện ở ô lỗi chung của trang. `ConnectionError`: "The restore may or may not have finished. Check your folders below; restoring the same file again is safe." và tải lại Home. Không bao giờ báo "nothing was replaced" khi lỗi mạng.
+- Lỗi file và lỗi lúc ghi hiện ở ô lỗi chung của trang. `replaceAll` trên Supabase coi lỗi không có mã SQLSTATE (trang lỗi HTML 502/504 của proxy, có thể đến sau khi đã commit) là `ConnectionError`; lỗi có mã Postgres nghĩa là đã rollback. `ConnectionError`: "The restore may or may not have finished. Check your folders below; restoring the same file again is safe." và tải lại Home. Không bao giờ báo "nothing was replaced" khi lỗi mạng.
 
 ## Trường hợp chấp nhận (không làm)
 - **Thiết bị khác đang mở:** từ không còn trong file → `record_answer` không làm gì, không đếm ngày học, không báo lỗi; từ còn cùng id → cộng lên tiến độ vừa khôi phục. Phiên Learn dở (#58) mở lại thì `resumeSession` bỏ id đã mất, nhưng level trong phiên vẫn là level cũ. Nháp ghi chú đã so với `base` (#69).
+- **Máy khác tạo folder đúng lúc đang khôi phục** (giữa bước xóa và bước kiểm tra kho trống): `import_snapshot` ném VC001, cả hàm rollback, dữ liệu an toàn; câu báo là lỗi chung, bấm lại là được.
 - **Khe giữa lúc xem so sánh và lúc bấm:** máy khác thêm từ trong khoảng đó thì bị xóa theo. Chặn được bằng mốc `updatedAt` gửi kèm, nhưng thêm nhánh lỗi; một người dùng thì không đáng.
 - **Nhắc sao lưu định kỳ** (`lastBackupAt`): không làm, ứng viên của Settings ở giai đoạn 6.
 
@@ -43,5 +44,5 @@ Role `authenticated` có `statement_timeout` 8 s (cả local lẫn mặc định
 
 ## Test
 - **Bộ hợp đồng (cả hai kho):** thay xong `exportBackup` đúng bằng file (`toStrictEqual`); chạy hai lần cùng file ra cùng kết quả; kho trống; kho chỉ có ngày học; file có id trùng dữ liệu hiện tại; file không hợp lệ → dữ liệu cũ nguyên vẹn, so cả bản ghi.
-- **pgTAP:** payload sai bộ key (lỗi xảy ra *sau* bước xóa) → dữ liệu cũ còn nguyên; không đụng dữ liệu người B; quyền `anon` không gọi được; giữ khóa cùng key với `import_snapshot`.
+- **pgTAP:** payload sai bộ key (lỗi xảy ra *sau* bước xóa) → dữ liệu cũ còn nguyên; không đụng dữ liệu người B; không dùng khóa advisory thứ hai ngoài key của `import_snapshot` (đọc `pg_locks`; không chứng minh được thứ tự khóa, mà thứ tự cũng không ảnh hưởng tính đúng); quyền `anon` và `security invoker` đã có test chung cho mọi hàm ở `tables.test.sql`.
 - **UI trên `App` thật:** luồng chọn file → so sánh → Replace all → danh sách và streak đổi; Cancel không ghi gì; lỗi mạng hiện đúng câu báo; kho trống không có cảnh báo đỏ; cảnh báo snapshot hỏng.
