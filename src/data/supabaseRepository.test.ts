@@ -100,6 +100,50 @@ describe('SupabaseRepository errors', () => {
     await expect(repo.importIntoEmpty(EMPTY_BACKUP)).rejects.toBeInstanceOf(DataAlreadyExistsError)
   })
 
+  // A write may have committed before a proxy answered with an error page, or before the body
+  // was cut off, so these must read "may or may not have been saved", not "failed" (runRequest).
+  it.each([
+    ['a proxy error page', () => new Response('<html>502 Bad Gateway</html>', { status: 502 })],
+    ['a timeout page', () => new Response('<html>504 Gateway Timeout</html>', { status: 504 })],
+    ['proxy JSON without a code', () => json({ message: 'upstream error' }, 503)],
+    ['a 201 whose body is not JSON', () => new Response('<html>oops</html>', { status: 201 })],
+  ])('reports a write failure without a database code (%s) as ConnectionError', async (_, page) => {
+    await expect(fakeRepository(page).createFolder({ name: 'IELTS' })).rejects.toBeInstanceOf(
+      ConnectionError,
+    )
+  })
+
+  // The gateway refused it before the database: nothing was saved, and the reason stays visible.
+  it.each([
+    [429, 'API rate limit exceeded'],
+    [413, 'Request Entity Too Large'],
+  ])('keeps a code-less HTTP %i as a plain error with its status', async (status, message) => {
+    const repo = fakeRepository(() => json({ message }, status))
+    await expect(repo.createFolder({ name: 'IELTS' })).rejects.toThrow(
+      `Cloud request failed (HTTP ${status}): ${message}`,
+    )
+  })
+
+  // A gateway's own 401 has no code; it must still ask the user to sign in again.
+  it('reports a code-less HTTP 401 as SessionExpiredError, not ConnectionError', async () => {
+    const onSessionExpired = vi.fn()
+    const repo = fakeRepository(
+      () => json({ message: 'No API key found in request' }, 401),
+      onSessionExpired,
+    )
+    await expect(repo.createFolder({ name: 'IELTS' })).rejects.toBeInstanceOf(SessionExpiredError)
+    expect(onSessionExpired).toHaveBeenCalledOnce()
+  })
+
+  it('keeps a write failure with a PostgREST code as a plain error', async () => {
+    const repo = fakeRepository(() =>
+      json({ code: 'PGRST204', message: "Could not find the 'x' column" }, 400),
+    )
+    await expect(repo.createFolder({ name: 'IELTS' })).rejects.toThrow(
+      "Cloud request failed (PGRST204): Could not find the 'x' column",
+    )
+  })
+
   // The restore may have committed before a proxy answered with an error page (docs/backup.md).
   it('reports a replace_all failure without a database code as maybe applied', async () => {
     const page = new Response('<html>502 Bad Gateway</html>', {

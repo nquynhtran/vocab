@@ -31,7 +31,7 @@ Một mục duy nhất, luôn hiện: nút Export JSON (đã có) + "Restore fro
    - Nút đỏ **Replace all** và Cancel. Không thêm `window.confirm`: màn này đã là bước xác nhận.
    - Kho trống (0 folder, 0 ngày học): bỏ cảnh báo đỏ, chỉ hiện số lượng của file và nút "Restore". Có ngày học mà không có folder (lỗi #74 cũ) vẫn nêu số ngày sẽ bị thay.
 4. Xong → tải lại danh sách folder và ô streak (#73).
-- Lỗi file và lỗi lúc ghi hiện ở ô lỗi chung của trang. `replaceAll` trên Supabase coi lỗi không có mã SQLSTATE (trang lỗi HTML 502/504 của proxy, có thể đến sau khi đã commit) là `ConnectionError`; lỗi có mã Postgres nghĩa là đã rollback. `ConnectionError`: "The restore may or may not have finished. Check your folders below; restoring the same file again is safe." và tải lại Home. Không bao giờ báo "nothing was replaced" khi lỗi mạng.
+- Lỗi file và lỗi lúc ghi hiện ở ô lỗi chung của trang. Trên Supabase, lỗi không có mã (trang lỗi HTML 502/504 của proxy, có thể đến sau khi đã commit) là `ConnectionError` như mọi request ([cloud-sync.md](cloud-sync.md)); lỗi có mã Postgres nghĩa là đã rollback. `ConnectionError`: "The restore may or may not have finished. Check your folders below; restoring the same file again is safe." và tải lại Home. Không bao giờ báo "nothing was replaced" khi lỗi mạng.
 
 ## Trường hợp chấp nhận (không làm)
 - **Thiết bị khác đang mở:** từ không còn trong file → `record_answer` không làm gì, không đếm ngày học, không báo lỗi; từ còn cùng id → cộng lên tiến độ vừa khôi phục. Phiên Learn dở (#58) mở lại thì `resumeSession` bỏ id đã mất, nhưng level trong phiên vẫn là level cũ. Nháp ghi chú đã so với `base` (#69).

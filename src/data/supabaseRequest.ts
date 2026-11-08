@@ -33,6 +33,14 @@ export async function runRequest(
     onSessionExpired?.()
     throw new SessionExpiredError()
   }
+  // Errors from Postgres or PostgREST carry a code and mean the request was rolled back. One
+  // without a code did not come from them: a proxy's 5xx page or a body cut off midway may
+  // arrive after the commit, so a write may or may not have been applied, as when the
+  // connection drops. Telling the user "failed" would invite a retry that adds a term twice.
+  // A code-less 4xx (rate limit 429, body too large 413) is the gateway refusing the request
+  // before it reached the database: nothing was applied, and "check your connection" would
+  // send the user retrying something that keeps failing.
+  if (!error.code && !isClientError(status)) throw new ConnectionError()
   if (error.code === '23505' || error.code === '23503') {
     const constraint = /constraint "([^"]+)"/.exec(error.message)?.[1]
     const mapped = constraint === undefined ? undefined : await onConstraint?.(constraint)
@@ -40,5 +48,10 @@ export async function runRequest(
   }
   const mapped = onErrorCode?.(error.code)
   if (mapped) throw mapped
-  throw new Error(`Cloud request failed (${error.code}): ${error.message}`, { cause: error })
+  const code = error.code || `HTTP ${status}`
+  throw new Error(`Cloud request failed (${code}): ${error.message}`, { cause: error })
+}
+
+function isClientError(status: number): boolean {
+  return status >= 400 && status < 500
 }

@@ -1,7 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { BACKUP_SCHEMA_VERSION, validateBackup, type Backup } from '../domain/backup.ts'
 import {
-  ConnectionError,
   DataAlreadyExistsError,
   DuplicateNameError,
   EntityNotFoundError,
@@ -365,13 +364,9 @@ export class SupabaseRepository implements Repository {
 
   async replaceAll(backup: Backup): Promise<void> {
     const payload = toSnapshotPayload(validateBackup(backup))
-    await runRequest(this.client.rpc('replace_all', { payload }), {
-      onSessionExpired: this.onSessionExpired,
-      // Postgres errors carry a SQLSTATE and mean the transaction rolled back. A failure without
-      // one (a proxy's 502/504 error page) may come after the commit, so the user must be told
-      // the restore may or may not have happened, as for a lost connection. Retrying is safe.
-      onErrorCode: (code) => (code ? undefined : new ConnectionError()),
-    })
+    // A failure without a database code becomes ConnectionError (see runRequest): the restore
+    // may or may not have happened. Retrying is safe, it replaces everything again.
+    await this.run(this.client.rpc('replace_all', { payload }))
   }
 
   // ---- Helpers ----
