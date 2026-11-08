@@ -40,7 +40,7 @@ Một mục duy nhất, luôn hiện: nút Export JSON (đã có) + "Restore fro
 - **Nhắc sao lưu định kỳ** (`lastBackupAt`): không làm, ứng viên của Settings ở giai đoạn 6.
 
 ## Giới hạn payload (đã đo trên local, 2026-11-08)
-Role `authenticated` có `statement_timeout` 8 s trên local (đọc `pg_roles`); trên cloud **chưa kiểm**, đọc lại trước khi deploy. `import_snapshot` trên Supabase local, dữ liệu giả có ghi chú, ví dụ, phiên âm, tiến độ và 1000 ngày học: 2 000 từ (2,1 MB) 0,4 s · 8 000 từ (6,0 MB) 1,4 s · 12 000 từ (8,6 MB) 2,1 s. Giới hạn 5 MB còn dư nhiều. Chưa đo trên cloud: phải dùng tài khoản riêng vì thao tác xóa sạch dữ liệu, mà cloud đã tắt đăng ký; dữ liệu thật còn nhỏ hơn nhiều nên để lúc deploy, thử khôi phục bằng chính file Export của người dùng.
+Role `authenticated` có `statement_timeout` 8 s, cả local (đọc `pg_roles`) lẫn cloud (`supabase inspect db role-stats --linked`, 2026-11-08). `import_snapshot` trên Supabase local, dữ liệu giả có ghi chú, ví dụ, phiên âm, tiến độ và 1000 ngày học: 2 000 từ (2,1 MB) 0,4 s · 8 000 từ (6,0 MB) 1,4 s · 12 000 từ (8,6 MB) 2,1 s. Giới hạn 5 MB còn dư nhiều. Chưa đo trên cloud: phải dùng tài khoản riêng vì thao tác xóa sạch dữ liệu, mà cloud đã tắt đăng ký; dữ liệu thật còn nhỏ hơn nhiều nên để lúc deploy, thử khôi phục bằng chính file Export của người dùng.
 
 ## Deploy
 Không đổi bảng hay cột, không nâng `min_client_version`; client cũ không gọi RPC mới. Thứ tự: `npm run test:supabase` trên đúng commit sẽ deploy → `db push --dry-run` (chỉ `20261108120000_replace_all.sql`) → hỏi người dùng → `db push` → push code. Làm ngược lại thì nút Replace all lỗi tới khi `db push`. Sau deploy: người dùng Export rồi khôi phục chính file đó trên cloud (vừa thử thật vừa đo payload thật).
