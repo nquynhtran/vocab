@@ -4,7 +4,7 @@
 
 ## Đang ở đâu
 - **Giai đoạn:** 4 xong (người dùng xác nhận trên máy tính + iPhone, 2026-11-06). Sắp vào giai đoạn 5.
-- **Việc tiếp theo:** giai đoạn 5, giao diện: mục "Restore from backup" trên Home theo [backup.md](docs/backup.md#giao-diện-home-mục-backup-cuối-trang-77) (thay mục Import trong `src/features/folders/HomePage.tsx`, dùng `repository.replaceAll`), UI test trên `App` thật, `reviewer`, thử Firefox (rộng + iframe 375 px).
+- **Việc tiếp theo:** (1) sửa gốc lỗi 502: `runRequest` (`src/data/supabaseRequest.ts`) coi lỗi không có mã SQLSTATE là `ConnectionError` cho **mọi** request, bỏ bản vá riêng trong `replaceAll`; hiện mọi thao tác ghi khác gặp trang lỗi proxy sau khi đã ghi sẽ báo "Something went wrong. Please try again." → bấm lại tạo bản trùng. Test + `reviewer`, commit `fix:` riêng. (2) giao diện "Restore from backup" theo [backup.md](docs/backup.md#giao-diện-home-mục-backup-cuối-trang-77) (thay mục Import trong `src/features/folders/HomePage.tsx`), UI test trên `App` thật, `reviewer`, thử Firefox (rộng + iframe 375 px).
 - **Đang vướng:** không. Build có cảnh báo chunk > 500 kB (supabase-js), để giai đoạn 6. 🔊 không kêu trong Simple Browser của VS Code. `npm run build` ở máy cần `VITE_SUPABASE_*` (xem cloud-sync.md). iPhone iOS cũ của người dùng tạo folder bị lỗi chưa rõ nguyên nhân (cloud-sync.md#iphone); người dùng sẽ cập nhật máy. Đã thỏa thuận để sau: tách hook khỏi `TermForm`, `saved!` ở `FilePage`, so `updatedAt` phụ thuộc đồng hồ máy. Test tốc độ ở `pronunciation.test.ts` từng đỏ một lần khi máy rất tải (`reviewer`, 1 lõi); nếu CI đỏ đúng test đó thì nới ngưỡng.
 
 ## Kế hoạch
