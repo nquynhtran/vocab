@@ -40,6 +40,5 @@
 ## Deploy
 Không đổi bảng hay cột, nên không cần Dexie version mới, `schemaVersion` hay nâng `min_client_version`; client cũ không gọi RPC mới. Thứ tự: `npm run test:supabase` trên đúng commit sẽ deploy → `db push --dry-run` → `db push` → push code. Làm ngược lại thì ô streak báo lỗi tới khi `db push`.
 
-## Việc của giai đoạn 5 (câu hỏi đang mở, #74)
-- "Replace all" (#38) bằng backup cũ 30 ngày sẽ mất 30 ngày streak gần nhất. Gợi ý: ghi đè cả `study_days`, nêu rõ trong hộp xác nhận. Người dùng quyết ở giai đoạn 5.
-- Xóa hết folder thì Home vẫn mời Import, nhưng kho còn `study_days` nên Import bị từ chối (`DataAlreadyExistsError`). Có từ giai đoạn 3; đường khôi phục thật là "Replace all".
+## Khôi phục backup (#74, đã chốt #76–#77)
+Khôi phục ghi đè cả ngày học theo file; màn so sánh nêu số ngày sẽ mất. Kho còn ngày học mà không có folder vẫn khôi phục được vì Home chỉ còn một mục "Restore from backup". Chi tiết: [backup.md](backup.md).

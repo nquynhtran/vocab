@@ -1,0 +1,47 @@
+# Khôi phục backup (giai đoạn 5)
+
+> Trạng thái: đã thiết kế, qua `challenger`, người dùng chốt #76–#79 (2026-11-08). **Chưa có code.**
+> Định dạng file, validate, `migrateBackup`: [data-model.md](data-model.md#sao-lưu-json). Nhập vào kho trống hiện có: [cloud-sync.md](cloud-sync.md#chuyển-dữ-liệu-local-lên-cloud-33-46).
+
+## Hành vi
+"Restore from backup" thay **toàn bộ** dữ liệu bằng nội dung file: folder, file, từ, tiến độ học và **ngày học** (`study_days`, #76). Lỗi ở bất kỳ bước nào thì dữ liệu hiện tại giữ nguyên. Chạy lại cùng file ra cùng kết quả (idempotent), nên bấm lại sau lỗi mạng không tạo bản trùng.
+
+## Tầng dữ liệu
+- `Repository.replaceAll(backup)`: validate lại (`validateBackup`) rồi ghi.
+- **Dexie:** một transaction rw trên mọi bảng trừ `meta`: xóa hết → chèn như `importIntoEmpty` (dùng lại phần chèn, không viết lại).
+- **Supabase:** RPC `replace_all(payload)` (#78), `security invoker`, cùng payload với `import_snapshot`:
+  1. kiểm tra đăng nhập;
+  2. `pg_advisory_xact_lock` **cùng key** `'import_snapshot:' || uid` (khác key thì một lần Import cũ chạy song song có thể chèn vào giữa lúc kho vừa bị xóa chưa commit);
+  3. `delete from folders` (cascade xuống files, terms, progress) và `delete from study_days` của user;
+  4. `perform public.import_snapshot(payload)`: kho đã trống nên qua bước kiểm tra kho trống, bộ key vẫn được kiểm tra. Khóa xact advisory vào lại được trong cùng phiên.
+  Không tách hàm chèn nội bộ: hàm ở `public` mà `authenticated` gọi được thì PostgREST lộ ra `/rpc`. `revoke`/`grant` như các RPC khác.
+- Giữ id và thời gian như file; `nameKey`/`wordKey` tính lại bằng `toKey`. Xóa rồi chèn cùng transaction nên id trùng với dữ liệu cũ không va chạm.
+- Không đổi bảng hay cột: không cần Dexie version mới, `schemaVersion` hay nâng `min_client_version`; client cũ không gọi RPC mới.
+- `importIntoEmpty` / `import_snapshot` giữ ở tầng dữ liệu (có test, `replace_all` dùng lại), chỉ bỏ khỏi UI (#77).
+
+## Giao diện (Home, mục Backup cuối trang, #77)
+Một mục duy nhất, luôn hiện: nút Export JSON (đã có) + "Restore from backup".
+1. Chọn file → `parseBackupFile` như hiện nay (≤ 5 MB, lỗi hiện tối đa 5 dòng kèm vị trí).
+2. Đọc dữ liệu hiện tại bằng **một** `exportBackup()` (vừa để so sánh, vừa là bản sao ở bước 3).
+3. Màn so sánh, hai cột *Current* / *Backup*: số folder, file, từ; lần sửa gần nhất (max `updatedAt` của folder, file, từ); ngày học gần nhất. Kèm:
+   - Dữ liệu hiện tại mới hơn file (lần sửa hoặc ngày học) → dòng cảnh báo rõ.
+   - "N study days not in the backup will be removed" (số ngày có ở hiện tại mà không có trong file), vì streak có thể giảm.
+   - "Close the app on other devices first."
+   - Nút **Download current data first** (#79): tải snapshot ở bước 2, không bắt buộc, không tự tải (Safari/iPhone có thể chặn tải sau `await` mà app không biết, như #46). Chạy thử `validateBackup` trên snapshot; hỏng → cảnh báo "Your current data has a problem at …; a copy taken now cannot be restored as is". Chỉ cảnh báo, không chặn (`exportBackup` cố ý không validate, #41).
+   - Nút đỏ **Replace all** và Cancel. Không thêm `window.confirm`: màn này đã là bước xác nhận.
+   - Kho trống (0 folder, 0 ngày học): bỏ cảnh báo đỏ, chỉ hiện số lượng của file và nút "Restore". Có ngày học mà không có folder (lỗi #74 cũ) vẫn nêu số ngày sẽ bị thay.
+4. Xong → tải lại danh sách folder và ô streak (#73).
+- Lỗi file và lỗi lúc ghi hiện ở ô lỗi chung của trang. `ConnectionError`: "The restore may or may not have finished. Check your folders below; restoring the same file again is safe." và tải lại Home. Không bao giờ báo "nothing was replaced" khi lỗi mạng.
+
+## Trường hợp chấp nhận (không làm)
+- **Thiết bị khác đang mở:** từ không còn trong file → `record_answer` không làm gì, không đếm ngày học, không báo lỗi; từ còn cùng id → cộng lên tiến độ vừa khôi phục. Phiên Learn dở (#58) mở lại thì `resumeSession` bỏ id đã mất, nhưng level trong phiên vẫn là level cũ. Nháp ghi chú đã so với `base` (#69).
+- **Khe giữa lúc xem so sánh và lúc bấm:** máy khác thêm từ trong khoảng đó thì bị xóa theo. Chặn được bằng mốc `updatedAt` gửi kèm, nhưng thêm nhánh lỗi; một người dùng thì không đáng.
+- **Nhắc sao lưu định kỳ** (`lastBackupAt`): không làm, ứng viên của Settings ở giai đoạn 6.
+
+## Cần đo trước khi hứa "khôi phục toàn bộ"
+Giới hạn của cloud với payload gần 5 MB (`statement_timeout` của role `authenticated`, giới hạn body ở cổng API): đo trên Supabase local, rồi một lần trên cloud. Quá giới hạn → hạ `MAX_BACKUP_FILE_BYTES` hoặc báo lỗi rõ.
+
+## Test
+- **Bộ hợp đồng (cả hai kho):** thay xong `exportBackup` đúng bằng file (`toStrictEqual`); chạy hai lần cùng file ra cùng kết quả; kho trống; kho chỉ có ngày học; file có id trùng dữ liệu hiện tại; file không hợp lệ → dữ liệu cũ nguyên vẹn, so cả bản ghi.
+- **pgTAP:** payload sai bộ key (lỗi xảy ra *sau* bước xóa) → dữ liệu cũ còn nguyên; không đụng dữ liệu người B; quyền `anon` không gọi được; giữ khóa cùng key với `import_snapshot`.
+- **UI trên `App` thật:** luồng chọn file → so sánh → Replace all → danh sách và streak đổi; Cancel không ghi gì; lỗi mạng hiện đúng câu báo; kho trống không có cảnh báo đỏ; cảnh báo snapshot hỏng.

@@ -4,7 +4,7 @@
 
 ## Đang ở đâu
 - **Giai đoạn:** 4 xong (người dùng xác nhận trên máy tính + iPhone, 2026-11-06). Sắp vào giai đoạn 5.
-- **Việc tiếp theo:** giai đoạn 5 (Sao lưu): gọi `challenger` soát phần sao lưu trong [data-model.md](docs/data-model.md#sao-lưu-json) và #38, #74 trước khi viết code; hỏi người dùng hai câu ở [streak.md](docs/streak.md#việc-của-giai-đoạn-5-câu-hỏi-đang-mở-74).
+- **Việc tiếp theo:** giai đoạn 5: thiết kế đã chốt ở [backup.md](docs/backup.md) (#76–#79). Bắt đầu code: đo giới hạn payload 5 MB trên Supabase local → `replaceAll` (domain/Dexie + RPC `replace_all` + pgTAP + hợp đồng) → UI, mỗi bước qua `reviewer`.
 - **Đang vướng:** không. Build có cảnh báo chunk > 500 kB (supabase-js), để giai đoạn 6. 🔊 không kêu trong Simple Browser của VS Code. `npm run build` ở máy cần `VITE_SUPABASE_*` (xem cloud-sync.md). iPhone iOS cũ của người dùng tạo folder bị lỗi chưa rõ nguyên nhân (cloud-sync.md#iphone); người dùng sẽ cập nhật máy. Đã thỏa thuận để sau: tách hook khỏi `TermForm`, `saved!` ở `FilePage`, so `updatedAt` phụ thuộc đồng hồ máy. Test tốc độ ở `pronunciation.test.ts` từng đỏ một lần khi máy rất tải (`reviewer`, 1 lõi); nếu CI đỏ đúng test đó thì nới ngưỡng.
 
 ## Kế hoạch
@@ -35,12 +35,13 @@ Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn 
   - [x] Migration nâng `min_client_version` 3 (`db push`, đọc lại trên cloud ra 3)
   - [x] Người dùng dùng thử: điện thoại và máy tính đều ổn, sau khi sửa hai lỗi (#70)
 - [x] **4. Streak** — chuỗi ngày, kỷ lục, lịch tháng trên Home ([streak.md](docs/streak.md)). `challenger` + người dùng chọn hiển thị (#71–#74); đọc qua RPC `list_study_days`; sửa đăng xuất nhầm do 401 về muộn (#75); `reviewer` 3 lượt; deploy; người dùng xác nhận trên máy tính và iPhone
-- [ ] **5. Sao lưu** — khôi phục toàn bộ dữ liệu từ file backup; quyết hai câu hỏi đang mở (#74)
+- [ ] **5. Sao lưu** — khôi phục toàn bộ dữ liệu từ file backup ([backup.md](docs/backup.md))
+  - [x] `challenger` (10 điểm, đã kiểm trong code); người dùng chốt #76–#79: ghi đè ngày học, nút tải bản sao, gộp Import thành một mục Restore, chưa nhắc sao lưu
 - [ ] **6. Hoàn thiện** — phím tắt còn lại (nếu cần; 1–4 và Enter đã có, #55), dark mode + làm lại thiết kế cho đẹp hơn (người dùng muốn, 2026-11-04; có thể gửi ảnh app mẫu; giao diện mới từ giờ chỉ dùng biến màu `--color-*`, bóng đổ menu ⋯ đang viết thẳng màu); dark mode mặc định theo máy (`prefers-color-scheme`); màn Settings chỉ làm khi có ≥ 2–3 thứ người dùng thật sự muốn chỉnh (ứng viên: giao diện tự động/sáng/tối, số từ mỗi vòng, tài khoản + Sign out, gom xuất/khôi phục backup về đây), người dùng ghi lại nhu cầu khi dùng; README; tối ưu gói code (724 kB, nén 213 kB, chủ yếu supabase-js: xem có code bản local như Dexie bị gói vào không, tách phần chưa cần lúc mở app; người dùng nhờ ghi lại 2026-11-04); dùng thử 1 tuần
 
 ## Nhật ký (5 mục gần nhất, mới nhất trên cùng)
+- 2026-11-08 — Thiết kế giai đoạn 5 qua `challenger`; người dùng chọn cả 4 phương án gợi ý (#76–#79). Tài liệu mới `docs/backup.md`. Chưa có code.
 - 2026-11-06 — Người dùng xác nhận Streak ổn trên máy tính và iPhone → đóng giai đoạn 4.
 - 2026-11-06 — Người dùng yêu cầu soát lại: rủi ro 401 về muộn đăng xuất luôn phiên mới; chặn ở ô streak là vá triệu chứng nên gỡ, sửa tại `expireSession` (#75, hỏi lại máy chủ, chỉ lỗi Auth 401/403 mới đăng xuất). Tách lại commit chưa push.
 - 2026-11-05 — Viết xong Streak theo #71–#74; `reviewer` nêu cả lệnh kiểm tra múi giờ ghi trong tài liệu không có tác dụng (`TZ` bị cấu hình ghi đè) → thêm `test:zone` vào `check`. Thử trên Firefox thật: màn rộng và khung 375 px. Chưa deploy.
 - 2026-11-04 — Người dùng xác nhận form Edit trên máy tính và phiên âm ở "This round" đã ổn → đóng 3b.
-- 2026-11-04 — Theo #68, sau khi xác nhận Pages đã chạy client 3: migration riêng nâng `min_client_version` lên 3; `check`, 136 pgTAP + 78 hợp đồng cloud trên đúng commit, `db push --dry-run` chỉ một migration, `db push`, đọc lại trên cloud ra 3.

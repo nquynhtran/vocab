@@ -9,6 +9,7 @@ Chỉ mở file liên quan đến việc đang làm. Mỗi file chỉ nói về 
 | [architecture.md](architecture.md) | Hosting, công nghệ, cấu trúc thư mục, quy tắc phụ thuộc, quy tắc `Repository` | Tạo file/module mới, thêm thư viện, động vào tầng `data/` |
 | [data-model.md](data-model.md) | Các bảng, ràng buộc toàn vẹn, sao lưu JSON, migration | Sửa kiểu dữ liệu, schema, xuất/nhập |
 | [learn-algorithm.md](learn-algorithm.md) | Chọn từ, loại câu hỏi, chấm điểm, trường hợp biên | Làm `domain/learn/` hoặc màn Learn |
+| [backup.md](backup.md) | Khôi phục toàn bộ dữ liệu từ file backup (giai đoạn 5) | Làm `replaceAll`, RPC `replace_all`, mục Backup trên Home |
 | [streak.md](streak.md) | Quy tắc tính ngày học và chuỗi ngày | Làm `domain/streak/` hoặc ô streak |
 | [pronunciation-lookup.md](pronunciation-lookup.md) | Nguồn và cách tra phiên âm (nút Look up, 3b) | Làm ô Pronunciation, đổi nguồn tra |
 | [security.md](security.md) | XSS, dữ liệu không tin cậy, secret, CSP | Xử lý input, render nội dung người dùng, CI |
