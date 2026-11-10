@@ -4,7 +4,7 @@
 
 ## Đang ở đâu
 - **Giai đoạn:** 5 xong (2026-11-10). Bắt đầu giai đoạn 6.
-- **Việc tiếp theo:** ví dụ trong Learn (#82, #83) đã deploy (CI xanh 2026-11-10), chờ người dùng học thử vài vòng. Sau đó tối ưu gói code; thiết kế mới thì xin ảnh app mẫu. Người dùng để Claude tự chọn thứ tự giai đoạn 6.
+- **Việc tiếp theo:** tối ưu gói code (`npm run build`, xem supabase-js/Dexie trong gói, tách phần chưa cần lúc mở app); thiết kế mới thì xin ảnh app mẫu. Người dùng để Claude tự chọn thứ tự giai đoạn 6.
 - **Đang vướng:** không. Build có cảnh báo chunk > 500 kB (supabase-js), để giai đoạn 6. geckodriver bản snap không `kill` được từ đây (chặn quyền), dùng cổng khác nếu còn chạy. 🔊 không kêu trong Simple Browser của VS Code. `npm run build` ở máy cần `VITE_SUPABASE_*` (xem cloud-sync.md). iPhone iOS cũ của người dùng tạo folder bị lỗi chưa rõ nguyên nhân (cloud-sync.md#iphone); người dùng sẽ cập nhật máy. Đã thỏa thuận để sau: tách hook khỏi `TermForm`, `saved!` ở `FilePage`, so `updatedAt` phụ thuộc đồng hồ máy. Test tốc độ ở `pronunciation.test.ts` từng đỏ một lần khi máy rất tải (`reviewer`, 1 lõi); nếu CI đỏ đúng test đó thì nới ngưỡng.
 
 ## Kế hoạch
@@ -39,11 +39,11 @@ Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn 
 - [ ] **6. Hoàn thiện** — thứ tự: ví dụ trong Learn → gói code → dark mode + thiết kế → README, Settings (nếu cần) → dùng thử.
   - [x] Ví dụ trong Learn theo góp ý: che cả dạng chia có quy tắc (#82), ví dụ đầy đủ ở màn tóm tắt (#83); `reviewer` (4 điểm, đã sửa), chụp màn thật hai cỡ
   - [x] Deploy (CI xanh)
-  - [ ] Người dùng thử
-  - Còn lại: phím tắt còn lại (nếu cần; 1–4 và Enter đã có, #55), dark mode + làm lại thiết kế cho đẹp hơn (người dùng muốn, 2026-11-04; có thể gửi ảnh app mẫu; giao diện mới từ giờ chỉ dùng biến màu `--color-*`, bóng đổ menu ⋯ đang viết thẳng màu); dark mode mặc định theo máy (`prefers-color-scheme`); màn Settings chỉ làm khi có ≥ 2–3 thứ người dùng thật sự muốn chỉnh (ứng viên: giao diện tự động/sáng/tối, số từ mỗi vòng, tài khoản + Sign out, gom xuất/khôi phục backup về đây), người dùng ghi lại nhu cầu khi dùng; README; tối ưu gói code (724 kB, nén 213 kB, chủ yếu supabase-js: xem có code bản local như Dexie bị gói vào không, tách phần chưa cần lúc mở app; người dùng nhờ ghi lại 2026-11-04); dùng thử 1 tuần
+  - [x] Người dùng thử: ổn. Cụm 2 chữ ("take away") vẫn hay mất ví dụ, người dùng cho bỏ qua nếu khó; nguyên nhân có thể là dạng bất quy tắc ("took away") hoặc cụm bị tách ("take it away"), chưa xem dữ liệu thật
+  - Còn lại: phím tắt còn lại (nếu cần; 1–4 và Enter đã có, #55), dark mode + làm lại thiết kế cho đẹp hơn (người dùng muốn, 2026-11-04; danh sách từ trong file chạm vào từ để nghe như màn tóm tắt vòng, để Claude thiết kế, 2026-11-10; có thể gửi ảnh app mẫu; giao diện mới từ giờ chỉ dùng biến màu `--color-*`, bóng đổ menu ⋯ đang viết thẳng màu); dark mode mặc định theo máy (`prefers-color-scheme`); màn Settings chỉ làm khi có ≥ 2–3 thứ người dùng thật sự muốn chỉnh (ứng viên: giao diện tự động/sáng/tối, số từ mỗi vòng, tài khoản + Sign out, gom xuất/khôi phục backup về đây), người dùng ghi lại nhu cầu khi dùng; README; tối ưu gói code (724 kB, nén 213 kB, chủ yếu supabase-js: xem có code bản local như Dexie bị gói vào không, tách phần chưa cần lúc mở app; người dùng nhờ ghi lại 2026-11-04); dùng thử 1 tuần
 
 ## Nhật ký (5 mục gần nhất, mới nhất trên cùng)
-- 2026-11-10 — Giai đoạn 6 bắt đầu bằng góp ý về ví dụ trong Learn (#82, #83), `reviewer`, chụp màn thật; người dùng đồng ý → đã deploy.
+- 2026-11-10 — Giai đoạn 6 bắt đầu bằng góp ý về ví dụ trong Learn (#82, #83), `reviewer`, chụp màn thật; đã deploy, người dùng xác nhận ổn.
 - 2026-11-10 — Người dùng xác nhận Export → Restore ổn trên máy tính và iPhone → đóng giai đoạn 5.
 - 2026-11-08 — Sửa gốc lỗi không mã cho mọi request (#81) + giao diện Restore (#80), `reviewer` hai lượt, thử app thật; `statement_timeout` cloud 8 s như local. Người dùng đồng ý → đã deploy.
 - 2026-11-08 — Viết tầng dữ liệu khôi phục backup (`replaceAll`, migration `replace_all` chưa `db push`); `reviewer` 3 điểm đã sửa; check + 156 pgTAP + 94 hợp đồng cloud xanh. 6 commit chưa push (4 ghi chú + refactor + feat), đi cùng lần deploy giai đoạn 5.
