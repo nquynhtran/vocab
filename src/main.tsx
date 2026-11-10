@@ -7,7 +7,6 @@ import { ReloadNotice } from './app/ReloadNotice.tsx'
 import { lastOutdatedReload, rememberOutdatedReload, shouldAutoReload } from './app/reload.ts'
 import { SupabaseAuth } from './data/supabaseAuth.ts'
 import { isClientOutdated } from './data/clientVersion.ts'
-import { VocabDb } from './data/db.ts'
 import { defaultDeps } from './data/deps.ts'
 import { createSupabaseClient } from './data/supabaseClient.ts'
 import { SupabaseRepository } from './data/supabaseRepository.ts'
@@ -30,11 +29,6 @@ function replaceAppAndReload(automatic = true) {
   if (automatic) setTimeout(() => window.location.reload(), RELOAD_DELAY_MS)
 }
 
-// Opened right away although the cloud build stores nothing in it yet: a tab still running the
-// local-only build then gets versionchange and reloads (decision #33). The db closes itself.
-const db = new VocabDb({ onVersionChange: () => replaceAppAndReload() })
-db.open().catch((error: unknown) => console.error('Could not open IndexedDB', error))
-
 const client = createSupabaseClient()
 const auth = new SupabaseAuth(client)
 const expireSession = () => void auth.expireSession()
@@ -56,3 +50,10 @@ root.render(
     </AuthGate>
   </StrictMode>,
 )
+
+// Opened although the cloud build stores nothing in it: a tab still running an older build then
+// gets versionchange and reloads (decision #33). The db closes itself. Dexie comes in a file of its
+// own, fetched alongside the first render instead of before it: nothing on screen needs it (#84).
+import('./data/db.ts')
+  .then(({ VocabDb }) => new VocabDb({ onVersionChange: () => replaceAppAndReload() }).open())
+  .catch((error: unknown) => console.error('Could not load or open IndexedDB', error))

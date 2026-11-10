@@ -1,9 +1,6 @@
-import {
-  isAuthApiError,
-  isAuthRetryableFetchError,
-  type SupabaseClient,
-} from '@supabase/supabase-js'
+import { isAuthApiError, isAuthRetryableFetchError } from '@supabase/auth-js'
 import { AuthenticationError, parseOrThrow } from '../domain/errors.ts'
+import type { SupabaseClient } from './supabaseClient.ts'
 import { SignInInputSchema, type Auth, type AuthListener, type SignInInput } from './auth.ts'
 
 export class SupabaseAuth implements Auth {
@@ -15,7 +12,7 @@ export class SupabaseAuth implements Auth {
   }
 
   subscribe(listener: AuthListener): () => void {
-    // Only sets state: supabase-js warns that awaiting its own calls in here can deadlock.
+    // Only sets state: auth-js warns that awaiting its own calls in here can deadlock.
     const { data } = this.client.auth.onAuthStateChange((_event, session) =>
       listener(session?.user.id ?? null),
     )
@@ -30,7 +27,7 @@ export class SupabaseAuth implements Auth {
 
   async signOut(): Promise<void> {
     const { error } = await this.client.auth.signOut({ scope: 'local' })
-    // supabase-js forgets the session on this device even when the server cannot be reached;
+    // auth-js forgets the session on this device even when the server cannot be reached;
     // only its refresh token stays valid on the server until it expires. Signed out is signed out.
     if (error && !isAuthRetryableFetchError(error))
       throw authenticationError(error, 'Cannot sign out')
@@ -64,7 +61,7 @@ export class SupabaseAuth implements Auth {
 }
 
 function authenticationError(error: unknown, action: string): Error {
-  // Offline, and also any 5xx: supabase-js counts both as worth retrying.
+  // Offline, and also any 5xx: auth-js counts both as worth retrying.
   if (isAuthRetryableFetchError(error)) {
     return new AuthenticationError(
       `${action}: the server cannot be reached or is busy. Check your connection and try again.`,

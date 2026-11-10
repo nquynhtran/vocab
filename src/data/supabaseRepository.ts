@@ -1,4 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { BACKUP_SCHEMA_VERSION, validateBackup, type Backup } from '../domain/backup.ts'
 import {
   DataAlreadyExistsError,
@@ -32,6 +31,7 @@ import { defaultDeps, type RepositoryDeps } from './deps.ts'
 import { summarizeFiles } from './fileSummaries.ts'
 import { byLocation, byName, newestFirst } from './ordering.ts'
 import type { FolderContents, LearnData, Repository, TermLocation } from './repository.ts'
+import type { SupabaseClient } from './supabaseClient.ts'
 import { runRequest, type ConstraintHandler, type SupabaseResponse } from './supabaseRequest.ts'
 import {
   arrayField,

@@ -26,7 +26,7 @@ interface AuthGateProps {
  * the button unmounts it.
  */
 export function AuthGate({ auth, isOutdated, onOutdated, children }: AuthGateProps) {
-  // undefined until supabase-js has read the stored session.
+  // undefined until auth-js has read the stored session.
   const [userId, setUserId] = useState<string | null>()
   // The user of the current session once the version check passed; reset by every sign-out.
   const [checkedUserId, setCheckedUserId] = useState<string>()
@@ -80,7 +80,7 @@ export function AuthGate({ auth, isOutdated, onOutdated, children }: AuthGatePro
     try {
       await auth.signOut()
     } finally {
-      // Also on failure: supabase-js drops the local session even when the server could not be
+      // Also on failure: auth-js drops the local session even when the server could not be
       // told. Should a session survive, it is checked again and gets a fresh app.
       setAppUserId(undefined)
       setCheckedUserId(undefined)

@@ -68,6 +68,18 @@ export default defineConfig({
   // GitHub Pages serves the app from https://<user>.github.io/vocab/
   base: '/vocab/',
   plugins: [react(), contentSecurityPolicy()],
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          // Libraries change less often than the app: a deploy then re-downloads only app code.
+          // Dexie stays out of it so main.tsx can load it after the first screen (decision #84).
+          // Assumes npm's flat node_modules: under pnpm, dexie's path starts with another package's.
+          groups: [{ name: 'vendor', test: /node_modules[\\/](?!dexie[\\/])/ }],
+        },
+      },
+    },
+  },
   test: {
     environment: 'jsdom',
     // The user's zone, on every machine: CI runs in UTC, where local and UTC days never differ
