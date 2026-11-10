@@ -74,8 +74,17 @@ export default defineConfig({
         codeSplitting: {
           // Libraries change less often than the app: a deploy then re-downloads only app code.
           // Dexie stays out of it so main.tsx can load it after the first screen (decision #84).
+          // React in a file of its own keeps each file under the 500 kB warning, and an upgrade of
+          // one library leaves the other file cached. Higher priority wins when both match.
           // Assumes npm's flat node_modules: under pnpm, dexie's path starts with another package's.
-          groups: [{ name: 'vendor', test: /node_modules[\\/](?!dexie[\\/])/ }],
+          groups: [
+            {
+              name: 'react',
+              test: /node_modules[\\/](react|react-dom|react-router|scheduler)[\\/]/,
+              priority: 2,
+            },
+            { name: 'vendor', test: /node_modules[\\/](?!dexie[\\/])/, priority: 1 },
+          ],
         },
       },
     },

@@ -1,4 +1,4 @@
-import type { PostgrestError } from '@supabase/postgrest-js'
+import type { PostgrestError } from '@supabase/supabase-js'
 import { ConnectionError, SessionExpiredError } from '../domain/errors.ts'
 
 export type ConstraintHandler = (
@@ -27,7 +27,7 @@ export async function runRequest(
 ): Promise<unknown> {
   const { data, error, status } = await request
   if (!error) return data
-  // postgrest-js reports a failed fetch (offline, DNS, CORS) as status 0.
+  // supabase-js reports a failed fetch (offline, DNS, CORS) as status 0.
   if (status === 0) throw new ConnectionError()
   if (status === 401) {
     onSessionExpired?.()

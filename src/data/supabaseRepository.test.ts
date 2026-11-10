@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import {
   AuthenticationError,
@@ -12,7 +13,6 @@ import type { Backup } from '../domain/backup.ts'
 import { StudyDaySchema, TermProgressSchema } from '../domain/schemas.ts'
 import { isClientOutdated } from './clientVersion.ts'
 import { SupabaseAuth } from './supabaseAuth.ts'
-import { SupabaseClient } from './supabaseClient.ts'
 import { describeRepositoryContract, testDeps, testId } from './repositoryContract.ts'
 import { MAX_ROWS, SupabaseRepository } from './supabaseRepository.ts'
 import { entityToRow } from './supabaseRows.ts'
@@ -25,9 +25,11 @@ function fakeRepository(
   respond: (url: string) => Response | Promise<Response>,
   onSessionExpired?: () => void,
 ) {
-  const client = new SupabaseClient('http://fake.test', 'fake-key', {
-    ...NO_SESSION,
-    fetch: async (input) => respond(String(input instanceof Request ? input.url : input)),
+  const client = createClient('http://fake.test', 'fake-key', {
+    auth: NO_SESSION,
+    global: {
+      fetch: async (input) => respond(String(input instanceof Request ? input.url : input)),
+    },
   })
   return new SupabaseRepository(client, testDeps(), onSessionExpired)
 }
@@ -55,7 +57,7 @@ const EMPTY_BACKUP: Backup = {
 }
 
 describe('SupabaseRepository errors', () => {
-  it('reports a failed fetch as ConnectionError, after postgrest-js retried a read', async () => {
+  it('reports a failed fetch as ConnectionError, after supabase-js retried a read', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout'] })
     try {
       let attempts = 0
@@ -252,7 +254,7 @@ const LOCAL_PUBLISHABLE_KEY = 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH'
 const TEST_USER = { email: 'contract@test.local', password: 'contract-test-password' }
 
 describe.runIf(import.meta.env.VOCAB_SUPABASE_TESTS === '1')('on local Supabase', () => {
-  const client = new SupabaseClient(LOCAL_URL, LOCAL_PUBLISHABLE_KEY, NO_SESSION)
+  const client = createClient(LOCAL_URL, LOCAL_PUBLISHABLE_KEY, { auth: NO_SESSION })
 
   beforeAll(async () => {
     const { error } = await client.auth.signInWithPassword(TEST_USER)
@@ -283,7 +285,7 @@ describe.runIf(import.meta.env.VOCAB_SUPABASE_TESTS === '1')('on local Supabase'
       await clearAccount(client)
       const repo = new SupabaseRepository(client, testDeps())
       const folder = await repo.createFolder({ name: 'IELTS' })
-      // No user_id key at all: postgrest-js would send an undefined one as null.
+      // No user_id key at all: supabase-js would send an undefined one as null.
       const { user_id: _, ...handEdited } = { ...folderRow, id: testId(2), name: 'TOEIC  ' }
       await insert(client, 'folders', [{ ...handEdited, name_key: 'toeic' }])
       await expect(repo.listFolders()).rejects.toBeInstanceOf(InvalidStoredDataError)
@@ -291,7 +293,7 @@ describe.runIf(import.meta.env.VOCAB_SUPABASE_TESTS === '1')('on local Supabase'
     })
 
     it('signs in with SupabaseAuth and tells wrong credentials apart', async () => {
-      const own = new SupabaseClient(LOCAL_URL, LOCAL_PUBLISHABLE_KEY, NO_SESSION)
+      const own = createClient(LOCAL_URL, LOCAL_PUBLISHABLE_KEY, { auth: NO_SESSION })
       const auth = new SupabaseAuth(own)
       await expect(auth.signIn({ ...TEST_USER, password: 'wrong' })).rejects.toThrow(
         new AuthenticationError('Wrong email or password.'),
@@ -306,7 +308,7 @@ describe.runIf(import.meta.env.VOCAB_SUPABASE_TESTS === '1')('on local Supabase'
     })
 
     it('keeps a working session on a late 401, and ends one the server revoked', async () => {
-      const own = new SupabaseClient(LOCAL_URL, LOCAL_PUBLISHABLE_KEY, NO_SESSION)
+      const own = createClient(LOCAL_URL, LOCAL_PUBLISHABLE_KEY, { auth: NO_SESSION })
       const auth = new SupabaseAuth(own)
       await auth.signIn(TEST_USER)
 
@@ -316,7 +318,7 @@ describe.runIf(import.meta.env.VOCAB_SUPABASE_TESTS === '1')('on local Supabase'
       // Signing out everywhere from another device revokes this session on the server. Done with
       // a separate login: a global sign-out also revokes the session the shared client uses, so
       // that client signs in again for the tests after this one.
-      const other = new SupabaseClient(LOCAL_URL, LOCAL_PUBLISHABLE_KEY, NO_SESSION)
+      const other = createClient(LOCAL_URL, LOCAL_PUBLISHABLE_KEY, { auth: NO_SESSION })
       await other.auth.signInWithPassword(TEST_USER)
       await other.auth.signOut({ scope: 'global' })
       await client.auth.signInWithPassword(TEST_USER)
@@ -327,7 +329,7 @@ describe.runIf(import.meta.env.VOCAB_SUPABASE_TESTS === '1')('on local Supabase'
 
     it('reads app_config only when signed in', async () => {
       expect(await isClientOutdated(client)).toBe(false)
-      const signedOut = new SupabaseClient(LOCAL_URL, LOCAL_PUBLISHABLE_KEY, NO_SESSION)
+      const signedOut = createClient(LOCAL_URL, LOCAL_PUBLISHABLE_KEY, { auth: NO_SESSION })
       const onSessionExpired = vi.fn()
       await expect(isClientOutdated(signedOut, onSessionExpired)).rejects.toBeInstanceOf(
         SessionExpiredError,
@@ -336,7 +338,7 @@ describe.runIf(import.meta.env.VOCAB_SUPABASE_TESTS === '1')('on local Supabase'
     })
 
     it('reports SessionExpiredError when nobody is signed in', async () => {
-      const signedOut = new SupabaseClient(LOCAL_URL, LOCAL_PUBLISHABLE_KEY, NO_SESSION)
+      const signedOut = createClient(LOCAL_URL, LOCAL_PUBLISHABLE_KEY, { auth: NO_SESSION })
       const repo = new SupabaseRepository(signedOut, testDeps())
       await expect(repo.listFolders()).rejects.toBeInstanceOf(SessionExpiredError)
       await expect(repo.createFolder({ name: 'IELTS' })).rejects.toBeInstanceOf(SessionExpiredError)

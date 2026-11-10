@@ -1,15 +1,14 @@
 // @vitest-environment node
+import { createClient } from '@supabase/supabase-js'
 import { describe, expect, it, vi } from 'vitest'
 import { AuthenticationError, ValidationError } from '../domain/errors.ts'
 import { SupabaseAuth } from './supabaseAuth.ts'
-import { SupabaseClient } from './supabaseClient.ts'
 
 function fakeAuth(respond: () => Response | Promise<Response>) {
   const fetch = vi.fn(async () => respond())
-  const client = new SupabaseClient('http://fake.test', 'fake-key', {
-    persistSession: false,
-    autoRefreshToken: false,
-    fetch,
+  const client = createClient('http://fake.test', 'fake-key', {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { fetch },
   })
   return { auth: new SupabaseAuth(client), client, fetch }
 }
@@ -86,7 +85,7 @@ describe('SupabaseAuth.expireSession', () => {
     access_token: 'token',
     refresh_token: 'refresh',
     token_type: 'bearer',
-    // Not near expiry, so auth-js does not try to refresh it during these tests.
+    // Not near expiry, so supabase-js does not try to refresh it during these tests.
     expires_in: 3600,
     expires_at: Math.floor(Date.now() / 1000) + 3600,
     user: { id: 'me', aud: 'authenticated', role: 'authenticated', email: 'me@example.com' },
@@ -110,7 +109,7 @@ describe('SupabaseAuth.expireSession', () => {
     expect(listener).not.toHaveBeenCalledWith(null)
   })
 
-  // Only `session_not_found` is dropped by auth-js itself; the others need our sign-out.
+  // Only `session_not_found` is dropped by supabase-js itself; the others need our sign-out.
   it.each([
     ['an expired token', 401, 'bad_jwt'],
     ['a bad token', 403, 'bad_jwt'],

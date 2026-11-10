@@ -37,7 +37,7 @@ class FakeAuth implements Auth {
   signOut = vi.fn(async () => this.change(null))
   expireSession = vi.fn(async () => this.change(null))
 
-  /** Like auth-js: listeners hear about changes from any tab or from a failed refresh. */
+  /** Like supabase-js: listeners hear about changes from any tab or from a failed refresh. */
   change(userId: string | null) {
     this.userId = userId
     act(() => this.listeners.forEach((listener) => listener(userId)))

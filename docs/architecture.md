@@ -25,13 +25,13 @@ Web tĩnh, **không có backend** (giai đoạn 0–6).
 | CSDL | Dexie | Transaction, index, migration theo version |
 | Validate | Zod | Một schema cho form, file nhập và kiểu TS |
 | Test | Vitest + Testing Library + fake-indexeddb | Unit test domain, test repository |
-| Cloud | `@supabase/auth-js` + `@supabase/postgrest-js` | Hai phần của client chính thức app dùng: Auth, PostgREST + RPC; `src/data/supabaseClient.ts` ghép lại thay `createClient` của supabase-js, vốn luôn gói cả realtime, storage, functions (#84, [cloud-sync.md](cloud-sync.md)) |
+| Cloud | `@supabase/supabase-js` | Client chính thức: PostgREST, Auth, RPC ([cloud-sync.md](cloud-sync.md)) |
 | Chất lượng | oxlint + Prettier | oxlint là mặc định của template Vite, nhanh, không cần cấu hình; chạy trong CI |
 | CI/CD | GitHub Actions → GitHub Pages | Tự động hoàn toàn |
 
 Thêm thư viện mới → ghi lý do vào [decisions.md](decisions.md).
 
-**Gói code** (#84): thư viện nằm ở file riêng (`vendor`), deploy chỉ đổi code app thì trình duyệt dùng lại bản đã tải. Dexie được `import()` sau khi app đã hiện, vì bản cloud chỉ mở DB để tab cũ reload. Đo lại: `npm run build` rồi xem cỡ từng file trong `dist/assets`.
+**Gói code** (#84, #85): thư viện nằm ở file riêng (`react` và `vendor`, mỗi file dưới ngưỡng cảnh báo 500 kB), deploy chỉ đổi code app thì trình duyệt dùng lại bản đã tải. Dexie được `import()` sau khi app đã hiện, vì bản cloud chỉ mở DB để tab cũ reload. Đo lại: `npm run build` rồi xem cỡ từng file trong `dist/assets`.
 
 ## Cấu trúc thư mục
 ```

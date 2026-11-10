@@ -33,6 +33,7 @@
 - Code ngược mục tiêu chính mình ghi trong tài liệu (`localeCompare(undefined)` trong khi cam kết "mọi thiết bị cùng thứ tự"; `validateBackup` lặng lẽ chuẩn hóa ngay sau khi ghi #35 "khác là lỗi") → đọc lại lý do đã ghi trước khi chọn tham số. (lặp lại ×3: mapper ghi lý do "key có thể lệch chữ" nhưng bỏ cột key mà không kiểm)
 - Chép lý do kỹ thuật của `challenger` vào code và `decisions.md` mà không tự suy lại (khóa advisory "để Import không lọt vào lúc kho vừa bị xóa", trong khi bản xóa chưa commit thì không ai thấy) → kết luận của agent đúng chưa chắc lý do đúng; tự suy lại cơ chế trước khi ghi.
 - Viết tài liệu mô tả tính năng chưa làm như đã có (README nói có xuất JSON) → chỉ mô tả cái đã có, cái chưa có thì ghi "planned".
+- Chọn cách tự ghép auth-js + postgrest-js chỉ vì giảm nhiều kB nhất, không cân chi phí bảo trì ở chỗ nhạy cảm (đăng nhập), không hỏi người dùng; lợi ích còn nhỏ hơn sau khi đã tách `vendor` → với thay đổi đổi cách dùng thư viện lõi, so sánh được/mất về lâu dài và hỏi người dùng trước khi làm; tính lại lợi ích sau mỗi bước tối ưu khác.
 - Báo "giữ đúng 2.118.0" khi `package.json` vẫn là `^2.118.0` (chỉ file lock ghim) → nói "ghim" là phải bỏ `^`; kiểm đúng file quyết định trước khi khẳng định.
 
 - Thêm trường mà không tăng version Dexie vì "dữ liệu cũ vẫn đọc được" → chỉ xét chiều đọc, quên code cũ ở tab khác ghi đè cả bản ghi làm mất trường mới → đổi cấu trúc là tăng version, xét cả chiều đọc lẫn chiều ghi.

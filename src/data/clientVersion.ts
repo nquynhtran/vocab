@@ -1,5 +1,5 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { z } from 'zod'
-import type { SupabaseClient } from './supabaseClient.ts'
 import { runRequest } from './supabaseRequest.ts'
 import { parseRow } from './supabaseRows.ts'
 

@@ -1,14 +1,13 @@
 // @vitest-environment node
+import { createClient } from '@supabase/supabase-js'
 import { describe, expect, it, vi } from 'vitest'
 import { InvalidStoredDataError, SessionExpiredError } from '../domain/errors.ts'
 import { CLIENT_VERSION, isClientOutdated } from './clientVersion.ts'
-import { SupabaseClient } from './supabaseClient.ts'
 
 function fakeClient(response: () => Response) {
-  return new SupabaseClient('http://fake.test', 'fake-key', {
-    persistSession: false,
-    autoRefreshToken: false,
-    fetch: async () => response(),
+  return createClient('http://fake.test', 'fake-key', {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { fetch: async () => response() },
   })
 }
 

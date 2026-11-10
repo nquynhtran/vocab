@@ -21,8 +21,7 @@
     "test:supabase": "supabase test db && VOCAB_SUPABASE_TESTS=1 vitest run src/data/supabaseRepository.test.ts"
   },
   "dependencies": {
-    "@supabase/auth-js": "2.118.0",
-    "@supabase/postgrest-js": "2.118.0",
+    "@supabase/supabase-js": "^2.118.0",
     "dexie": "^4.4.6",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
