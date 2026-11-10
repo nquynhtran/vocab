@@ -882,11 +882,22 @@ label {
   color: var(--color-danger);
 }
 
+.tally__example {
+  font-size: 0.9rem;
+  font-style: italic;
+  color: var(--color-muted);
+}
+
 @media (min-width: 640px) {
   .tally {
     grid-template-columns: 1fr 1.5fr auto;
     align-items: center;
-    gap: 12px;
+    gap: 4px 12px;
+  }
+
+  /* The example gets its own full-width line under the row. */
+  .tally__example {
+    grid-column: 1 / -1;
   }
 }
 

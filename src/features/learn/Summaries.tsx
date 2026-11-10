@@ -91,6 +91,8 @@ function TallyList({ label, tallies }: { label: string; tallies: TermTally[] }) 
             <span className={wrong > 0 ? 'tally__count tally__count--wrong' : 'tally__count'}>
               {correct} right · {wrong} wrong
             </span>
+            {/* Unmasked: the question is answered, so nothing is left to give away (#83). */}
+            {term.example && <span className="tally__example">{term.example}</span>}
           </li>
         ))}
       </ul>

@@ -127,7 +127,11 @@ describe('Learn', () => {
   })
 
   it('ends a round once its 7 terms are learned, then goes on with the rest', async () => {
-    const terms = Array.from({ length: 8 }, (_, i) => ({ word: `w${i}`, meaning: `nghĩa ${i}` }))
+    const terms = Array.from({ length: 8 }, (_, i) => ({
+      word: `w${i}`,
+      meaning: `nghĩa ${i}`,
+      example: `Say w${i} now.`,
+    }))
     const { repository, file, wordOf } = await setUp(terms)
     await masterAll(repository, file.id)
     renderAt(repository, `/files/${file.id}/learn`)
@@ -136,9 +140,13 @@ describe('Learn', () => {
 
     expect(await screen.findByRole('heading', { name: 'Round 1 done' })).toBeInTheDocument()
     expect(screen.getByText('7 learned · 1 familiar / 8')).toBeInTheDocument()
-    expect(
-      within(screen.getByRole('list', { name: 'This round' })).getAllByRole('listitem'),
-    ).toHaveLength(7)
+    const rows = within(screen.getByRole('list', { name: 'This round' })).getAllByRole('listitem')
+    expect(rows).toHaveLength(7)
+    // Each row shows its own example, unmasked, to read again (#83).
+    for (const row of rows) {
+      const word = row.querySelector('.tally__word')?.textContent?.replace('🔊', '')
+      expect(row.querySelector('.tally__example')).toHaveTextContent(`Say ${word} now.`)
+    }
     fireEvent.click(screen.getByRole('button', { name: 'Next round' }))
     await answerAllRight(wordOf)
     expect(await screen.findByRole('heading', { name: 'You learned all 8 terms!' })).toBeVisible()
@@ -337,7 +345,9 @@ describe('Learn', () => {
         }
       },
     )
-    const { repository, file, wordOf } = await setUp([{ word: 'big', meaning: 'to' }])
+    const { repository, file, wordOf } = await setUp([
+      { word: 'big', meaning: 'to', example: 'Bigger is not always better, big guy.' },
+    ])
     renderAt(repository, `/files/${file.id}/learn`)
     await asked()
     fireEvent.click(screen.getByRole('button', { name: 'Answer' }))
@@ -350,6 +360,7 @@ describe('Learn', () => {
     const missed = screen.getByRole('list', { name: 'Missed most' })
     expect(missed).toHaveTextContent('big')
     expect(missed).toHaveTextContent('2 right · 1 wrong')
+    expect(missed).toHaveTextContent('Bigger is not always better, big guy.')
     fireEvent.click(within(missed).getByRole('button', { name: 'Listen to "big"' }))
     expect(speak).toHaveBeenCalledWith(expect.objectContaining({ text: 'big' }))
     expect(
