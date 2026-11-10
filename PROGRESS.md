@@ -3,8 +3,8 @@
 > File này được nạp tự động mỗi phiên. Giữ ngắn: chỉ trạng thái hiện tại, checklist và 5 mục nhật ký gần nhất.
 
 ## Đang ở đâu
-- **Giai đoạn:** 5 đã deploy (2026-11-08: `db push` `replace_all`, CI xanh, trang thật có mục Restore).
-- **Việc tiếp theo:** chờ người dùng thử trên cloud: Export JSON → Restore chính file đó (máy tính + iPhone). Ổn thì đóng giai đoạn 5, sang giai đoạn 6.
+- **Giai đoạn:** 5 xong (2026-11-10). Bắt đầu giai đoạn 6.
+- **Việc tiếp theo:** hỏi người dùng thứ tự trong giai đoạn 6 và xin ảnh app mẫu cho thiết kế mới; trong lúc chờ, có thể làm trước phần tối ưu gói code (không cần ý kiến về giao diện).
 - **Đang vướng:** không. Build có cảnh báo chunk > 500 kB (supabase-js), để giai đoạn 6. geckodriver bản snap không `kill` được từ đây (chặn quyền), dùng cổng khác nếu còn chạy. 🔊 không kêu trong Simple Browser của VS Code. `npm run build` ở máy cần `VITE_SUPABASE_*` (xem cloud-sync.md). iPhone iOS cũ của người dùng tạo folder bị lỗi chưa rõ nguyên nhân (cloud-sync.md#iphone); người dùng sẽ cập nhật máy. Đã thỏa thuận để sau: tách hook khỏi `TermForm`, `saved!` ở `FilePage`, so `updatedAt` phụ thuộc đồng hồ máy. Test tốc độ ở `pronunciation.test.ts` từng đỏ một lần khi máy rất tải (`reviewer`, 1 lõi); nếu CI đỏ đúng test đó thì nới ngưỡng.
 
 ## Kế hoạch
@@ -35,19 +35,12 @@ Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn 
   - [x] Migration nâng `min_client_version` 3 (`db push`, đọc lại trên cloud ra 3)
   - [x] Người dùng dùng thử: điện thoại và máy tính đều ổn, sau khi sửa hai lỗi (#70)
 - [x] **4. Streak** — chuỗi ngày, kỷ lục, lịch tháng trên Home ([streak.md](docs/streak.md)). `challenger` + người dùng chọn hiển thị (#71–#74); đọc qua RPC `list_study_days`; sửa đăng xuất nhầm do 401 về muộn (#75); `reviewer` 3 lượt; deploy; người dùng xác nhận trên máy tính và iPhone
-- [ ] **5. Sao lưu** — khôi phục toàn bộ dữ liệu từ file backup ([backup.md](docs/backup.md))
-  - [x] `challenger` (10 điểm, đã kiểm trong code); người dùng chốt #76–#79: ghi đè ngày học, nút tải bản sao, gộp Import thành một mục Restore, chưa nhắc sao lưu
-  - [x] Đo payload: 6 MB nhập 1,4 s trên local (giới hạn 8 s); chưa đo cloud
-  - [x] Tầng dữ liệu: `replaceAll` (Dexie + RPC `replace_all` dùng lại `import_snapshot`), hợp đồng + pgTAP, phá thử, `reviewer` (3 điểm, đã sửa: lỗi 502 không mã → `ConnectionError`)
-  - [x] Sửa gốc lỗi không mã ở `runRequest` (#81), qua `reviewer`
-  - [x] Giao diện Restore (`BackupSection`, `compareForRestore`, lỗi trong mục #80), UI test trên `App` thật, `reviewer` (5 điểm nhỏ, đã sửa), thử Firefox rộng + iframe 375 px trên Supabase local
-  - [x] Deploy (`db push` → `git push` → CI xanh)
-  - [ ] Người dùng thử
+- [x] **5. Sao lưu** — khôi phục toàn bộ dữ liệu từ file backup ([backup.md](docs/backup.md)). `challenger` + người dùng chốt #76–#79; `replaceAll` (Dexie + RPC `replace_all`), sửa gốc lỗi không mã ở `runRequest` (#81), mục Restore trên Home (#80), mỗi bước qua `reviewer`; deploy; người dùng xác nhận Export → Restore trên máy tính và iPhone
 - [ ] **6. Hoàn thiện** — phím tắt còn lại (nếu cần; 1–4 và Enter đã có, #55), dark mode + làm lại thiết kế cho đẹp hơn (người dùng muốn, 2026-11-04; có thể gửi ảnh app mẫu; giao diện mới từ giờ chỉ dùng biến màu `--color-*`, bóng đổ menu ⋯ đang viết thẳng màu); dark mode mặc định theo máy (`prefers-color-scheme`); màn Settings chỉ làm khi có ≥ 2–3 thứ người dùng thật sự muốn chỉnh (ứng viên: giao diện tự động/sáng/tối, số từ mỗi vòng, tài khoản + Sign out, gom xuất/khôi phục backup về đây), người dùng ghi lại nhu cầu khi dùng; README; tối ưu gói code (724 kB, nén 213 kB, chủ yếu supabase-js: xem có code bản local như Dexie bị gói vào không, tách phần chưa cần lúc mở app; người dùng nhờ ghi lại 2026-11-04); dùng thử 1 tuần
 
 ## Nhật ký (5 mục gần nhất, mới nhất trên cùng)
+- 2026-11-10 — Người dùng xác nhận Export → Restore ổn trên máy tính và iPhone → đóng giai đoạn 5.
 - 2026-11-08 — Sửa gốc lỗi không mã cho mọi request (#81) + giao diện Restore (#80), `reviewer` hai lượt, thử app thật; `statement_timeout` cloud 8 s như local. Người dùng đồng ý → đã deploy.
 - 2026-11-08 — Viết tầng dữ liệu khôi phục backup (`replaceAll`, migration `replace_all` chưa `db push`); `reviewer` 3 điểm đã sửa; check + 156 pgTAP + 94 hợp đồng cloud xanh. 6 commit chưa push (4 ghi chú + refactor + feat), đi cùng lần deploy giai đoạn 5.
 - 2026-11-08 — Thiết kế giai đoạn 5 qua `challenger`; người dùng chọn cả 4 phương án gợi ý (#76–#79). Tài liệu mới `docs/backup.md`. Chưa có code.
 - 2026-11-06 — Người dùng xác nhận Streak ổn trên máy tính và iPhone → đóng giai đoạn 4.
-- 2026-11-06 — Người dùng yêu cầu soát lại: rủi ro 401 về muộn đăng xuất luôn phiên mới; chặn ở ô streak là vá triệu chứng nên gỡ, sửa tại `expireSession` (#75, hỏi lại máy chủ, chỉ lỗi Auth 401/403 mới đăng xuất). Tách lại commit chưa push.
