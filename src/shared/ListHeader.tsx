@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { ReactNode, RefObject } from 'react'
 import { EmptyState } from './EmptyState.tsx'
 import { Icon, type IconName } from './Icon.tsx'
 import { NameForm } from './NameForm.tsx'
@@ -33,20 +33,14 @@ export function ListHeader({ title, createLabel, onCreate, empty }: ListHeaderPr
 
   return (
     <>
-      <div className="list-header">
-        <h1>{title}</h1>
-        {!form.open && (
-          <button
-            ref={buttonRef}
-            type="button"
-            className="button list-header__create"
-            onClick={form.show}
-          >
-            <Icon name="plus" />
-            {createLabel}
-          </button>
-        )}
-      </div>
+      <RevealHeader
+        title={title}
+        level={1}
+        buttonLabel={createLabel}
+        open={form.open}
+        onShow={form.show}
+        buttonRef={buttonRef}
+      />
       {form.open && (
         <div className="create-card">
           <NameForm
@@ -82,5 +76,44 @@ export function ListHeader({ title, createLabel, onCreate, empty }: ListHeaderPr
         </EmptyState>
       )}
     </>
+  )
+}
+
+/**
+ * A title with a "+ …" button that steps aside while its form is open (useRevealedForm): the
+ * header of Home, a folder and the term list of a file.
+ */
+export function RevealHeader({
+  title,
+  level,
+  buttonLabel,
+  open,
+  onShow,
+  buttonRef,
+}: {
+  title: string
+  /** 1 for the page title, 2 for a section of the page. */
+  level: 1 | 2
+  buttonLabel: string
+  open: boolean
+  onShow: () => void
+  buttonRef: RefObject<HTMLButtonElement | null>
+}) {
+  const Heading = level === 1 ? 'h1' : 'h2'
+  return (
+    <div className="list-header">
+      <Heading>{title}</Heading>
+      {!open && (
+        <button
+          ref={buttonRef}
+          type="button"
+          className="button list-header__create"
+          onClick={onShow}
+        >
+          <Icon name="plus" />
+          {buttonLabel}
+        </button>
+      )}
+    </div>
   )
 }

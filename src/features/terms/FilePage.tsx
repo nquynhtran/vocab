@@ -2,7 +2,7 @@ import { useCallback } from 'react'
 import { Link, useParams } from 'react-router'
 import type { Term, TermInput, VocabFile } from '../../domain/schemas.ts'
 import { deleteTermMessage, plural } from '../../shared/deleteMessages.ts'
-import { Icon } from '../../shared/Icon.tsx'
+import { RevealHeader } from '../../shared/ListHeader.tsx'
 import {
   ActionError,
   LoadError,
@@ -107,20 +107,14 @@ function TermsSection({ terms, onAdd, onUpdate, onDelete }: TermsSectionProps) {
 
   return (
     <>
-      <div className="list-header">
-        <h2>Terms</h2>
-        {!form.open && (
-          <button
-            ref={buttonRef}
-            type="button"
-            className="button list-header__create"
-            onClick={form.show}
-          >
-            <Icon name="plus" />
-            Add term
-          </button>
-        )}
-      </div>
+      <RevealHeader
+        title="Terms"
+        level={2}
+        buttonLabel="Add term"
+        open={form.open}
+        onShow={form.show}
+        buttonRef={buttonRef}
+      />
       {form.open && (
         <TermForm
           submitLabel="Add"
