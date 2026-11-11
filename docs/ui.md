@@ -9,7 +9,7 @@ Giai đoạn 0–6 ưu tiên máy tính, nhưng CSS **responsive ngay từ đầ
 - `<html lang="en">`.
 
 ## Màn hình
-0. **Sign in** (bản cloud): Email, Password, nút "Sign in". Mất phiên khi đang dùng → hộp "Sign in" phủ kín trang, app vẫn giữ nguyên bên dưới, kèm câu "You were signed out…" ([cloud-sync.md](cloud-sync.md#đăng-nhập--phiên-bước-5-4345)). Thanh đầu: tên app (về Home) bên trái, icon ⚙ (`Settings`) bên phải.
+0. **Sign in** (bản cloud): Email, Password, nút "Sign in". Mất phiên khi đang dùng → hộp "Sign in" phủ kín trang, app vẫn giữ nguyên bên dưới, kèm câu "You were signed out…" ([cloud-sync.md](cloud-sync.md#đăng-nhập--phiên-bước-5-4345)). Thanh đầu: tên app (về Home) bên trái, icon ⚙ (`Settings`) bên phải; riêng màn Learn dùng thanh đầu thu gọn (‹ về trang File, tên file, Stop), xem [design.md](design.md#bố-cục-màn-hình-kế-hoạch-86-làm-dần).
 1. **Home**: ô streak ở trên danh sách folder (🔥 N-day streak, kỷ lục, "Today: 4/10 answers", lịch tháng thu gọn; chi tiết ở [streak.md](streak.md#hiển-thị-home-71)), folder dạng thẻ, nút "+ New folder" mở form tạo ([design.md](design.md#bố-cục-màn-hình-kế-hoạch-86-làm-dần)). Sao lưu đã chuyển sang Settings (#86).
 1b. **Settings** (`#/settings`, #86): ba thẻ. **Appearance**: System / Light / Dark (radio vẽ thành nút ghép, lưu trên máy, [design.md](design.md#chế-độ-sángtối)). **Backup**: "Export JSON" (tải `vocab-backup-YYYY-MM-DD.json`, ngày theo giờ máy) và "Restore from backup" (chọn file → màn so sánh → Replace all; lỗi hiện ngay trong mục), xem [backup.md](backup.md). **Account** (chỉ khi đã đăng nhập): nút Sign out. Không hiện email (Auth chỉ báo `userId`; một người dùng, không đáng đổi).
 2. **Folder**: file dạng thẻ (tên, số từ, % mastered kèm thanh tiến độ), nút "+ New file" mở form tạo.
