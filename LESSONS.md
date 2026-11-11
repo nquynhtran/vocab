@@ -57,4 +57,5 @@
 - Nạp dữ liệu mẫu để thử app rồi chạy `test:supabase` mà không dọn → pgTAP đếm `study_days` toàn bảng thấy ngày của dữ liệu mẫu, đỏ giả → thử xong thì làm trống tài khoản test trước khi chạy bộ test cloud.
 - Thử app thật ngay sau `test:supabase` mà không dọn và nạp lại dữ liệu: bộ test đã xóa dữ liệu mẫu và để lại folder sai, nên ảnh chụp không kiểm tra được thứ cần xem → nạp dữ liệu mẫu ngay trước mỗi lần thử, và đọc lại con số trên ảnh trước khi kết luận.
 - Phá code thử để kiểm tra test trên file chưa commit rồi khôi phục bằng `git checkout` → không có tác dụng với file chưa track → chép file ra scratchpad trước khi phá, hoặc commit trước. (lặp lại ×2: file đã track nhưng có sửa chưa commit, `git checkout` xóa luôn phần sửa thật)
+- Commit refactor (`useRevealedForm`) sau khi chỉ chạy `vitest` + `tsc`, bỏ qua lint → oxlint báo `react(refs)` ở commit đó → trước mỗi commit chạy `npm run check` đầy đủ, không chọn vài bước.
 - Deploy giai đoạn 3: `db push` khi mới chạy `npm run check` (59 test cloud bị bỏ qua, CI cũng không chạy pgTAP), dựa vào lần chạy xanh từ mấy commit trước → trước mọi `db push`, chạy `npm run test:supabase` trên đúng commit sẽ deploy.

@@ -54,6 +54,11 @@ Component `shared/Icon.tsx`: SVG viết tay, nét 2 px, `currentColor`, `aria-hi
    - Thẻ folder: ô icon folder nền `primary-bg` + tên. Không hiện số file (`listFolders` không trả, thêm thì phải sửa cả hai repository; YAGNI).
    - Thẻ file: icon file, tên, `12 terms · 40% mastered`, thanh tiến độ mảnh (rãnh `border` như thanh của Learn, vì `subtle` gần như không thấy ở chế độ tối; phần đã thuộc `primary`), `aria-hidden` vì dòng chữ đã nói đủ.
    - Nút "+ New …" kiểu nút thường (màu nhấn để dành cho Learn). Bấm → nút ẩn, form hiện trong thẻ ngay dưới hàng tiêu đề, focus sẵn ô nhập; Create xong hoặc Cancel/`Escape` → form đóng, focus trả về nút. Lỗi (tên trùng…) thì form giữ nguyên chữ.
-4. *(Planned)* File: tên, số từ, nút Learn nổi bật → Notes → "+ Add term" (file trống thì mở sẵn; mở rồi giữ mở để nhập liên tục) → danh sách từ, chạm vào từ để nghe.
+4. File:
+   - Breadcrumb chữ nhạt, không gạch chân (gạch chân khi rê chuột hoặc focus bằng phím).
+   - Đầu trang: tên file + số từ; nút **Learn** (nút màu nhấn duy nhất trên trang) bên phải, trên điện thoại rộng hết hàng. File trống: thay bằng "Add some terms to start learning.".
+   - Notes → hàng "Terms" + nút "+ Add term" (cùng kiểu `ListHeader`, hook `shared/useRevealedForm.ts`). Thêm xong form vẫn mở, focus về ô Term. Cancel/`Escape` đóng, focus về nút. File trống: form mở sẵn nhưng **không** tự focus (trên điện thoại sẽ bật bàn phím ngay khi vào trang).
+   - Danh sách từ gom trong một thẻ, hàng ngăn bằng đường kẻ; nút ⋯ không viền; hàng tiêu đề cột có ô trống thay cột ⋯ để thẳng hàng. Hàng đang sửa tô nền `subtle`, form bên trong không viền (tránh thẻ trong thẻ).
+   - Chạm vào chính từ để nghe (`shared/ListenWord.tsx`, dùng chung với màn tóm tắt của Learn): cả chữ lẫn icon loa nhỏ mờ phía sau là một nút. Bỏ nút 🔊 riêng; nút vẫn cao 44 px nhưng không làm dòng đầu cao thêm.
 5. *(Planned)* Learn: thanh đầu thu gọn khi đang học (không Settings/Sign out).
 6. *(Planned)* Đăng nhập, trang lỗi, màn trống có hướng dẫn kèm nút hành động.
