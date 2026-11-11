@@ -6,6 +6,7 @@ Chỉ mở file liên quan đến việc đang làm. Mỗi file chỉ nói về 
 |------|----------|---------|
 | [scope.md](scope.md) | Tính năng có làm / không làm, luồng người dùng | Thêm hoặc bỏ tính năng, không chắc việc gì nằm trong phạm vi |
 | [ui.md](ui.md) | Các màn hình, responsive, phím tắt | Làm hoặc sửa giao diện |
+| [design.md](design.md) | Hệ thống thiết kế: màu sáng/tối, cỡ chữ, khoảng cách, icon, kế hoạch bố cục mới | Viết CSS, thêm màu hay icon, làm lại màn hình (giai đoạn 6) |
 | [architecture.md](architecture.md) | Hosting, công nghệ, cấu trúc thư mục, quy tắc phụ thuộc, quy tắc `Repository` | Tạo file/module mới, thêm thư viện, động vào tầng `data/` |
 | [data-model.md](data-model.md) | Các bảng, ràng buộc toàn vẹn, sao lưu JSON, migration | Sửa kiểu dữ liệu, schema, xuất/nhập |
 | [learn-algorithm.md](learn-algorithm.md) | Chọn từ, loại câu hỏi, chấm điểm, trường hợp biên | Làm `domain/learn/` hoặc màn Learn |
