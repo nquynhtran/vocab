@@ -3,8 +3,8 @@
 > File này được nạp tự động mỗi phiên. Giữ ngắn: chỉ trạng thái hiện tại, checklist và 5 mục nhật ký gần nhất.
 
 ## Đang ở đâu
-- **Giai đoạn:** 6 đang làm: thiết kế lại theo [design.md](docs/design.md) (#86, #87), xong bước 1 (màu sáng/tối, cỡ chữ, icon), 2 (Settings), 3 (Home/Folder dạng thẻ, người dùng duyệt), 4 (trang File) người dùng đã duyệt; bước 5 (thanh đầu Learn thu gọn) xong, chờ người dùng duyệt ảnh; chưa deploy.
-- **Việc tiếp theo:** người dùng duyệt bước 5 (`LearnFrame.tsx`) → bước 6 của design.md#bố-cục-màn-hình (đăng nhập, trang lỗi, màn trống kèm nút hành động; gồm màn trống của file với form mở sẵn), chụp 2 cỡ × sáng/tối; rồi hỏi deploy. Người dùng để Claude chọn thiết kế, muốn "tinh tế", theo chuẩn ngành.
+- **Giai đoạn:** 6 đang làm: thiết kế lại theo [design.md](docs/design.md) (#86, #87), xong bước 1 (màu sáng/tối, cỡ chữ, icon), 2 (Settings), 3 (Home/Folder dạng thẻ, người dùng duyệt), 4 (trang File), 5 (thanh đầu Learn thu gọn) người dùng đã duyệt; bước 6 (màn trống, lỗi tải + Try again, thẻ đăng nhập) xong, chờ duyệt ảnh; chưa deploy.
+- **Việc tiếp theo:** người dùng duyệt ảnh bước 6 → hỏi deploy (`git push`, 20 commit; không có migration nên không cần `db push`) → người dùng dùng thử → README, dùng thử 1 tuần. Home trống chưa chụp (tài khoản test có dữ liệu mẫu); cùng component với Folder trống. Người dùng để Claude chọn thiết kế, muốn "tinh tế", theo chuẩn ngành.
 - **Đang vướng:** không. geckodriver bản snap không `kill` được từ đây (chặn quyền), dùng cổng khác nếu còn chạy. 🔊 không kêu trong Simple Browser của VS Code. `npm run build` ở máy cần `VITE_SUPABASE_*` (xem cloud-sync.md). iPhone iOS cũ của người dùng tạo folder bị lỗi chưa rõ nguyên nhân (cloud-sync.md#iphone); người dùng sẽ cập nhật máy. Đã thỏa thuận để sau: tách hook khỏi `TermForm`, `saved!` ở `FilePage`, so `updatedAt` phụ thuộc đồng hồ máy. Test tốc độ ở `pronunciation.test.ts` từng đỏ một lần khi máy rất tải (`reviewer`, 1 lõi); nếu CI đỏ đúng test đó thì nới ngưỡng.
 
 ## Kế hoạch
@@ -40,8 +40,8 @@ Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn 
   - Còn lại: phím tắt còn lại (nếu cần; 1–4 và Enter đã có, #55); README; dùng thử 1 tuần
 
 ## Nhật ký (5 mục gần nhất, mới nhất trên cùng)
+- 2026-11-11 — Bước 6 (#86): `EmptyState` (Home/Folder trống có nút "Create your first …", Learn file trống, NotFound), `LoadError` có Try again (`useAsync.reload` hiện Loading khi thử lại sau lỗi), câu mất mạng riêng cho lỗi đọc, thẻ đăng nhập có icon app. Phá thử test Try again; thử bản build (đường dẫn icon). `reviewer` bỏ qua (giao diện; thay đổi `useAsync` một dòng, có test).
 - 2026-11-11 — Bước 5 (#86): Learn ra ngoài `Layout`, thanh đầu riêng (‹ về File, tên file một dòng, Stop không viền), cao 44 px như trang khác. Sửa test "Back to list" vốn sẽ xanh giả vì tên file giờ ở cả thanh đầu Learn; phá thử test mới. `reviewer` bỏ qua (chỉ giao diện + route). 16 commit chưa push.
 - 2026-11-11 — Thiết kế lại bước 3–4 (#86): Home/Folder dạng thẻ, trang File mới, `ListenWord` dùng chung với Learn; sửa lệch cột tiêu đề bảng từ. `reviewer` bỏ qua (chỉ giao diện); phá thử test mới. Bài học: chạy `npm run check` đủ trước mỗi commit. Chưa push.
 - 2026-11-11 — Thiết kế lại bước 1–2 (#86, #87): docs/design.md, bộ màu sáng/tối đo WCAG AA, icon SVG, màn Settings, Backup rời Home. `reviewer` bỏ qua (CSS + chuyển chỗ, logic khôi phục không đổi; tự soát, phá thử test theme). 4 commit chưa push.
 - 2026-11-11 — Gói code: thử tự ghép auth-js + postgrest-js (#84), cân lại thì quay về supabase-js (#85); giữ Dexie tải sau + file `react`/`vendor`. `reviewer`, test:supabase, thử bản build; deploy, người dùng xác nhận trên iPhone.
-- 2026-11-10 — Giai đoạn 6 bắt đầu bằng góp ý về ví dụ trong Learn (#82, #83), `reviewer`, chụp màn thật; đã deploy, người dùng xác nhận ổn.
