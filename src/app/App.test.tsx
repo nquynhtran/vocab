@@ -26,6 +26,11 @@ function typeInto(label: string | RegExp, value: string) {
   fireEvent.change(screen.getByLabelText(label), { target: { value } })
 }
 
+/** "New folder" / "New file": the form is behind a button (design.md, step 3). */
+function openCreateForm(label: string) {
+  fireEvent.click(screen.getByRole('button', { name: label }))
+}
+
 function chooseFile(file: File) {
   fireEvent.change(screen.getByLabelText('Backup file'), { target: { files: [file] } })
 }
@@ -74,11 +79,13 @@ describe('folder → file → term', () => {
     const { unmount, indexedDB } = renderApp()
     await screen.findByText(/No folders yet/)
 
+    openCreateForm('New folder')
     typeInto('New folder', 'IELTS')
     fireEvent.click(screen.getByRole('button', { name: 'Create' }))
     fireEvent.click(await screen.findByRole('link', { name: 'IELTS' }))
 
     await screen.findByRole('heading', { name: 'IELTS' })
+    openCreateForm('New file')
     typeInto('New file', 'Unit 1')
     fireEvent.click(screen.getByRole('button', { name: 'Create' }))
     expect(await screen.findByText('0 terms · 0% mastered')).toBeInTheDocument()
@@ -113,6 +120,7 @@ describe('folders', () => {
     await repository.createFolder({ name: 'IELTS' })
     await screen.findByText(/No folders yet/)
 
+    openCreateForm('New folder')
     typeInto('New folder', ' ielts ')
     fireEvent.click(screen.getByRole('button', { name: 'Create' }))
 
@@ -120,6 +128,25 @@ describe('folders', () => {
       'A folder named "IELTS" already exists.',
     )
     expect(screen.getByLabelText('New folder')).toHaveValue(' ielts ')
+  })
+
+  it('opens the create form from its button and closes it after Create or Escape', async () => {
+    renderApp()
+    await screen.findByText(/No folders yet/)
+    expect(screen.queryByLabelText('New folder')).not.toBeInTheDocument()
+
+    openCreateForm('New folder')
+    expect(screen.getByLabelText('New folder')).toHaveFocus()
+    fireEvent.keyDown(screen.getByLabelText('New folder'), { key: 'Escape' })
+    expect(screen.queryByLabelText('New folder')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'New folder' })).toHaveFocus()
+
+    openCreateForm('New folder')
+    typeInto('New folder', 'IELTS')
+    fireEvent.click(screen.getByRole('button', { name: 'Create' }))
+    await screen.findByRole('link', { name: 'IELTS' })
+    expect(screen.queryByLabelText('New folder')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'New folder' })).toHaveFocus()
   })
 
   it('renames in place, and Escape cancels', async () => {
@@ -367,6 +394,7 @@ describe('unexpected errors', () => {
     vi.spyOn(repository, 'createFolder').mockRejectedValue(new Error('disk on fire'))
     await screen.findByRole('link', { name: 'IELTS' })
 
+    openCreateForm('New folder')
     typeInto('New folder', 'TOEIC')
     fireEvent.click(screen.getByRole('button', { name: 'Create' }))
 
@@ -576,6 +604,7 @@ describe('streak on Home', () => {
     await screen.findByText('Start a streak today')
     const list = vi.spyOn(repository, 'listStudyDays')
 
+    openCreateForm('New folder')
     typeInto('New folder', 'IELTS')
     fireEvent.click(screen.getByRole('button', { name: 'Create' }))
 

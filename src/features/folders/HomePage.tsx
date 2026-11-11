@@ -4,7 +4,7 @@ import { StreakPanel } from '../streak/StreakPanel.tsx'
 import { useStreak } from '../streak/useStreak.ts'
 import { deleteFolderMessage } from '../../shared/deleteMessages.ts'
 import { NamedItemRow } from '../../shared/NamedItemRow.tsx'
-import { NameForm } from '../../shared/NameForm.tsx'
+import { ListHeader } from '../../shared/ListHeader.tsx'
 import { ActionError, LoadError, Loading, RefreshError } from '../../shared/PageStatus.tsx'
 import { useRepository } from '../../shared/repositoryContext.ts'
 import { useAsync } from '../../shared/useAsync.ts'
@@ -31,12 +31,11 @@ export function HomePage() {
 
   return (
     <section>
-      <h1>Your folders</h1>
       <StreakPanel state={streak} />
-      <NameForm
-        label="New folder"
-        submitLabel="Create"
-        onSubmit={(name) => write(() => repository.createFolder({ name }))}
+      <ListHeader
+        title="Your folders"
+        createLabel="New folder"
+        onCreate={(name) => write(() => repository.createFolder({ name }))}
       />
       <ActionError message={actionError} />
       {state.status === 'loading' && <Loading />}
@@ -48,7 +47,7 @@ export function HomePage() {
             No folders yet. Create one to start adding terms, or restore a backup in Settings.
           </p>
         ) : (
-          <ul className="item-list" aria-label="Folders">
+          <ul className="item-grid" aria-label="Folders">
             {state.data.map((folder) => (
               <NamedItemRow
                 key={folder.id}

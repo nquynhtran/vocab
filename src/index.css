@@ -425,46 +425,155 @@ label {
   gap: var(--space-2);
 }
 
-/* ---- Folder and file lists ---- */
+/* ---- Folder and file cards (design.md, step 3) ---- */
 
-.item-list,
+.list-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  /* As tall as the button, so the page does not jump when the button hides for the form. */
+  min-height: var(--tap-size);
+  margin-bottom: var(--space-4);
+}
+
+.list-header h1 {
+  flex: 1;
+  margin: 0;
+}
+
+.list-header__create {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+  padding-left: var(--space-3);
+}
+
+.create-card {
+  margin-bottom: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.create-card .inline-form {
+  margin: 0;
+}
+
 .term-list {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.item {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--color-border);
+.item-grid {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.item .inline-form {
-  flex: 1;
+@media (min-width: 560px) {
+  .item-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+  transition: border-color var(--transition);
+}
+
+@media (hover: hover) {
+  .item:not(.item--editing):hover {
+    border-color: var(--color-primary-soft);
+  }
+}
+
+/* The rename form needs the whole card; on two columns it would be cramped beside a card. */
+.item--editing {
+  display: block;
+  grid-column: 1 / -1;
+  padding: var(--space-4);
+}
+
+.item--editing .inline-form {
   margin: 0;
 }
 
+/* The whole card is the link, so it is easy to hit; only the ⋯ button is carved out of it. */
 .item__link {
   display: flex;
-  flex: 1 1 12rem;
-  flex-direction: column;
-  justify-content: center;
-  min-height: var(--tap-size);
+  flex: 1;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  min-height: 4.5rem;
+  padding: var(--space-3) 0 var(--space-3) var(--space-4);
+  border-radius: var(--radius);
+  color: var(--color-text);
   text-decoration: none;
-  overflow-wrap: anywhere;
+}
+
+.item__icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius);
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+}
+
+.item__body {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
 }
 
 .item__name {
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .item__detail {
   color: var(--color-muted);
   font-size: var(--text-sm);
+}
+
+.item__progress {
+  display: block;
+  width: 100%;
+  height: 4px;
+  margin-top: var(--space-1);
+  border-radius: 2px;
+  background: var(--color-border);
+}
+
+.item__progress-fill {
+  fill: var(--color-primary);
+}
+
+.item .row-menu {
+  flex: none;
+  margin-right: var(--space-2);
+}
+
+/* No box around ⋯ inside a card: the card is the box. */
+.item .icon-button {
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-muted);
 }
 
 .row-menu {

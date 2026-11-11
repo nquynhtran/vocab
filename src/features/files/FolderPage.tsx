@@ -4,7 +4,7 @@ import { masteredPercent } from '../../domain/mastery.ts'
 import type { VocabFile } from '../../domain/schemas.ts'
 import { deleteFileMessage, plural } from '../../shared/deleteMessages.ts'
 import { NamedItemRow } from '../../shared/NamedItemRow.tsx'
-import { NameForm } from '../../shared/NameForm.tsx'
+import { ListHeader } from '../../shared/ListHeader.tsx'
 import {
   ActionError,
   LoadError,
@@ -43,27 +43,28 @@ export function FolderPage() {
       <nav className="breadcrumb" aria-label="Breadcrumb">
         <Link to="/">Home</Link>
       </nav>
-      <h1>{folder.name}</h1>
-      <NameForm
-        label="New file"
-        submitLabel="Create"
-        onSubmit={(name) => write(() => repository.createFile(folder.id, { name }))}
+      <ListHeader
+        title={folder.name}
+        createLabel="New file"
+        onCreate={(name) => write(() => repository.createFile(folder.id, { name }))}
       />
       <ActionError message={actionError} />
       <RefreshError error={state.refreshError} />
       {files.length === 0 ? (
         <p className="muted">No files yet. Create one, then add terms to it.</p>
       ) : (
-        <ul className="item-list" aria-label="Files">
+        <ul className="item-grid" aria-label="Files">
           {files.map((file) => {
             const { termCount, masteredCount } = file
+            const percent = masteredPercent(masteredCount, termCount)
             return (
               <NamedItemRow
                 key={file.id}
                 kind="file"
                 name={file.name}
                 to={`/files/${file.id}`}
-                detail={`${plural(termCount, 'term')} · ${masteredPercent(masteredCount, termCount)}% mastered`}
+                detail={`${plural(termCount, 'term')} · ${percent}% mastered`}
+                progress={percent}
                 onRename={(name) => write(() => repository.renameFile(file.id, { name }))}
                 onDelete={() => handleDelete(file)}
               />
