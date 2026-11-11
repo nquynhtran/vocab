@@ -3,8 +3,8 @@
 > File này được nạp tự động mỗi phiên. Giữ ngắn: chỉ trạng thái hiện tại, checklist và 5 mục nhật ký gần nhất.
 
 ## Đang ở đâu
-- **Giai đoạn:** 6 đang làm: thiết kế lại theo [design.md](docs/design.md) (#86, #87), xong bước 1 (màu sáng/tối, cỡ chữ, icon), 2 (Settings), 3 (Home/Folder dạng thẻ), chưa deploy.
-- **Việc tiếp theo:** chờ người dùng duyệt ảnh bước 3 (Home/Folder dạng thẻ, đã commit, #86). Duyệt xong → bước 4 của design.md#bố-cục-màn-hình (trang File), rồi 5–6, rồi hỏi deploy. Người dùng không có app mẫu, để Claude chọn, muốn "tinh tế", theo chuẩn ngành.
+- **Giai đoạn:** 6 đang làm: thiết kế lại theo [design.md](docs/design.md) (#86, #87), xong bước 1 (màu sáng/tối, cỡ chữ, icon), 2 (Settings), 3 (Home/Folder dạng thẻ, người dùng duyệt), 4 (trang File), chưa deploy.
+- **Việc tiếp theo:** chờ người dùng duyệt ảnh bước 4 (trang File, đã commit). Duyệt xong → bước 5 của design.md#bố-cục-màn-hình (Learn: thanh đầu thu gọn), rồi 6, rồi hỏi deploy. Người dùng không có app mẫu, để Claude chọn, muốn "tinh tế", theo chuẩn ngành.
 - **Đang vướng:** không. geckodriver bản snap không `kill` được từ đây (chặn quyền), dùng cổng khác nếu còn chạy. 🔊 không kêu trong Simple Browser của VS Code. `npm run build` ở máy cần `VITE_SUPABASE_*` (xem cloud-sync.md). iPhone iOS cũ của người dùng tạo folder bị lỗi chưa rõ nguyên nhân (cloud-sync.md#iphone); người dùng sẽ cập nhật máy. Đã thỏa thuận để sau: tách hook khỏi `TermForm`, `saved!` ở `FilePage`, so `updatedAt` phụ thuộc đồng hồ máy. Test tốc độ ở `pronunciation.test.ts` từng đỏ một lần khi máy rất tải (`reviewer`, 1 lõi); nếu CI đỏ đúng test đó thì nới ngưỡng.
 
 ## Kế hoạch
