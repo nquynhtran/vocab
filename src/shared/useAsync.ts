@@ -44,6 +44,10 @@ export function useAsync<T>(load: () => Promise<T>): [AsyncState<T>, () => void]
     }
   }, [load, version])
 
-  const reload = useCallback(() => setVersion((v) => v + 1), [])
+  // After a failed first load, show that it is trying again; loaded data stays on screen.
+  const reload = useCallback(() => {
+    setState((previous) => (previous.status === 'error' ? { status: 'loading' } : previous))
+    setVersion((v) => v + 1)
+  }, [])
   return [state, reload]
 }

@@ -39,7 +39,7 @@ export function FilePage() {
   }
 
   if (state.status === 'loading') return <Loading />
-  if (state.status === 'error') return <LoadError error={state.error} />
+  if (state.status === 'error') return <LoadError error={state.error} onRetry={reload} />
   if (!state.data) return <NotFound message="This file no longer exists." />
   const { file, folder, terms } = state.data
 

@@ -99,7 +99,7 @@ export function AuthGate({ auth, isOutdated, onOutdated, children }: AuthGatePro
     overlay = <Loading />
   } else if (userId === null) {
     overlay = (
-      <section>
+      <AuthCard>
         <h1 id={dialogTitleId}>Sign in</h1>
         <SignInForm
           onSubmit={(input) => auth.signIn(input)}
@@ -109,18 +109,18 @@ export function AuthGate({ auth, isOutdated, onOutdated, children }: AuthGatePro
               : 'You were signed out. Sign in again with the same account to keep what you typed.'
           }
         />
-      </section>
+      </AuthCard>
     )
   } else if (checkError !== undefined) {
     overlay = (
-      <section>
+      <AuthCard>
         <p className="field-error" role="alert">
           {checkError instanceof ConnectionError ? OFFLINE_AT_START : errorMessage(checkError)}
         </p>
-        <button type="button" className="button" onClick={retry}>
+        <button type="button" className="button button--primary" onClick={retry}>
           Retry
         </button>
-      </section>
+      </AuthCard>
     )
   } else if (userId !== checkedUserId) {
     overlay = <Loading />
@@ -149,5 +149,18 @@ export function AuthGate({ auth, isOutdated, onOutdated, children }: AuthGatePro
         </div>
       )}
     </SignOutContext>
+  )
+}
+
+/** The app's mark above what is asked before the app can open (docs/design.md, step 6). */
+function AuthCard({ children }: { children: ReactNode }) {
+  return (
+    <section className="auth-card">
+      <p className="auth-card__brand">
+        <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" width={32} height={32} />
+        Vocab
+      </p>
+      {children}
+    </section>
   )
 }

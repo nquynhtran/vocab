@@ -1,4 +1,5 @@
 import { useCallback } from 'react'
+import { Link } from 'react-router'
 import type { Folder } from '../../domain/schemas.ts'
 import { StreakPanel } from '../streak/StreakPanel.tsx'
 import { useStreak } from '../streak/useStreak.ts'
@@ -36,30 +37,40 @@ export function HomePage() {
         title="Your folders"
         createLabel="New folder"
         onCreate={(name) => write(() => repository.createFolder({ name }))}
+        empty={
+          state.status === 'ready' && state.data.length === 0
+            ? {
+                icon: 'folder',
+                title: 'No folders yet',
+                text: 'Folders group your files, for example by course or topic.',
+                actionLabel: 'Create your first folder',
+                extra: (
+                  <Link to="/settings" className="button button--ghost">
+                    Restore a backup
+                  </Link>
+                ),
+              }
+            : undefined
+        }
       />
       <ActionError message={actionError} />
       {state.status === 'loading' && <Loading />}
-      {state.status === 'error' && <LoadError error={state.error} />}
+      {state.status === 'error' && <LoadError error={state.error} onRetry={reload} />}
       {state.status === 'ready' && <RefreshError error={state.refreshError} />}
-      {state.status === 'ready' &&
-        (state.data.length === 0 ? (
-          <p className="muted">
-            No folders yet. Create one to start adding terms, or restore a backup in Settings.
-          </p>
-        ) : (
-          <ul className="item-grid" aria-label="Folders">
-            {state.data.map((folder) => (
-              <NamedItemRow
-                key={folder.id}
-                kind="folder"
-                name={folder.name}
-                to={`/folders/${folder.id}`}
-                onRename={(name) => write(() => repository.renameFolder(folder.id, { name }))}
-                onDelete={() => handleDelete(folder)}
-              />
-            ))}
-          </ul>
-        ))}
+      {state.status === 'ready' && state.data.length > 0 && (
+        <ul className="item-grid" aria-label="Folders">
+          {state.data.map((folder) => (
+            <NamedItemRow
+              key={folder.id}
+              kind="folder"
+              name={folder.name}
+              to={`/folders/${folder.id}`}
+              onRename={(name) => write(() => repository.renameFolder(folder.id, { name }))}
+              onDelete={() => handleDelete(folder)}
+            />
+          ))}
+        </ul>
+      )}
     </section>
   )
 }

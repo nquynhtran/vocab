@@ -34,7 +34,7 @@ export function FolderPage() {
   }
 
   if (state.status === 'loading') return <Loading />
-  if (state.status === 'error') return <LoadError error={state.error} />
+  if (state.status === 'error') return <LoadError error={state.error} onRetry={reload} />
   if (!state.data) return <NotFound message="This folder no longer exists." />
   const { folder, files } = state.data
 
@@ -47,12 +47,20 @@ export function FolderPage() {
         title={folder.name}
         createLabel="New file"
         onCreate={(name) => write(() => repository.createFile(folder.id, { name }))}
+        empty={
+          files.length === 0
+            ? {
+                icon: 'file',
+                title: 'No files yet',
+                text: 'A file is one list of terms to learn, like a unit of a course.',
+                actionLabel: 'Create your first file',
+              }
+            : undefined
+        }
       />
       <ActionError message={actionError} />
       <RefreshError error={state.refreshError} />
-      {files.length === 0 ? (
-        <p className="muted">No files yet. Create one, then add terms to it.</p>
-      ) : (
+      {files.length > 0 && (
         <ul className="item-grid" aria-label="Files">
           {files.map((file) => {
             const { termCount, masteredCount } = file

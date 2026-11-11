@@ -74,6 +74,66 @@ afterEach(() => {
   window.location.hash = ''
 })
 
+describe('empty and error states (docs/design.md, step 6)', () => {
+  it('an empty Home offers to create the first folder, keeping the header button', async () => {
+    renderApp()
+    expect(await screen.findByRole('heading', { name: 'No folders yet' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Restore a backup' })).toHaveAttribute(
+      'href',
+      '#/settings',
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Create your first folder' }))
+    expect(screen.getByLabelText('New folder')).toHaveFocus()
+    // The form takes the empty state's place.
+    expect(screen.queryByRole('heading', { name: 'No folders yet' })).toBeNull()
+    typeInto('New folder', 'IELTS')
+    fireEvent.click(screen.getByRole('button', { name: 'Create' }))
+
+    expect(await screen.findByRole('link', { name: 'IELTS' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'No folders yet' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'New folder' })).toHaveFocus()
+  })
+
+  it('an empty folder offers to create the first file', async () => {
+    const indexedDB = new IDBFactory()
+    const folder = await openRepository(indexedDB).createFolder({ name: 'IELTS' })
+    renderApp(`/folders/${folder.id}`, indexedDB)
+    expect(await screen.findByRole('heading', { name: 'No files yet' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Create your first file' }))
+    expect(screen.getByLabelText('New file')).toHaveFocus()
+  })
+
+  it('a page that could not load says so, and Try again loads it, showing that it is loading', async () => {
+    const indexedDB = new IDBFactory()
+    const folder = await openRepository(indexedDB).createFolder({ name: 'IELTS' })
+    const repository = openRepository(indexedDB)
+    const real = repository.getFolderContents.bind(repository)
+    let release: () => void = () => {}
+    vi.spyOn(repository, 'getFolderContents')
+      .mockRejectedValueOnce(new ConnectionError())
+      .mockImplementationOnce(async (id) => {
+        await new Promise<void>((resolve) => (release = resolve))
+        return real(id)
+      })
+    window.location.hash = `#/folders/${folder.id}`
+    render(<App repository={repository} lookup={unusedLookup} />)
+
+    const alert = await screen.findByRole('alert')
+    expect(within(alert).getByRole('heading', { name: "Couldn't load this page" })).toBeVisible()
+    // Nothing was written: the generic "may or may not have been saved" would mislead.
+    expect(alert).toHaveTextContent(
+      'Cannot reach the server. Check your connection, then try again.',
+    )
+    fireEvent.click(within(alert).getByRole('button', { name: 'Try again' }))
+    expect(await screen.findByText('Loading…')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).toBeNull()
+
+    release()
+    expect(await screen.findByRole('heading', { name: 'IELTS' })).toBeInTheDocument()
+  })
+})
+
 describe('folder → file → term', () => {
   it('creates everything through the UI and keeps it after a reload', async () => {
     const { unmount, indexedDB } = renderApp()

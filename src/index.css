@@ -1008,6 +1008,74 @@ label {
   padding: var(--space-4);
 }
 
+/* Before the app opens: a centred card, the app's mark on top. */
+.auth-card {
+  display: grid;
+  gap: var(--space-4);
+  max-width: 24rem;
+  margin: var(--space-8) auto 0;
+  padding: var(--space-6);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.auth-card h1 {
+  margin: 0;
+}
+
+.auth-card__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 700;
+  font-size: var(--text-lg);
+}
+
+/* ---- Empty states ---- */
+
+.empty-state {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  padding: var(--space-8) var(--space-4);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.empty-state__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  margin-bottom: var(--space-1);
+  border-radius: 50%;
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+  font-size: var(--text-lg);
+}
+
+.empty-state__title {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.empty-state p {
+  max-width: 28rem;
+}
+
+.empty-state__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
 /* ---- Learn ---- */
 
 .file-header {

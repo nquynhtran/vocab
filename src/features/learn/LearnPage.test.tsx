@@ -405,8 +405,10 @@ describe('Learn', () => {
 
     // The same sentence was on the file page: wait for what only the Learn page has.
     window.location.hash = `#/files/${file.id}/learn`
-    await screen.findByRole('link', { name: 'Back to list' })
-    expect(screen.getByText('Add some terms to start learning.')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'No terms to learn' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('link', { name: 'Add terms' }))
+    expect(await screen.findByRole('navigation', { name: 'Breadcrumb' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Term')).toBeInTheDocument()
   })
 
   it('a missing file shows "no longer exists"', async () => {

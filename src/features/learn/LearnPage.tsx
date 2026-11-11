@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import type { LearnData } from '../../data/repository.ts'
 import { resumeSession } from '../../domain/learn/resume.ts'
+import { EmptyState } from '../../shared/EmptyState.tsx'
 import { LoadError, Loading, NotFound } from '../../shared/PageStatus.tsx'
 import { useRepository } from '../../shared/repositoryContext.ts'
 import { useAsync } from '../../shared/useAsync.ts'
@@ -26,7 +27,7 @@ export function LearnPage() {
 function LearnLoader({ fileId, onReload }: { fileId: string; onReload: () => void }) {
   const repository = useRepository()
   const load = useCallback(() => repository.getLearnData(fileId), [repository, fileId])
-  const [state] = useAsync(load)
+  const [state, reload] = useAsync(load)
 
   if (state.status === 'loading') {
     return (
@@ -38,7 +39,7 @@ function LearnLoader({ fileId, onReload }: { fileId: string; onReload: () => voi
   if (state.status === 'error') {
     return (
       <LearnFrame fileId={fileId}>
-        <LoadError error={state.error} />
+        <LoadError error={state.error} onRetry={reload} />
       </LearnFrame>
     )
   }
@@ -53,10 +54,17 @@ function LearnLoader({ fileId, onReload }: { fileId: string; onReload: () => voi
   if (data.terms.length === 0) {
     return (
       <LearnFrame fileId={fileId} title={data.file.name}>
-        <p>Add some terms to start learning.</p>
-        <p>
-          <Link to={`/files/${fileId}`}>Back to list</Link>
-        </p>
+        <EmptyState
+          icon="file"
+          title="No terms to learn"
+          actions={
+            <Link to={`/files/${fileId}`} className="button button--primary">
+              Add terms
+            </Link>
+          }
+        >
+          Add some terms to this file first.
+        </EmptyState>
       </LearnFrame>
     )
   }
