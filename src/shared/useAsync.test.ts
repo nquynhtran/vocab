@@ -27,6 +27,32 @@ describe('useAsync', () => {
     await waitFor(() => expect(result.current[0]).toEqual({ status: 'error', error }))
   })
 
+  it('reload after a failed load keeps the error until the result; retry shows loading', async () => {
+    const error = new Error('offline')
+    const next = deferred<string>()
+    let calls = 0
+    const load = () => (++calls === 1 ? Promise.reject(error) : next.promise)
+    const { result } = renderHook(() => useAsync(load))
+    await waitFor(() => expect(result.current[0]).toEqual({ status: 'error', error }))
+
+    // useStreak reloads on every window focus: an error must not flash "loading" each time.
+    act(() => result.current[1]())
+    expect(result.current[0]).toEqual({ status: 'error', error })
+
+    act(() => result.current[2]())
+    expect(result.current[0]).toEqual({ status: 'loading' })
+    next.resolve('data')
+    await waitFor(() => expect(result.current[0]).toEqual({ status: 'ready', data: 'data' }))
+  })
+
+  it('retry leaves loaded data on screen', async () => {
+    const load = () => Promise.resolve('data')
+    const { result } = renderHook(() => useAsync(load))
+    await waitFor(() => expect(result.current[0]).toEqual({ status: 'ready', data: 'data' }))
+    act(() => result.current[2]())
+    expect(result.current[0]).toEqual({ status: 'ready', data: 'data' })
+  })
+
   it('keeps the data when a reload fails, so the page and its forms stay', async () => {
     const error = new Error('offline')
     let fail = false

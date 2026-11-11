@@ -12,6 +12,8 @@
 - Viết helper test rối (`Object.create` để ghi đè method) → thêm tham số cho helper.
 
 ## UI
+- Đổi `useAsync.reload` (hook dùng chung) để hiện Loading sau lỗi, chỉ nghĩ tới nút Try again, quên `useStreak` gọi `reload` mỗi lần cửa sổ được focus → ô streak lỗi nhấp nháy → trước khi đổi hành vi một hàm dùng chung, `grep` mọi nơi gọi nó (CLAUDE.md §1); hành vi mới cho một nơi thì thêm hàm riêng.
+
 - Giữ kết quả tra cứu theo input (`{ key, locations }`) rồi dùng lại khi gõ lại đúng input đó → hiện dữ liệu cũ, thiếu bản ghi vừa thêm → bỏ kết quả mỗi khi input đổi; kết quả chỉ hợp lệ cho lần tra sau lần đổi cuối.
 
 - Xóa `value` của ô chọn file sau khi đọc (để chọn lại cùng file vẫn nhận) → ô hiện "No file chosen" cạnh nút Import của file đó → xóa lúc mở hộp chọn (`onClick`), không phải sau khi đọc; sửa góp ý xong thì tự hình dung lại màn hình.

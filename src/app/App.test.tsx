@@ -426,6 +426,72 @@ describe('terms', () => {
   })
 })
 
+describe('create and add forms while saving', () => {
+  it('keeps the add form, and its error, when Escape or Cancel come while saving', async () => {
+    const indexedDB = new IDBFactory()
+    const seed = openRepository(indexedDB)
+    const folder = await seed.createFolder({ name: 'IELTS' })
+    const file = await seed.createFile(folder.id, { name: 'Unit 1' })
+    const repository = openRepository(indexedDB)
+    let fail: (error: Error) => void = () => {}
+    vi.spyOn(repository, 'createTerm').mockImplementationOnce(
+      () => new Promise((_, reject) => (fail = reject)),
+    )
+    window.location.hash = `#/files/${file.id}`
+    render(<App repository={repository} lookup={unusedLookup} />)
+    await screen.findByLabelText('Term')
+
+    typeInto('Term', 'run')
+    typeInto('Meaning', 'chạy')
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled()
+    fireEvent.keyDown(screen.getByLabelText('Term'), { key: 'Escape' })
+    expect(screen.getByLabelText('Term')).toHaveValue('run')
+
+    await act(async () => fail(new ConnectionError()))
+    expect(await screen.findByText(/may or may not have been saved/)).toBeInTheDocument()
+    expect(screen.getByLabelText('Term')).toHaveValue('run')
+  })
+
+  it('a create form ignores Escape while saving', async () => {
+    const { repository } = renderApp()
+    await screen.findByRole('heading', { name: 'No folders yet' })
+    let fail: (error: Error) => void = () => {}
+    vi.spyOn(repository, 'createFolder').mockImplementationOnce(
+      () => new Promise((_, reject) => (fail = reject)),
+    )
+    openCreateForm('New folder')
+    typeInto('New folder', 'IELTS')
+    fireEvent.click(screen.getByRole('button', { name: 'Create' }))
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled()
+    fireEvent.keyDown(screen.getByLabelText('New folder'), { key: 'Escape' })
+    await act(async () => fail(new ConnectionError()))
+    expect(await screen.findByText(/may or may not have been saved/)).toBeInTheDocument()
+  })
+
+  it('does not pull focus back after a slow create if the user moved on', async () => {
+    const indexedDB = new IDBFactory()
+    await openRepository(indexedDB).createFolder({ name: 'Old' })
+    const { repository } = renderApp('/', indexedDB)
+    await screen.findByRole('link', { name: 'Old' })
+    const real = repository.createFolder.bind(repository)
+    let release: () => void = () => {}
+    vi.spyOn(repository, 'createFolder').mockImplementationOnce(async (input) => {
+      await new Promise<void>((resolve) => (release = resolve))
+      return real(input)
+    })
+    openCreateForm('New folder')
+    typeInto('New folder', 'IELTS')
+    fireEvent.click(screen.getByRole('button', { name: 'Create' }))
+
+    const elsewhere = screen.getByRole('button', { name: 'More actions for "Old"' })
+    elsewhere.focus()
+    await act(async () => release())
+    expect(await screen.findByRole('link', { name: 'IELTS' })).toBeInTheDocument()
+    expect(elsewhere).toHaveFocus()
+  })
+})
+
 describe('files', () => {
   it('renames and deletes a file, confirming with its term count', async () => {
     const indexedDB = new IDBFactory()

@@ -16,7 +16,10 @@ export function useRevealedForm(initiallyOpen = false) {
   useEffect(() => {
     if (state !== 'closed' || !returnFocus.current) return
     returnFocus.current = false
-    buttonRef.current?.focus()
+    // Only if focus went down with the form. A slow create may finish after the user moved on,
+    // e.g. to rename another item: pulling focus away from there would lose their place.
+    const active = document.activeElement
+    if (active === null || active === document.body) buttonRef.current?.focus()
   }, [state])
 
   return {

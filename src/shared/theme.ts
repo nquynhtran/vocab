@@ -3,7 +3,8 @@ import { z } from 'zod'
 /**
  * Light/dark choice of this device (docs/design.md#chế-độ-sángtối). `system` follows the device;
  * the other two put `data-theme` on <html>, which the CSS reads. `public/theme.js` does the same
- * before the first paint, so keep the key, the values and the bar colours in step with it.
+ * before the first paint, so keep the key, the values and the bar colours in step with it
+ * (theme.test.ts runs that file and compares).
  */
 export const THEMES = ['system', 'light', 'dark'] as const
 export const ThemeSchema = z.enum(THEMES).catch('system')

@@ -27,7 +27,7 @@ export function LearnPage() {
 function LearnLoader({ fileId, onReload }: { fileId: string; onReload: () => void }) {
   const repository = useRepository()
   const load = useCallback(() => repository.getLearnData(fileId), [repository, fileId])
-  const [state, reload] = useAsync(load)
+  const [state, , retry] = useAsync(load)
 
   if (state.status === 'loading') {
     return (
@@ -39,7 +39,7 @@ function LearnLoader({ fileId, onReload }: { fileId: string; onReload: () => voi
   if (state.status === 'error') {
     return (
       <LearnFrame fileId={fileId}>
-        <LoadError error={state.error} onRetry={reload} />
+        <LoadError error={state.error} onRetry={retry} />
       </LearnFrame>
     )
   }

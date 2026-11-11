@@ -43,7 +43,8 @@ export function NameForm({
   }
 
   function handleKeyDown(event: KeyboardEvent) {
-    if (event.key === 'Escape' && onCancel) onCancel()
+    // Not while saving: the form would be gone before the error (or "may have been saved") shows.
+    if (event.key === 'Escape' && onCancel && !pending) onCancel()
   }
 
   return (
@@ -63,7 +64,7 @@ export function NameForm({
           {submitLabel}
         </button>
         {onCancel && (
-          <button type="button" className="button" onClick={onCancel}>
+          <button type="button" className="button" onClick={onCancel} disabled={pending}>
             Cancel
           </button>
         )}

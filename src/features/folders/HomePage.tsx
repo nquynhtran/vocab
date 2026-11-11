@@ -14,7 +14,7 @@ import { usePageWrites } from '../../shared/usePageWrites.ts'
 export function HomePage() {
   const repository = useRepository()
   const load = useCallback(() => repository.listFolders(), [repository])
-  const [state, reload] = useAsync(load)
+  const [state, reload, retry] = useAsync(load)
   const { write, run, actionError } = usePageWrites(reload)
   // Loaded apart from the folders: a study day that cannot be read must not cost the whole page
   // (decision #73). None of the writes here changes it.
@@ -55,7 +55,7 @@ export function HomePage() {
       />
       <ActionError message={actionError} />
       {state.status === 'loading' && <Loading />}
-      {state.status === 'error' && <LoadError error={state.error} onRetry={reload} />}
+      {state.status === 'error' && <LoadError error={state.error} onRetry={retry} />}
       {state.status === 'ready' && <RefreshError error={state.refreshError} />}
       {state.status === 'ready' && state.data.length > 0 && (
         <ul className="item-grid" aria-label="Folders">

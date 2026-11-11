@@ -7,7 +7,10 @@ export type AsyncState<T> =
   | { status: 'error'; error: unknown }
 
 /**
- * Runs `load` (memoize it with useCallback) and again on `reload()`. The UI never subscribes to
+ * Runs `load` (memoize it with useCallback) and again on `reload()`, or on `retry()` after a
+ * failed first load: that one shows `loading` while it tries, for a Try again button. `reload`
+ * leaves an error on screen until the new result is in, since some callers reload on every window
+ * focus (useStreak) and must not flash a loading state each time. The UI never subscribes to
  * the database (docs/architecture.md), so screens call `reload()` after each write.
  * A result that arrives after `load` changed is dropped, so a slow answer for the previous
  * page never overwrites the current one.
@@ -15,7 +18,9 @@ export type AsyncState<T> =
  * after a write fails offline or with an expired session, the reload fails the same way, and
  * replacing the page would throw away what the user typed in its forms (decision #43).
  */
-export function useAsync<T>(load: () => Promise<T>): [AsyncState<T>, () => void] {
+export function useAsync<T>(
+  load: () => Promise<T>,
+): [AsyncState<T>, reload: () => void, retry: () => void] {
   const [state, setState] = useState<AsyncState<T>>({ status: 'loading' })
   const [loadedFn, setLoadedFn] = useState(() => load)
   const [version, setVersion] = useState(0)
@@ -44,10 +49,10 @@ export function useAsync<T>(load: () => Promise<T>): [AsyncState<T>, () => void]
     }
   }, [load, version])
 
-  // After a failed first load, show that it is trying again; loaded data stays on screen.
-  const reload = useCallback(() => {
+  const reload = useCallback(() => setVersion((v) => v + 1), [])
+  const retry = useCallback(() => {
     setState((previous) => (previous.status === 'error' ? { status: 'loading' } : previous))
     setVersion((v) => v + 1)
   }, [])
-  return [state, reload]
+  return [state, reload, retry]
 }

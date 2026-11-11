@@ -30,7 +30,7 @@ export function FilePage() {
     ])
     return folder && { file, folder, terms }
   }, [repository, fileId])
-  const [state, reload] = useAsync(load)
+  const [state, reload, retry] = useAsync(load)
   const { write, run, actionError } = usePageWrites(reload)
 
   function handleDelete(term: Term) {
@@ -39,7 +39,7 @@ export function FilePage() {
   }
 
   if (state.status === 'loading') return <Loading />
-  if (state.status === 'error') return <LoadError error={state.error} onRetry={reload} />
+  if (state.status === 'error') return <LoadError error={state.error} onRetry={retry} />
   if (!state.data) return <NotFound message="This file no longer exists." />
   const { file, folder, terms } = state.data
 

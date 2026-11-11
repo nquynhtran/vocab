@@ -20,7 +20,7 @@ export function FolderPage() {
   const { folderId = '' } = useParams()
   const repository = useRepository()
   const load = useCallback(() => repository.getFolderContents(folderId), [repository, folderId])
-  const [state, reload] = useAsync(load)
+  const [state, reload, retry] = useAsync(load)
   const { write, run, actionError } = usePageWrites(reload)
 
   function handleDelete(file: VocabFile) {
@@ -34,7 +34,7 @@ export function FolderPage() {
   }
 
   if (state.status === 'loading') return <Loading />
-  if (state.status === 'error') return <LoadError error={state.error} onRetry={reload} />
+  if (state.status === 'error') return <LoadError error={state.error} onRetry={retry} />
   if (!state.data) return <NotFound message="This folder no longer exists." />
   const { folder, files } = state.data
 

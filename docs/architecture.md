@@ -41,7 +41,7 @@ src/
     learn/     #   thuật toán học
     streak/    #   tính chuỗi ngày
   data/        # Repository interface, DexieRepository, SupabaseRepository + mapper, bộ test hợp đồng; Auth, CLIENT_VERSION; tra Wiktionary (3b)
-  features/    # UI theo tính năng: auth/ folders/ files/ terms/ learn/ streak/ backup/
+  features/    # UI theo tính năng: auth/ folders/ files/ terms/ learn/ streak/ backup/ settings/
   shared/      # Component, hook dùng chung; RepositoryContext + useRepository, SignOutContext, PronunciationLookupContext (3b)
   app/         # Router, layout, AuthGate, khởi tạo (main.tsx tạo client Supabase + SupabaseRepository, mở VocabDb bản mới nhất)
 ```

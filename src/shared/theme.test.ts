@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { applyTheme, readTheme, saveTheme, THEME_STORAGE_KEY } from './theme.ts'
+// The real files, as text: the script runs before the app and index.html holds the first colours.
+import indexHtml from '../../index.html?raw'
+import themeScript from '../../public/theme.js?raw'
 
 function addBarColors() {
   document.head.innerHTML =
@@ -53,5 +56,48 @@ describe('theme', () => {
     applyTheme('system')
     expect(document.documentElement.dataset.theme).toBeUndefined()
     expect(barColors()).toStrictEqual(['#ffffff', '#1c1f26'])
+  })
+})
+
+/**
+ * public/theme.js repeats the key, the values and the bar colours of this module (it runs before
+ * the app loads). Running the real file and comparing with applyTheme catches the two drifting.
+ */
+describe('public/theme.js', () => {
+  function headFromIndexHtml() {
+    const parsed = new DOMParser().parseFromString(indexHtml, 'text/html')
+    document.head.innerHTML = [...parsed.querySelectorAll('meta[name="theme-color"]')]
+      .map((meta) => meta.outerHTML)
+      .join('')
+  }
+
+  function runScript() {
+    // Test only: the app never evaluates strings (docs/security.md); this is our own file.
+    new Function(themeScript)()
+  }
+
+  it.each(['light', 'dark'] as const)('applies a stored "%s" exactly like applyTheme', (theme) => {
+    headFromIndexHtml()
+    applyTheme(theme)
+    const expected = { theme: document.documentElement.dataset.theme, bars: barColors() }
+
+    headFromIndexHtml()
+    delete document.documentElement.dataset.theme
+    localStorage.setItem(THEME_STORAGE_KEY, theme)
+    runScript()
+    expect({ theme: document.documentElement.dataset.theme, bars: barColors() }).toEqual(expected)
+  })
+
+  it.each([null, 'system', '{broken'])('leaves the device choice for %s', (stored) => {
+    headFromIndexHtml()
+    applyTheme('system')
+    const expected = barColors()
+
+    headFromIndexHtml()
+    if (stored !== null) localStorage.setItem(THEME_STORAGE_KEY, stored)
+    runScript()
+    expect(document.documentElement.dataset.theme).toBeUndefined()
+    // index.html starts with the same colours applyTheme gives for "system".
+    expect(barColors()).toEqual(expected)
   })
 })
