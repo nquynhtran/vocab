@@ -30,6 +30,11 @@ function chooseFile(file: File) {
   fireEvent.change(screen.getByLabelText('Backup file'), { target: { files: [file] } })
 }
 
+/** Through the header, as a user would. */
+function goHome() {
+  fireEvent.click(screen.getByRole('link', { name: 'Vocab' }))
+}
+
 /** Opens the ⋯ menu of the row named `name` and picks `action` in it. */
 async function chooseFromMenu(name: string, action: string) {
   fireEvent.click(await screen.findByRole('button', { name: `More actions for "${name}"` }))
@@ -441,7 +446,7 @@ describe('backup', () => {
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
 
-    renderApp('/', indexedDB)
+    renderApp('/settings', indexedDB)
     fireEvent.click(await screen.findByRole('button', { name: 'Export JSON' }))
 
     await waitFor(() => expect(click).toHaveBeenCalledOnce())
@@ -529,26 +534,29 @@ describe('streak on Home', () => {
     expect(await screen.findByText('Start a streak today')).toBeInTheDocument()
   })
 
-  it('updates after restoring a backup that holds study days', async () => {
+  it('shows the restored study days back on Home', async () => {
     setToday('2026-11-05')
     const file = await backupWithStudyDay('2026-11-05')
-    const { repository } = renderApp()
+    const { repository } = renderApp('/')
     await screen.findByText('Start a streak today')
-    const list = vi.spyOn(repository, 'listStudyDays')
+    fireEvent.click(screen.getByRole('link', { name: 'Settings' }))
 
     chooseFile(file)
     fireEvent.click(await screen.findByRole('button', { name: 'Restore' }))
+    await screen.findByText(/^Restored 1 folder/)
+    const list = vi.spyOn(repository, 'listStudyDays')
+    goHome()
 
     expect(await screen.findByText('🔥 1-day streak · Best 1')).toBeInTheDocument()
     expect(screen.getByText('Today: 10 answers ✓')).toBeInTheDocument()
     expect(list).toHaveBeenCalledTimes(1)
   })
 
-  it('updates when a restore went through but its answer was lost', async () => {
+  it('shows the study days of a restore that went through but lost its answer', async () => {
     setToday('2026-11-05')
     const file = await backupWithStudyDay('2026-11-05')
-    const { repository } = renderApp()
-    await screen.findByText('Start a streak today')
+    const { repository } = renderApp('/settings')
+    await screen.findByRole('heading', { name: 'Settings' })
     const replaceAll = repository.replaceAll.bind(repository)
     vi.spyOn(repository, 'replaceAll').mockImplementation(async (backup) => {
       await replaceAll(backup)
@@ -557,6 +565,8 @@ describe('streak on Home', () => {
 
     chooseFile(file)
     fireEvent.click(await screen.findByRole('button', { name: 'Restore' }))
+    await screen.findByText(/may or may not have finished/)
+    goHome()
 
     expect(await screen.findByText('🔥 1-day streak · Best 1')).toBeInTheDocument()
   })
@@ -692,15 +702,15 @@ describe('restore from backup', () => {
         day: '2026-11-01',
       })
     }
-    const view = renderApp('/', indexedDB)
-    await screen.findByRole('link', { name: 'Old' })
+    const view = renderApp('/settings', indexedDB)
+    await screen.findByRole('heading', { name: 'Settings' })
     return view
   }
 
   it('restores into an empty account without warnings', async () => {
     const file = asFile(await exportedBackup())
-    renderApp()
-    await screen.findByText(/No folders yet/)
+    renderApp('/settings')
+    await screen.findByRole('heading', { name: 'Settings' })
 
     chooseFile(file)
 
@@ -710,6 +720,7 @@ describe('restore from backup', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Restore' }))
 
     expect(await backupSection().findByText('Restored 1 folder, 1 file and 1 term.')).toBeVisible()
+    goHome()
     fireEvent.click(await screen.findByRole('link', { name: 'IELTS' }))
     expect(await screen.findByText('1 term · 0% mastered')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('link', { name: /Unit 1/ }))
@@ -750,20 +761,22 @@ describe('restore from backup', () => {
     // Only `Date`: IndexedDB and React still need the real timers.
     vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-11-01T12:00:00+07:00') })
     const { repository } = await renderWithCurrentData()
-    expect(await screen.findByText('🔥 1-day streak · Best 1')).toBeInTheDocument()
+    expect(await repository.listStudyDays()).toHaveLength(1)
 
     chooseFile(file)
     await pressButton('Replace all')
 
-    expect(await screen.findByRole('link', { name: 'IELTS' })).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: 'Old' })).not.toBeInTheDocument()
+    await screen.findByText(/^Restored 1 folder/)
     // Focus follows the outcome, not the button that just disappeared.
     expectFocusOn('Restored 1 folder')
-    expect(await screen.findByText('Start a streak today')).toBeInTheDocument()
     expect(
       screen.queryByRole('table', { name: /Replace your current data/ }),
     ).not.toBeInTheDocument()
     expect(await repository.listStudyDays()).toStrictEqual([])
+    goHome()
+    expect(await screen.findByRole('link', { name: 'IELTS' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Old' })).not.toBeInTheDocument()
+    expect(await screen.findByText('Start a streak today')).toBeInTheDocument()
   })
 
   it('writes nothing on Cancel', async () => {
@@ -779,7 +792,7 @@ describe('restore from backup', () => {
     ).not.toBeInTheDocument()
     expect(document.activeElement).toBe(screen.getByLabelText('Backup file'))
     expect(replaceAll).not.toHaveBeenCalled()
-    expect(screen.getByRole('link', { name: 'Old' })).toBeInTheDocument()
+    expect(await repository.listFolders()).toMatchObject([{ name: 'Old' }])
   })
 
   it('downloads the current data it compared, without writing', async () => {
@@ -840,15 +853,16 @@ describe('restore from backup', () => {
     await pressButton('Replace all')
 
     expect(await backupSection().findByRole('alert')).toHaveTextContent(
-      'The restore may or may not have finished. Check your folders above; restoring the same ' +
+      'The restore may or may not have finished. Check your folders on Home; restoring the same ' +
         'file again is safe.',
     )
-    expect(await screen.findByRole('link', { name: 'IELTS' })).toBeInTheDocument()
-    expect(await screen.findByText('Start a streak today')).toBeInTheDocument()
     // The comparison was of data that may have changed since.
     expect(
       screen.queryByRole('table', { name: /Replace your current data/ }),
     ).not.toBeInTheDocument()
+    goHome()
+    expect(await screen.findByRole('link', { name: 'IELTS' })).toBeInTheDocument()
+    expect(await screen.findByText('Start a streak today')).toBeInTheDocument()
   })
 
   it.each([
@@ -865,17 +879,17 @@ describe('restore from backup', () => {
 
     expect(await backupSection().findByRole('alert')).toHaveTextContent(message)
     expectFocusOn(message)
-    expect(screen.getByRole('link', { name: 'Old' })).toBeInTheDocument()
+    expect(await repository.listFolders()).toMatchObject([{ name: 'Old' }])
     await pressButton('Replace all')
-    expect(await screen.findByRole('link', { name: 'IELTS' })).toBeInTheDocument()
+    expect(await screen.findByText(/^Restored 1 folder/)).toBeInTheDocument()
     expect(replaceAll).toHaveBeenCalledTimes(2)
     expect(backupSection().queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it('lists the first problems of an invalid file with where they are', async () => {
     const backup = await exportedBackup()
-    renderApp()
-    await screen.findByText(/No folders yet/)
+    renderApp('/settings')
+    await screen.findByRole('heading', { name: 'Settings' })
     const broken = { ...backup, terms: backup.terms.map((t) => ({ ...t, word: '' })) }
 
     chooseFile(asFile(broken, 'broken.json'))
@@ -888,8 +902,8 @@ describe('restore from backup', () => {
 
   it('refuses a file too big to be a backup without reading it', async () => {
     const file = asFile(await exportedBackup())
-    renderApp()
-    await screen.findByText(/No folders yet/)
+    renderApp('/settings')
+    await screen.findByRole('heading', { name: 'Settings' })
     Object.defineProperty(file, 'size', { value: MAX_BACKUP_FILE_BYTES + 1 })
     const text = vi.spyOn(file, 'text')
 

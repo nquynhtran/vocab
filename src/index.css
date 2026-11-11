@@ -186,8 +186,7 @@ a {
 .app-header {
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
-  padding: env(safe-area-inset-top) max(var(--space-4), env(safe-area-inset-right)) 0
-    max(var(--space-4), env(safe-area-inset-left));
+  padding-top: env(safe-area-inset-top);
 }
 
 .app-header__title {
@@ -279,6 +278,13 @@ label {
   border-color: var(--color-primary);
   background: var(--color-primary);
   color: var(--color-on-primary);
+}
+
+/* For icon buttons on the header: no box until hovered. */
+.button--ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-muted);
 }
 
 .button--danger {
@@ -614,18 +620,75 @@ label {
 
 /* ---- Backup ---- */
 
-.backup {
+/* ---- Settings ---- */
+
+.settings {
   display: grid;
-  gap: var(--space-2);
-  justify-items: start;
-  margin-top: var(--space-8);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--color-border);
+  gap: var(--space-4);
 }
 
-.backup h2 {
+.settings-section {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.settings-section h2 {
   margin: 0;
   font-size: var(--text-lg);
+}
+
+/* Three radios drawn as one segmented control; still radios for keyboard and screen readers. */
+.segmented {
+  display: inline-flex;
+  margin: 0;
+  padding: var(--space-1);
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--color-subtle);
+}
+
+/* The radio sits invisibly over its label; the span after it shows the state (no :has(), which
+   needs iOS 15.4). */
+.segmented__option {
+  position: relative;
+  display: inline-flex;
+  margin: 0;
+  font-weight: 500;
+}
+
+.segmented__option input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.segmented__option span {
+  display: inline-flex;
+  align-items: center;
+  min-height: calc(var(--tap-size) - var(--space-2));
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-sm);
+}
+
+.segmented__option input:checked + span {
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+  color: var(--color-primary);
+}
+
+.segmented__option input:focus-visible + span {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .import-problems {
@@ -737,6 +800,9 @@ label {
   gap: var(--space-2);
   max-width: var(--content-max-width);
   margin: 0 auto;
+  /* Same side padding as .page, so the title lines up with the content under it. */
+  padding: 0 max(var(--space-4), env(safe-area-inset-right)) 0
+    max(var(--space-4), env(safe-area-inset-left));
 }
 
 .sign-in-form {

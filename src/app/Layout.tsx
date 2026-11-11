@@ -1,9 +1,7 @@
 import { Link, Outlet } from 'react-router'
-import { SignOutButton } from '../features/auth/SignOutButton.tsx'
-import { useSignOut } from '../shared/signOutContext.ts'
+import { Icon } from '../shared/Icon.tsx'
 
 export function Layout() {
-  const signOut = useSignOut()
   return (
     <>
       <header className="app-header">
@@ -11,7 +9,9 @@ export function Layout() {
           <Link to="/" className="app-header__title">
             Vocab
           </Link>
-          {signOut && <SignOutButton signOut={signOut} />}
+          <Link to="/settings" className="button icon-button button--ghost" aria-label="Settings">
+            <Icon name="settings" />
+          </Link>
         </div>
       </header>
       <main className="page">

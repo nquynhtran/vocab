@@ -19,7 +19,7 @@ export type StreakState = AsyncState<StreakData>
  * windows side by side, where neither ever becomes hidden. No midnight timer: Home left open and
  * in front across midnight stays stale until the next return, which is accepted (docs/streak.md).
  */
-export function useStreak(): [StreakState, () => void] {
+export function useStreak(): StreakState {
   const repository = useRepository()
   const load = useCallback(async () => {
     try {
@@ -46,5 +46,5 @@ export function useStreak(): [StreakState, () => void] {
     }
   }, [reload])
 
-  return [state, reload]
+  return state
 }

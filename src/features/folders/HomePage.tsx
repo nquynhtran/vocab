@@ -1,6 +1,5 @@
 import { useCallback } from 'react'
 import type { Folder } from '../../domain/schemas.ts'
-import { BackupSection } from '../backup/BackupSection.tsx'
 import { StreakPanel } from '../streak/StreakPanel.tsx'
 import { useStreak } from '../streak/useStreak.ts'
 import { deleteFolderMessage } from '../../shared/deleteMessages.ts'
@@ -17,8 +16,8 @@ export function HomePage() {
   const [state, reload] = useAsync(load)
   const { write, run, actionError } = usePageWrites(reload)
   // Loaded apart from the folders: a study day that cannot be read must not cost the whole page
-  // (decision #73). Only a restore changes it among the writes here.
-  const [streak, reloadStreak] = useStreak()
+  // (decision #73). None of the writes here changes it.
+  const streak = useStreak()
 
   function handleDelete(folder: Folder) {
     void run(async () => {
@@ -46,7 +45,7 @@ export function HomePage() {
       {state.status === 'ready' &&
         (state.data.length === 0 ? (
           <p className="muted">
-            No folders yet. Create one to start adding terms, or restore a backup below.
+            No folders yet. Create one to start adding terms, or restore a backup in Settings.
           </p>
         ) : (
           <ul className="item-list" aria-label="Folders">
@@ -62,12 +61,6 @@ export function HomePage() {
             ))}
           </ul>
         ))}
-      <BackupSection
-        onRestored={() => {
-          reload()
-          reloadStreak()
-        }}
-      />
     </section>
   )
 }

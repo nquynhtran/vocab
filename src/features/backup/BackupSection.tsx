@@ -5,13 +5,11 @@ import { errorMessage } from '../../shared/errorMessage.ts'
 import { backupFileName, downloadBackup } from './backupFile.ts'
 import { RestoreBackup } from './RestoreBackup.tsx'
 
-interface BackupSectionProps {
-  /** Reloads what the page shows after a restore (folders and streak). */
-  onRestored: () => void
-}
-
-/** Always shown at the bottom of Home, whether or not there is data yet (decision #77). */
-export function BackupSection({ onRestored }: BackupSectionProps) {
+/**
+ * On Settings, whether or not there is data yet (#77, #86). Nothing on that page shows stored
+ * data, so a restore reloads nothing; Home loads afresh when opened.
+ */
+export function BackupSection() {
   const repository = useRepository()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string>()
@@ -29,7 +27,7 @@ export function BackupSection({ onRestored }: BackupSectionProps) {
   }
 
   return (
-    <section aria-labelledby="backup-heading" className="backup">
+    <section aria-labelledby="backup-heading" className="settings-section backup">
       <h2 id="backup-heading">Backup</h2>
       <p className="muted">
         Download all folders, files, terms, learning progress and study days as a JSON file.
@@ -38,7 +36,7 @@ export function BackupSection({ onRestored }: BackupSectionProps) {
         Export JSON
       </button>
       <ActionError message={error} />
-      <RestoreBackup onRestored={onRestored} />
+      <RestoreBackup />
     </section>
   )
 }

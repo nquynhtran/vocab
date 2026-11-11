@@ -16,7 +16,7 @@ import { RestoreReview } from './RestoreReview.tsx'
 
 /** A write that may have committed before its answer was lost (docs/backup.md). */
 export const RESTORE_MAYBE_DONE =
-  'The restore may or may not have finished. Check your folders above; restoring the same ' +
+  'The restore may or may not have finished. Check your folders on Home; restoring the same ' +
   'file again is safe.'
 
 export interface Review {
@@ -28,12 +28,7 @@ export interface Review {
   snapshotProblem?: string
 }
 
-interface RestoreBackupProps {
-  /** Reloads what the page shows from stored data (folders and streak). */
-  onRestored: () => void
-}
-
-export function RestoreBackup({ onRestored }: RestoreBackupProps) {
+export function RestoreBackup() {
   const repository = useRepository()
   const inputId = useId()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -109,8 +104,6 @@ export function RestoreBackup({ onRestored }: RestoreBackupProps) {
     } finally {
       setRestoring(false)
       resultRef.current?.focus()
-      // Also on failure: the restore can succeed and only lose its answer.
-      onRestored()
     }
   }
 
