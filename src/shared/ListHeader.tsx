@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
 import { Icon } from './Icon.tsx'
 import { NameForm } from './NameForm.tsx'
+import { useRevealedForm } from './useRevealedForm.ts'
 
 interface ListHeaderProps {
   title: string
@@ -15,49 +15,35 @@ interface ListHeaderProps {
  * creating is rare next to opening what is already there, so the form stays out of the way.
  */
 export function ListHeader({ title, createLabel, onCreate }: ListHeaderProps) {
-  const [open, setOpen] = useState(false)
-  const buttonRef = useRef<HTMLButtonElement>(null)
-  // Only after the form closes, not on the first render: keyboard users land back where they were.
-  const returnFocus = useRef(false)
-
-  useEffect(() => {
-    if (open || !returnFocus.current) return
-    returnFocus.current = false
-    buttonRef.current?.focus()
-  }, [open])
-
-  function close() {
-    returnFocus.current = true
-    setOpen(false)
-  }
+  const { buttonRef, ...form } = useRevealedForm()
 
   return (
     <>
       <div className="list-header">
         <h1>{title}</h1>
-        {!open && (
+        {!form.open && (
           <button
             ref={buttonRef}
             type="button"
             className="button list-header__create"
-            onClick={() => setOpen(true)}
+            onClick={form.show}
           >
             <Icon name="plus" />
             {createLabel}
           </button>
         )}
       </div>
-      {open && (
+      {form.open && (
         <div className="create-card">
           <NameForm
             label={createLabel}
             submitLabel="Create"
-            autoFocus
+            autoFocus={form.autoFocus}
             onSubmit={async (name) => {
               await onCreate(name)
-              close()
+              form.hide()
             }}
-            onCancel={close}
+            onCancel={form.hide}
           />
         </div>
       )}
