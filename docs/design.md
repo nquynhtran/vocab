@@ -45,7 +45,7 @@ Component `shared/Icon.tsx`: SVG viết tay, nét 2 px, `currentColor`, `aria-hi
 - `scrollbar-gutter: stable`: nội dung không xê dịch khi chuyển giữa trang ngắn và trang dài.
 - iPhone mở từ màn hình chính: chừa `env(safe-area-inset-*)` ở hai bên và đáy.
 
-## Bố cục màn hình (kế hoạch #86, làm dần)
+## Bố cục màn hình (#86)
 1. Hệ thống thiết kế (file này).
 2. Màn **Settings** (`#/settings`, icon ⚙ trên thanh đầu): Appearance, Backup (Export + Restore chuyển từ Home), Account (Sign out). Xem [ui.md](ui.md).
 3. Home và Folder dạng thẻ (component dùng chung `shared/NamedItemRow.tsx`, `shared/ListHeader.tsx`):

@@ -5,7 +5,7 @@ import { Icon } from '../../shared/Icon.tsx'
 /**
  * The Learn screen in place of the app layout: a slim header with only a way back to the file,
  * so nothing else (app name, Settings) pulls attention away while learning
- * (docs/design.md#bố-cục-màn-hình-kế-hoạch-86-làm-dần).
+ * (docs/design.md#bố-cục-màn-hình-86).
  */
 export function LearnFrame({
   fileId,

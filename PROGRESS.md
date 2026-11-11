@@ -3,9 +3,9 @@
 > File này được nạp tự động mỗi phiên. Giữ ngắn: chỉ trạng thái hiện tại, checklist và 5 mục nhật ký gần nhất.
 
 ## Đang ở đâu
-- **Giai đoạn:** 6 đang làm: thiết kế lại theo [design.md](docs/design.md) (#86, #87), xong bước 1 (màu sáng/tối, cỡ chữ, icon), 2 (Settings), 3 (Home/Folder dạng thẻ, người dùng duyệt), 4 (trang File), 5 (thanh đầu Learn thu gọn) người dùng đã duyệt; bước 6 (màn trống, lỗi tải + Try again, thẻ đăng nhập) xong, chờ duyệt ảnh; chưa deploy.
-- **Việc tiếp theo:** người dùng duyệt ảnh bước 6 → hỏi deploy (`git push`, 23 commit; không có migration nên không cần `db push`) → người dùng dùng thử → README, dùng thử 1 tuần. Home trống chưa chụp (tài khoản test có dữ liệu mẫu); cùng component với Folder trống. Người dùng để Claude chọn thiết kế, muốn "tinh tế", theo chuẩn ngành.
-- **Đang vướng:** không. geckodriver bản snap không `kill` được từ đây (chặn quyền), dùng cổng khác nếu còn chạy. 🔊 không kêu trong Simple Browser của VS Code. `npm run build` ở máy cần `VITE_SUPABASE_*` (xem cloud-sync.md). iPhone iOS cũ của người dùng tạo folder bị lỗi chưa rõ nguyên nhân (cloud-sync.md#iphone); người dùng sẽ cập nhật máy. Đã thỏa thuận để sau: tách hook khỏi `TermForm`, `saved!` ở `FilePage`, so `updatedAt` phụ thuộc đồng hồ máy. Test tốc độ ở `pronunciation.test.ts` từng đỏ một lần khi máy rất tải (`reviewer`, 1 lõi); nếu CI đỏ đúng test đó thì nới ngưỡng.
+- **Giai đoạn:** 6. Thiết kế lại (#86–#89) xong cả 6 bước, đã soát lại (`reviewer` + bản build có CSP), **đã deploy** (f39d5df, CI xanh, trang thật có bản mới). Đang chờ người dùng dùng thử trên máy tính và iPhone.
+- **Việc tiếp theo:** hỏi người dùng kết quả dùng thử bản mới; có góp ý thì sửa theo. Sau đó: README (chỉ mô tả cái đã có), rồi dùng thử 1 tuần để đóng giai đoạn 6.
+- **Đang vướng:** không. Chụp ảnh: script WebDriver tự viết (không có selenium), geckodriver bản snap không `kill` được từ đây; tối bằng pref `layout.css.prefers-color-scheme.content-override` = 0. Không có `gh`: xem CI qua `api.github.com/repos/nquynhtran/vocab/actions/runs?head_sha=<SHA đầy đủ>`. 🔊 không kêu trong Simple Browser của VS Code. `npm run build` cần `VITE_SUPABASE_*` (giả cũng được). iPhone iOS cũ tạo folder lỗi chưa rõ (cloud-sync.md#iphone). Để sau theo thỏa thuận: tách hook khỏi `TermForm`, `saved!` ở `FilePage`, so `updatedAt` phụ thuộc đồng hồ máy, công cụ tự chặn import sai tầng (hiện kiểm tay, đang đúng). Test tốc độ `pronunciation.test.ts` nếu CI đỏ đúng test đó thì nới ngưỡng.
 
 ## Kế hoạch
 Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn đề nghiêm trọng đã biết, người dùng dùng thử OK. Khi nào gọi agent: xem CLAUDE.md. Thứ tự làm: 0 → 1 → 2 → **7** → 3 → 3b → 4 → 5 → 6.
@@ -32,16 +32,14 @@ Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn 
   - [x] Ví dụ trong Learn theo góp ý: che cả dạng chia có quy tắc (#82), ví dụ đầy đủ ở màn tóm tắt (#83); `reviewer` (4 điểm, đã sửa), chụp màn thật hai cỡ; deploy (CI xanh)
   - [x] Người dùng thử: ổn. Cụm 2 chữ ("take away") vẫn hay mất ví dụ, người dùng cho bỏ qua nếu khó; nguyên nhân có thể là dạng bất quy tắc ("took away") hoặc cụm bị tách ("take it away"), chưa xem dữ liệu thật
   - [x] Gói code (#84, #85): giữ supabase-js; Dexie `import()` sau màn đầu; tách file `react` + `vendor`. Lúc mở app 215 → 186 kB nén, deploy chỉ đổi code app thì tải lại ~25 kB. Deploy 5cbf9b5, người dùng xác nhận trên iPhone
-  - [x] Thiết kế lại, bước 1: biến màu/chữ/khoảng cách, dark mode theo máy, icon SVG, focus, safe area (#87); người dùng duyệt màu ("dễ nhìn")
-  - [x] Bước 2: màn Settings (Appearance lưu trên máy + `public/theme.js`, Backup chuyển từ Home, Account + Sign out) (#86); thử bản build + CSP
-  - [x] Bước 3: Home/Folder dạng thẻ, nút "+ New …" mở form (`ListHeader`, `useRevealedForm`); người dùng duyệt
-  - [x] Bước 4: trang File (Learn nổi bật, "+ Add term", danh sách trong một thẻ, chạm vào từ để nghe qua `ListenWord`); người dùng duyệt
-  - [ ] Bước 5–6 của design.md (Learn → đăng nhập/lỗi/màn trống), chụp ảnh mỗi bước cho người dùng xem; rồi deploy
+  - [x] Thiết kế lại bước 1–4 (#86, #87): màu/chữ/icon + dark mode, Settings, Home/Folder dạng thẻ, trang File; người dùng duyệt từng bước
+  - [x] Bước 5–6 (Learn thu gọn #88, màn trống/lỗi/đăng nhập #89), người dùng duyệt ảnh; soát lại cả đợt, deploy f39d5df
+  - [ ] Người dùng dùng thử bản thiết kế mới (máy tính + iPhone)
   - Còn lại: phím tắt còn lại (nếu cần; 1–4 và Enter đã có, #55); README; dùng thử 1 tuần
 
 ## Nhật ký (5 mục gần nhất, mới nhất trên cùng)
+- 2026-11-11 — Deploy thiết kế mới (23 commit, f39d5df), CI xanh, kiểm tra trang thật. Ghi #88, #89; đổi tiêu đề design.md thành "Bố cục màn hình (#86)".
 - 2026-11-11 — Soát lại cả đợt thiết kế lại theo yêu cầu: `reviewer` (8 điểm, không có lỗi nghiêm trọng, nhận hết) + tự thử bản build có CSP. Sửa: ô streak lỗi nhấp nháy mỗi lần focus (do `useAsync.reload` ở bước 6 → tách `retry`), khóa Cancel/Escape khi đang lưu, không cướp focus, test chạy thật `theme.js`, tách `RevealHeader`, 3 chỗ tài liệu lệch. Mỗi sửa có test đã phá thử. Chưa có công cụ tự chặn import sai tầng (kiểm bằng tay, đang đúng).
 - 2026-11-11 — Bước 6 (#86): `EmptyState` (Home/Folder trống có nút "Create your first …", Learn file trống, NotFound), `LoadError` có Try again (`useAsync.reload` hiện Loading khi thử lại sau lỗi), câu mất mạng riêng cho lỗi đọc, thẻ đăng nhập có icon app. Phá thử test Try again; thử bản build (đường dẫn icon). `reviewer` bỏ qua (giao diện; thay đổi `useAsync` một dòng, có test).
 - 2026-11-11 — Bước 5 (#86): Learn ra ngoài `Layout`, thanh đầu riêng (‹ về File, tên file một dòng, Stop không viền), cao 44 px như trang khác. Sửa test "Back to list" vốn sẽ xanh giả vì tên file giờ ở cả thanh đầu Learn; phá thử test mới. `reviewer` bỏ qua (chỉ giao diện + route). 16 commit chưa push.
 - 2026-11-11 — Thiết kế lại bước 3–4 (#86): Home/Folder dạng thẻ, trang File mới, `ListenWord` dùng chung với Learn; sửa lệch cột tiêu đề bảng từ. `reviewer` bỏ qua (chỉ giao diện); phá thử test mới. Bài học: chạy `npm run check` đủ trước mỗi commit. Chưa push.
-- 2026-11-11 — Thiết kế lại bước 1–2 (#86, #87): docs/design.md, bộ màu sáng/tối đo WCAG AA, icon SVG, màn Settings, Backup rời Home. `reviewer` bỏ qua (CSS + chuyển chỗ, logic khôi phục không đổi; tự soát, phá thử test theme). 4 commit chưa push.
