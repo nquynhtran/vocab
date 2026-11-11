@@ -3,8 +3,8 @@
 > File này được nạp tự động mỗi phiên. Giữ ngắn: chỉ trạng thái hiện tại, checklist và 5 mục nhật ký gần nhất.
 
 ## Đang ở đâu
-- **Giai đoạn:** 6 đang làm: thiết kế lại theo [design.md](docs/design.md) (#86, #87), xong bước 1 (màu sáng/tối, cỡ chữ, icon), 2 (Settings), 3 (Home/Folder dạng thẻ, người dùng duyệt), 4 (trang File), chưa deploy.
-- **Việc tiếp theo:** chờ người dùng duyệt ảnh bước 4 (trang File, đã commit). Duyệt xong → bước 5 của design.md#bố-cục-màn-hình (Learn: thanh đầu thu gọn), rồi 6, rồi hỏi deploy. Người dùng không có app mẫu, để Claude chọn, muốn "tinh tế", theo chuẩn ngành.
+- **Giai đoạn:** 6 đang làm: thiết kế lại theo [design.md](docs/design.md) (#86, #87), xong bước 1 (màu sáng/tối, cỡ chữ, icon), 2 (Settings), 3 (Home/Folder dạng thẻ, người dùng duyệt), 4 (trang File), cả hai người dùng đã duyệt; chưa deploy.
+- **Việc tiếp theo:** bước 5 của design.md#bố-cục-màn-hình: màn Learn (`features/learn/LearnPage.tsx`, `LearnSession.tsx`) thu gọn thanh đầu khi đang học (không Settings), sửa design.md + ui.md cùng lúc; chụp 2 cỡ × sáng/tối rồi gửi người dùng. Sau đó bước 6, rồi hỏi deploy. Người dùng để Claude chọn thiết kế, muốn "tinh tế", theo chuẩn ngành.
 - **Đang vướng:** không. geckodriver bản snap không `kill` được từ đây (chặn quyền), dùng cổng khác nếu còn chạy. 🔊 không kêu trong Simple Browser của VS Code. `npm run build` ở máy cần `VITE_SUPABASE_*` (xem cloud-sync.md). iPhone iOS cũ của người dùng tạo folder bị lỗi chưa rõ nguyên nhân (cloud-sync.md#iphone); người dùng sẽ cập nhật máy. Đã thỏa thuận để sau: tách hook khỏi `TermForm`, `saved!` ở `FilePage`, so `updatedAt` phụ thuộc đồng hồ máy. Test tốc độ ở `pronunciation.test.ts` từng đỏ một lần khi máy rất tải (`reviewer`, 1 lõi); nếu CI đỏ đúng test đó thì nới ngưỡng.
 
 ## Kế hoạch
@@ -34,12 +34,14 @@ Mỗi giai đoạn xong khi: test xanh, CI xanh, đã deploy, không còn vấn 
   - [x] Gói code (#84, #85): giữ supabase-js; Dexie `import()` sau màn đầu; tách file `react` + `vendor`. Lúc mở app 215 → 186 kB nén, deploy chỉ đổi code app thì tải lại ~25 kB. Deploy 5cbf9b5, người dùng xác nhận trên iPhone
   - [x] Thiết kế lại, bước 1: biến màu/chữ/khoảng cách, dark mode theo máy, icon SVG, focus, safe area (#87); người dùng duyệt màu ("dễ nhìn")
   - [x] Bước 2: màn Settings (Appearance lưu trên máy + `public/theme.js`, Backup chuyển từ Home, Account + Sign out) (#86); thử bản build + CSP
-  - [ ] Bước 3–6 của design.md (Home/Folder thẻ → File → Learn → đăng nhập/lỗi/màn trống), chụp ảnh mỗi bước cho người dùng xem; rồi deploy
+  - [x] Bước 3: Home/Folder dạng thẻ, nút "+ New …" mở form (`ListHeader`, `useRevealedForm`); người dùng duyệt
+  - [x] Bước 4: trang File (Learn nổi bật, "+ Add term", danh sách trong một thẻ, chạm vào từ để nghe qua `ListenWord`); người dùng duyệt
+  - [ ] Bước 5–6 của design.md (Learn → đăng nhập/lỗi/màn trống), chụp ảnh mỗi bước cho người dùng xem; rồi deploy
   - Còn lại: phím tắt còn lại (nếu cần; 1–4 và Enter đã có, #55); README; dùng thử 1 tuần
 
 ## Nhật ký (5 mục gần nhất, mới nhất trên cùng)
+- 2026-11-11 — Thiết kế lại bước 3–4 (#86): Home/Folder dạng thẻ, trang File mới, `ListenWord` dùng chung với Learn; sửa lệch cột tiêu đề bảng từ. `reviewer` bỏ qua (chỉ giao diện); phá thử test mới. Bài học: chạy `npm run check` đủ trước mỗi commit. Chưa push.
 - 2026-11-11 — Thiết kế lại bước 1–2 (#86, #87): docs/design.md, bộ màu sáng/tối đo WCAG AA, icon SVG, màn Settings, Backup rời Home. `reviewer` bỏ qua (CSS + chuyển chỗ, logic khôi phục không đổi; tự soát, phá thử test theme). 4 commit chưa push.
 - 2026-11-11 — Gói code: thử tự ghép auth-js + postgrest-js (#84), cân lại thì quay về supabase-js (#85); giữ Dexie tải sau + file `react`/`vendor`. `reviewer`, test:supabase, thử bản build; deploy, người dùng xác nhận trên iPhone.
 - 2026-11-10 — Giai đoạn 6 bắt đầu bằng góp ý về ví dụ trong Learn (#82, #83), `reviewer`, chụp màn thật; đã deploy, người dùng xác nhận ổn.
 - 2026-11-10 — Người dùng xác nhận Export → Restore ổn trên máy tính và iPhone → đóng giai đoạn 5.
-- 2026-11-08 — Sửa gốc lỗi không mã cho mọi request (#81) + giao diện Restore (#80), `reviewer` hai lượt, thử app thật; `statement_timeout` cloud 8 s như local. Người dùng đồng ý → đã deploy.
