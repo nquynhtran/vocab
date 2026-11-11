@@ -24,11 +24,12 @@ export function App({
       <PronunciationLookupContext value={lookup}>
         <HashRouter>
           <Routes>
+            {/* Outside Layout: Learn has its own slim header (docs/design.md, step 5). */}
+            <Route path="files/:fileId/learn" element={<LearnPage />} />
             <Route element={<Layout />}>
               <Route index element={<HomePage />} />
               <Route path="folders/:folderId" element={<FolderPage />} />
               <Route path="files/:fileId" element={<FilePage />} />
-              <Route path="files/:fileId/learn" element={<LearnPage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="*" element={<NotFound message="Page not found." />} />
             </Route>

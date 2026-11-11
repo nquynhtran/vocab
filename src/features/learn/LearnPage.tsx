@@ -5,6 +5,7 @@ import { resumeSession } from '../../domain/learn/resume.ts'
 import { LoadError, Loading, NotFound } from '../../shared/PageStatus.tsx'
 import { useRepository } from '../../shared/repositoryContext.ts'
 import { useAsync } from '../../shared/useAsync.ts'
+import { LearnFrame } from './LearnFrame.tsx'
 import { LearnSession } from './LearnSession.tsx'
 import { clearSavedSession, readSavedSession } from './sessionStore.ts'
 
@@ -27,19 +28,36 @@ function LearnLoader({ fileId, onReload }: { fileId: string; onReload: () => voi
   const load = useCallback(() => repository.getLearnData(fileId), [repository, fileId])
   const [state] = useAsync(load)
 
-  if (state.status === 'loading') return <Loading />
-  if (state.status === 'error') return <LoadError error={state.error} />
-  if (!state.data) return <NotFound message="This file no longer exists." />
+  if (state.status === 'loading') {
+    return (
+      <LearnFrame fileId={fileId}>
+        <Loading />
+      </LearnFrame>
+    )
+  }
+  if (state.status === 'error') {
+    return (
+      <LearnFrame fileId={fileId}>
+        <LoadError error={state.error} />
+      </LearnFrame>
+    )
+  }
+  if (!state.data) {
+    return (
+      <LearnFrame fileId={fileId}>
+        <NotFound message="This file no longer exists." />
+      </LearnFrame>
+    )
+  }
   const { data } = state
   if (data.terms.length === 0) {
     return (
-      <section>
-        <h1>{data.file.name}</h1>
+      <LearnFrame fileId={fileId} title={data.file.name}>
         <p>Add some terms to start learning.</p>
         <p>
           <Link to={`/files/${fileId}`}>Back to list</Link>
         </p>
-      </section>
+      </LearnFrame>
     )
   }
   return <LearnStart data={data} onReload={onReload} />

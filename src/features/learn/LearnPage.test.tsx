@@ -330,7 +330,34 @@ describe('Learn', () => {
     expect(screen.getByText('1 answer: 1 right, 0 wrong.')).toBeInTheDocument()
     expect(screen.queryByRole('list', { name: 'Missed most' })).toBeNull()
     fireEvent.click(screen.getByRole('link', { name: 'Back to list' }))
-    expect(await screen.findByRole('heading', { name: 'Unit 1' })).toBeInTheDocument()
+    // The Learn header also shows the file name: the breadcrumb is only on the File page.
+    expect(await screen.findByRole('navigation', { name: 'Breadcrumb' })).toBeInTheDocument()
+  })
+
+  it('has a slim header: the file name and a way back to the file, no app name or Settings', async () => {
+    const { repository, file } = await setUp(TWO)
+    renderAt(repository, `/files/${file.id}/learn`)
+    await asked()
+    const header = screen.getByRole('banner')
+    expect(within(header).getByRole('heading', { level: 1 })).toHaveTextContent('Unit 1')
+    expect(within(header).getByRole('button', { name: 'Stop' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Settings' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Vocab' })).toBeNull()
+
+    fireEvent.click(within(header).getByRole('link', { name: 'Back to file' }))
+    expect(await screen.findByRole('navigation', { name: 'Breadcrumb' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Settings' })).toBeInTheDocument()
+  })
+
+  it('keeps the way back to the file while loading and when the file is gone', async () => {
+    const { repository } = await setUp([])
+    renderAt(repository, `/files/${MISSING_ID}/learn`)
+    expect(screen.getByRole('link', { name: 'Back to file' })).toHaveAttribute(
+      'href',
+      `#/files/${MISSING_ID}`,
+    )
+    await screen.findByRole('heading', { name: 'This file no longer exists.' })
+    expect(screen.getByRole('link', { name: 'Back to file' })).toBeInTheDocument()
   })
 
   it('lists the most missed terms at the end, each word read aloud on a tap', async () => {

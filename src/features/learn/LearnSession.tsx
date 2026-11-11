@@ -9,6 +9,7 @@ import { PartOfSpeechLabel } from '../../shared/PartOfSpeechLabel.tsx'
 import { useRepository } from '../../shared/repositoryContext.ts'
 import { ChoiceQuestion } from './ChoiceQuestion.tsx'
 import { Feedback } from './Feedback.tsx'
+import { LearnFrame } from './LearnFrame.tsx'
 import {
   continueOn,
   finishPause,
@@ -93,44 +94,48 @@ export function LearnSession({
   const total = session.terms.length
   const { learned, familiar } = progressCounts(session)
   return (
-    <section className="learn">
-      <div className="learn__bar">
-        <h1 className="learn__title">{data.file.name}</h1>
-        {step.kind === 'question' && (
-          <button type="button" className="button" onClick={() => update(stop)}>
+    <LearnFrame
+      fileId={fileId}
+      title={data.file.name}
+      action={
+        step.kind === 'question' && (
+          <button type="button" className="button button--ghost" onClick={() => update(stop)}>
             Stop
           </button>
-        )}
-      </div>
-      <div className="learn__progress">
-        {/*
+        )
+      }
+    >
+      <section className="learn">
+        <div className="learn__progress">
+          {/*
           Two colours, which <progress> cannot draw. SVG widths are attributes, so the strict
           style-src of the CSP never comes into it. The text says the same for screen readers.
         */}
-        <svg className="learn__meter" aria-hidden="true" focusable="false">
-          <rect
-            className="learn__meter-familiar"
-            width={percent(learned + familiar, total)}
-            height="100%"
+          <svg className="learn__meter" aria-hidden="true" focusable="false">
+            <rect
+              className="learn__meter-familiar"
+              width={percent(learned + familiar, total)}
+              height="100%"
+            />
+            <rect className="learn__meter-learned" width={percent(learned, total)} height="100%" />
+          </svg>
+          <span>
+            {learned} learned · {familiar} familiar / {total}
+          </span>
+        </div>
+        {/* A new key per answer resets the written box, also when the same term comes right back. */}
+        <div key={`${session.round}-${session.answers.length}`} className="learn__body">
+          <StepView
+            step={step}
+            session={session}
+            onPick={onPick}
+            update={update}
+            onReload={onReload}
+            fileId={data.file.id}
           />
-          <rect className="learn__meter-learned" width={percent(learned, total)} height="100%" />
-        </svg>
-        <span>
-          {learned} learned · {familiar} familiar / {total}
-        </span>
-      </div>
-      {/* A new key per answer resets the written box, also when the same term comes right back. */}
-      <div key={`${session.round}-${session.answers.length}`} className="learn__body">
-        <StepView
-          step={step}
-          session={session}
-          onPick={onPick}
-          update={update}
-          onReload={onReload}
-          fileId={data.file.id}
-        />
-      </div>
-    </section>
+        </div>
+      </section>
+    </LearnFrame>
   )
 }
 

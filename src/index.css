@@ -1037,17 +1037,28 @@ label {
   gap: var(--space-4);
 }
 
-.learn__bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
+.learn-header {
+  flex-wrap: nowrap;
+  justify-content: flex-start;
 }
 
-.learn__title {
+/* The icon and the word line up with the content edges, not with their 44 px boxes. */
+.learn-header > a:first-child {
+  margin-left: calc(-1 * var(--space-3));
+}
+
+.learn-header > .button:last-child:not(:first-child) {
+  margin-right: calc(-1 * var(--space-4));
+}
+
+.learn-header__title {
+  flex: 1;
+  min-width: 0;
   margin: 0;
   font-size: var(--text-lg);
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .learn__progress {
