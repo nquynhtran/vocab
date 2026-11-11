@@ -48,7 +48,12 @@ Component `shared/Icon.tsx`: SVG viết tay, nét 2 px, `currentColor`, `aria-hi
 ## Bố cục màn hình (kế hoạch #86, làm dần)
 1. Hệ thống thiết kế (file này).
 2. Màn **Settings** (`#/settings`, icon ⚙ trên thanh đầu): Appearance, Backup (Export + Restore chuyển từ Home), Account (Sign out). Xem [ui.md](ui.md).
-3. *(Planned)* Home: ô streak + folder dạng thẻ; tạo mới thu vào nút "+ New folder". Folder: file dạng thẻ có thanh % mastered.
+3. Home và Folder dạng thẻ (component dùng chung `shared/NamedItemRow.tsx`, `shared/ListHeader.tsx`):
+   - Thứ tự Home: ô streak → hàng tiêu đề (`Your folders` + nút "+ New folder") → lưới thẻ. Folder: breadcrumb → hàng tiêu đề (tên folder + "+ New file") → lưới thẻ.
+   - Lưới: 1 cột trên điện thoại, 2 cột từ 560 px. Cả thẻ là link (vùng bấm lớn), nút ⋯ không viền nằm bên phải, đổi tên vẫn sửa ngay trong thẻ. Hover: viền đậm hơn (`primary-soft`), không đổi bóng.
+   - Thẻ folder: ô icon folder nền `primary-bg` + tên. Không hiện số file (`listFolders` không trả, thêm thì phải sửa cả hai repository; YAGNI).
+   - Thẻ file: icon file, tên, `12 terms · 40% mastered`, thanh tiến độ mảnh (rãnh `border` như thanh của Learn, vì `subtle` gần như không thấy ở chế độ tối; phần đã thuộc `primary`), `aria-hidden` vì dòng chữ đã nói đủ.
+   - Nút "+ New …" kiểu nút thường (màu nhấn để dành cho Learn). Bấm → nút ẩn, form hiện trong thẻ ngay dưới hàng tiêu đề, focus sẵn ô nhập; Create xong hoặc Cancel/`Escape` → form đóng, focus trả về nút. Lỗi (tên trùng…) thì form giữ nguyên chữ.
 4. *(Planned)* File: tên, số từ, nút Learn nổi bật → Notes → "+ Add term" (file trống thì mở sẵn; mở rồi giữ mở để nhập liên tục) → danh sách từ, chạm vào từ để nghe.
 5. *(Planned)* Learn: thanh đầu thu gọn khi đang học (không Settings/Sign out).
 6. *(Planned)* Đăng nhập, trang lỗi, màn trống có hướng dẫn kèm nút hành động.
