@@ -24,6 +24,12 @@ async function startEditing(button = 'Add notes') {
   await screen.findByRole('textbox', { name: 'Notes' })
 }
 
+/** An empty file also opens the term form, which has its own Cancel. */
+function notesCancelButton() {
+  const notes = screen.getByText(/^Notes/, { selector: 'summary' }).closest('details')!
+  return within(notes).getByRole('button', { name: 'Cancel' })
+}
+
 function typeNotes(text: string) {
   fireEvent.change(notesBox(), { target: { value: text } })
 }
@@ -90,7 +96,7 @@ describe('file notes', () => {
     fireEvent.keyDown(notesBox(), { key: 'Escape' })
     expect(notesBox()).toHaveValue('Half a reading')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    fireEvent.click(notesCancelButton())
     expect(screen.getByText('No notes yet.')).toBeInTheDocument()
     expect(localStorage.getItem(draftKey(file.id))).toBeNull()
   })
@@ -219,7 +225,7 @@ describe('file notes', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Save' }))
       await screen.findByRole('alert')
 
-      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+      fireEvent.click(notesCancelButton())
 
       expect(
         screen.getByText('From the computer', { selector: '.notes__text' }),
@@ -270,7 +276,7 @@ describe('file notes', () => {
       renderAppAt(`/files/${file.id}`, repository)
       expect(await screen.findByRole('alert')).toHaveTextContent(/changed after you started/)
       expect(notesBox()).toHaveValue('Draft, longer')
-      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+      fireEvent.click(notesCancelButton())
       expect(screen.getByText('Newer', { selector: '.notes__text' })).toBeInTheDocument()
     })
 

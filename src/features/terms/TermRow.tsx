@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Term, TermInput } from '../../domain/schemas.ts'
-import { ListenButton } from '../../shared/ListenButton.tsx'
+import { ListenWord } from '../../shared/ListenWord.tsx'
 import { PartOfSpeechLabel } from '../../shared/PartOfSpeechLabel.tsx'
 import { RowMenu } from '../../shared/RowMenu.tsx'
 import { TermForm } from './TermForm.tsx'
@@ -35,10 +35,9 @@ export function TermRow({ term, onUpdate, onDelete }: TermRowProps) {
   return (
     <li className="term">
       <span className="term__head">
-        <span className="term__word">{term.word}</span>
+        <ListenWord word={term.word} className="term__word" />
         {term.partOfSpeech && <PartOfSpeechLabel partOfSpeech={term.partOfSpeech} />}
         {term.pronunciation && <span className="pronunciation">{term.pronunciation}</span>}
-        <ListenButton text={term.word} />
       </span>
       <span className="term__meaning">{term.meaning}</span>
       <span className="term__example">{term.example}</span>

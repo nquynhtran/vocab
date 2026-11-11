@@ -26,7 +26,7 @@ function typeInto(label: string | RegExp, value: string) {
   fireEvent.change(screen.getByLabelText(label), { target: { value } })
 }
 
-/** "New folder" / "New file": the form is behind a button (design.md, step 3). */
+/** "New folder" / "New file" / "Add term": the form is behind a button (design.md, steps 3–4). */
 function openCreateForm(label: string) {
   fireEvent.click(screen.getByRole('button', { name: label }))
 }
@@ -198,6 +198,32 @@ describe('terms', () => {
     await screen.findByRole('heading', { name: 'Unit 2' })
     return { ...view, unit1, unit2 }
   }
+
+  it('opens the add form on an empty file without focusing it, and keeps it open', async () => {
+    await renderFile()
+    expect(screen.getByLabelText('Term')).not.toHaveFocus()
+    expect(screen.queryByRole('button', { name: 'Add term' })).not.toBeInTheDocument()
+
+    await addTerm('run', 'chạy')
+    expect(screen.getByLabelText('Term')).toHaveFocus()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(screen.queryByLabelText('Term')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add term' })).toHaveFocus()
+  })
+
+  it('keeps the add form behind "Add term" on a file with terms', async () => {
+    const { unit1 } = await renderFile()
+    window.location.hash = `#/files/${unit1.id}`
+    await screen.findByRole('heading', { name: 'Unit 1' })
+    expect(screen.queryByLabelText('Term')).not.toBeInTheDocument()
+
+    openCreateForm('Add term')
+    expect(screen.getByLabelText('Term')).toHaveFocus()
+    fireEvent.keyDown(screen.getByLabelText('Term'), { key: 'Escape' })
+    expect(screen.queryByLabelText('Term')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add term' })).toHaveFocus()
+  })
 
   it('shows field errors from validation', async () => {
     await renderFile()
@@ -421,6 +447,7 @@ describe('cloud failures while writing', () => {
     // The write fails, and so does the reload that follows it.
     vi.spyOn(repository, 'createTerm').mockRejectedValueOnce(makeError())
     vi.spyOn(repository, 'getFile').mockRejectedValueOnce(makeError())
+    openCreateForm('Add term')
     typeInto('Term', 'walk')
     typeInto('Meaning', 'đi bộ')
     fireEvent.click(screen.getByRole('button', { name: 'Add' }))

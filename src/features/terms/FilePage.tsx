@@ -1,7 +1,8 @@
 import { useCallback } from 'react'
 import { Link, useParams } from 'react-router'
-import type { Term, VocabFile } from '../../domain/schemas.ts'
+import type { Term, TermInput, VocabFile } from '../../domain/schemas.ts'
 import { deleteTermMessage, plural } from '../../shared/deleteMessages.ts'
+import { Icon } from '../../shared/Icon.tsx'
 import {
   ActionError,
   LoadError,
@@ -12,6 +13,7 @@ import {
 import { useRepository } from '../../shared/repositoryContext.ts'
 import { useAsync } from '../../shared/useAsync.ts'
 import { usePageWrites } from '../../shared/usePageWrites.ts'
+import { useRevealedForm } from '../../shared/useRevealedForm.ts'
 import { FileNotes } from './FileNotes.tsx'
 import { TermForm } from './TermForm.tsx'
 import { TermRow } from './TermRow.tsx'
@@ -48,11 +50,16 @@ export function FilePage() {
         <span aria-hidden="true"> / </span>
         <Link to={`/folders/${folder.id}`}>{folder.name}</Link>
       </nav>
-      <h1>{file.name}</h1>
-      <div className="file-actions">
-        <p className="muted">{plural(terms.length, 'term')}</p>
+      <div className="file-header">
+        <div className="file-header__title">
+          <h1>{file.name}</h1>
+          <p className="muted">{plural(terms.length, 'term')}</p>
+        </div>
         {terms.length > 0 ? (
-          <Link className="button button--primary" to={`/files/${file.id}/learn`}>
+          <Link
+            className="button button--primary file-header__learn"
+            to={`/files/${file.id}/learn`}
+          >
             Learn
           </Link>
         ) : (
@@ -71,12 +78,57 @@ export function FilePage() {
           return saved!
         }}
       />
-      <TermForm
-        submitLabel="Add"
-        onSubmit={(input) => write(() => repository.createTerm(file.id, input))}
-      />
       <ActionError message={actionError} />
       <RefreshError error={state.refreshError} />
+      <TermsSection
+        key={`terms-${file.id}`}
+        terms={terms}
+        onAdd={(input) => write(() => repository.createTerm(file.id, input))}
+        onUpdate={(term, input) => write(() => repository.updateTerm(term.id, input))}
+        onDelete={handleDelete}
+      />
+    </section>
+  )
+}
+
+interface TermsSectionProps {
+  terms: Term[]
+  onAdd: (input: TermInput) => Promise<void>
+  onUpdate: (term: Term, input: TermInput) => Promise<void>
+  onDelete: (term: Term) => void
+}
+
+/**
+ * "+ Add term" opens the form, which then stays open so terms can be typed one after another. An
+ * empty file has nothing else to do, so its form starts open (design.md, step 4).
+ */
+function TermsSection({ terms, onAdd, onUpdate, onDelete }: TermsSectionProps) {
+  const { buttonRef, ...form } = useRevealedForm(terms.length === 0)
+
+  return (
+    <>
+      <div className="list-header">
+        <h2>Terms</h2>
+        {!form.open && (
+          <button
+            ref={buttonRef}
+            type="button"
+            className="button list-header__create"
+            onClick={form.show}
+          >
+            <Icon name="plus" />
+            Add term
+          </button>
+        )}
+      </div>
+      {form.open && (
+        <TermForm
+          submitLabel="Add"
+          autoFocus={form.autoFocus}
+          onSubmit={onAdd}
+          onCancel={form.hide}
+        />
+      )}
       {terms.length > 0 && (
         <ul className="term-list" aria-label="Terms">
           <li className="term term--header" aria-hidden="true">
@@ -88,12 +140,12 @@ export function FilePage() {
             <TermRow
               key={term.id}
               term={term}
-              onUpdate={(input) => write(() => repository.updateTerm(term.id, input))}
-              onDelete={() => handleDelete(term)}
+              onUpdate={(input) => onUpdate(term, input)}
+              onDelete={() => onDelete(term)}
             />
           ))}
         </ul>
       )}
-    </section>
+    </>
   )
 }

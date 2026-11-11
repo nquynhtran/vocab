@@ -8,8 +8,7 @@ import {
   type TermTally,
 } from '../../domain/learn/summary.ts'
 import { plural } from '../../shared/deleteMessages.ts'
-import { canSpeak, speak } from '../../shared/speech.ts'
-import { Icon } from '../../shared/Icon.tsx'
+import { ListenWord } from '../../shared/ListenWord.tsx'
 
 export function RoundSummary({
   session,
@@ -85,7 +84,7 @@ function TallyList({ label, tallies }: { label: string; tallies: TermTally[] }) 
         {tallies.map(({ term, correct, wrong }) => (
           <li key={term.id} className="tally">
             <span className="tally__term">
-              <TallyWord word={term.word} />
+              <ListenWord word={term.word} className="tally__word" />
               {term.pronunciation && <span className="pronunciation">{term.pronunciation}</span>}
             </span>
             <span className="tally__meaning">{term.meaning}</span>
@@ -98,21 +97,5 @@ function TallyList({ label, tallies }: { label: string; tallies: TermTally[] }) 
         ))}
       </ul>
     </>
-  )
-}
-
-/** The whole word is the button, so a phone user taps the word itself to hear it. */
-function TallyWord({ word }: { word: string }) {
-  if (!canSpeak()) return <span className="tally__word">{word}</span>
-  return (
-    <button
-      type="button"
-      className="tally__word tally__listen"
-      aria-label={`Listen to "${word}"`}
-      onClick={() => speak(word)}
-    >
-      {word}
-      <Icon name="speaker" className="tally__speaker" />
-    </button>
   )
 }
