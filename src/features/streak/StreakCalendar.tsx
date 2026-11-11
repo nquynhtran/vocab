@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { addMonths, monthOfDay, monthTitle, monthWeeks } from '../../domain/streak/calendar.ts'
+import { Icon } from '../../shared/Icon.tsx'
 
 const WEEKDAYS = [
   ['Mon', 'Monday'],
@@ -30,11 +31,11 @@ export function StreakCalendar({ studiedDays, today }: StreakCalendarProps) {
       <div className="calendar__header">
         <button
           type="button"
-          className="button"
+          className="button icon-button"
           aria-label="Previous month"
           onClick={() => setMonthsBack((back) => back + 1)}
         >
-          ‹
+          <Icon name="chevronLeft" />
         </button>
         <span className="calendar__title" aria-live="polite">
           {title}
@@ -42,12 +43,12 @@ export function StreakCalendar({ studiedDays, today }: StreakCalendarProps) {
         {/* aria-disabled, not disabled: a disabled button would drop the keyboard focus on it. */}
         <button
           type="button"
-          className="button"
+          className="button icon-button"
           aria-label="Next month"
           aria-disabled={atCurrentMonth}
           onClick={() => setMonthsBack((back) => Math.max(back - 1, 0))}
         >
-          ›
+          <Icon name="chevronRight" />
         </button>
       </div>
       <table className="calendar" aria-label={title}>

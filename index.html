@@ -6,7 +6,9 @@
     <!-- Home-screen install only, no service worker (docs/decisions.md #36). -->
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <meta name="theme-color" content="#4255ff" />
+    <!-- iPhone status bar follows the light/dark palette (docs/design.md). -->
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1c1f26" media="(prefers-color-scheme: dark)" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vocab</title>
   </head>

@@ -1,4 +1,5 @@
 import { canSpeak, speak } from './speech.ts'
+import { Icon } from './Icon.tsx'
 
 export function ListenButton({ text }: { text: string }) {
   if (!canSpeak()) return null
@@ -10,7 +11,7 @@ export function ListenButton({ text }: { text: string }) {
       title="Listen"
       onClick={() => speak(text)}
     >
-      <span aria-hidden="true">🔊</span>
+      <Icon name="speaker" />
     </button>
   )
 }

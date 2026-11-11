@@ -144,7 +144,7 @@ describe('Learn', () => {
     expect(rows).toHaveLength(7)
     // Each row shows its own example, unmasked, to read again (#83).
     for (const row of rows) {
-      const word = row.querySelector('.tally__word')?.textContent?.replace('🔊', '')
+      const word = row.querySelector('.tally__word')?.textContent
       expect(row.querySelector('.tally__example')).toHaveTextContent(`Say ${word} now.`)
     }
     fireEvent.click(screen.getByRole('button', { name: 'Next round' }))

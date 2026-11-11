@@ -3,7 +3,7 @@ import { ListenButton } from '../../shared/ListenButton.tsx'
 import type { Answered } from './learnFlow.ts'
 
 /**
- * After an answer: the verdict, the right word (with 🔊, safe now that it is no secret) and
+ * After an answer: the verdict, the right word (with its listen button, safe now that it is no secret) and
  * Continue, focused so Enter moves on. "I was right" only for a written answer graded wrong.
  */
 export function Feedback({

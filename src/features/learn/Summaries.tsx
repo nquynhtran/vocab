@@ -9,6 +9,7 @@ import {
 } from '../../domain/learn/summary.ts'
 import { plural } from '../../shared/deleteMessages.ts'
 import { canSpeak, speak } from '../../shared/speech.ts'
+import { Icon } from '../../shared/Icon.tsx'
 
 export function RoundSummary({
   session,
@@ -111,9 +112,7 @@ function TallyWord({ word }: { word: string }) {
       onClick={() => speak(word)}
     >
       {word}
-      <span className="tally__speaker" aria-hidden="true">
-        🔊
-      </span>
+      <Icon name="speaker" className="tally__speaker" />
     </button>
   )
 }

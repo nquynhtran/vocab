@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
+import { Icon } from './Icon.tsx'
 
 export interface RowMenuAction {
   /** Shown in the menu. */
@@ -87,7 +88,7 @@ export function RowMenu({ name, actions }: { name: string; actions: readonly Row
           }
         }}
       >
-        <span aria-hidden="true">⋯</span>
+        <Icon name="more" className="icon--dots" />
       </button>
       {open && (
         <ul
