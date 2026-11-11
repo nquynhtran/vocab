@@ -21,7 +21,7 @@
 ## Đọc dữ liệu và làm mới (#73)
 - `listStudyDays()` ở interface riêng trong `Repository`, Supabase đọc qua RPC `list_study_days()` trả `jsonb`, validate từng dòng bằng `StudyDaySchema` (#35). **Không** dùng select thường: mỗi ngày học thêm một dòng và không xóa được, nên sau khoảng 2,7 năm sẽ chạm giới hạn 1000 dòng (#39), ô streak hỏng hẳn.
 - Hàm tải trả `{ summary, today }`: `today` lấy ngay sau khi có dữ liệu, để số và ngày luôn cùng một thời điểm. Không gọi `new Date()` lúc render.
-- Tải lại khi: vào Home (rời Learn về là có), trang hiện lại (`visibilitychange`), cửa sổ được chọn lại (`focus`, vì hai cửa sổ cạnh nhau không có `visibilitychange`), và sau khi nhập backup. Tạo hay đổi tên folder không tải lại streak.
+- Tải lại khi: vào Home (rời Learn về là có), trang hiện lại (`visibilitychange`), cửa sổ được chọn lại (`focus`, vì hai cửa sổ cạnh nhau không có `visibilitychange`), và khi quay về Home sau khi khôi phục backup (Home mở lại là tải mới, #86). Tạo hay đổi tên folder không tải lại streak.
 - Không đặt hẹn giờ nửa đêm (YAGNI): Home mở liên tục qua nửa đêm thì số cũ tới lần quay lại trang sau. Chấp nhận.
 - Hai trường hợp số cũ khác cũng chấp nhận, vì hiếm và tự đúng lại ở lần quay lại trang sau: đăng nhập lại sau khi hết phiên (app giữ nguyên, không tải lại); về Home đúng lúc câu trả lời vừa rồi đang lưu.
 - Đã thử trên iPhone thật (2026-11-06): quay lại app thì số tự cập nhật.
@@ -41,4 +41,4 @@
 Không đổi bảng hay cột, nên không cần Dexie version mới, `schemaVersion` hay nâng `min_client_version`; client cũ không gọi RPC mới. Thứ tự: `npm run test:supabase` trên đúng commit sẽ deploy → `db push --dry-run` → `db push` → push code. Làm ngược lại thì ô streak báo lỗi tới khi `db push`.
 
 ## Khôi phục backup (#74, đã chốt #76–#77)
-Khôi phục ghi đè cả ngày học theo file; màn so sánh nêu số ngày sẽ mất. Kho còn ngày học mà không có folder vẫn khôi phục được vì Home chỉ còn một mục "Restore from backup". Chi tiết: [backup.md](backup.md).
+Khôi phục ghi đè cả ngày học theo file; màn so sánh nêu số ngày sẽ mất. Kho còn ngày học mà không có folder vẫn khôi phục được vì chỉ còn một mục "Restore from backup" (ở Settings). Chi tiết: [backup.md](backup.md).

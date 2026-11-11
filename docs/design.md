@@ -28,7 +28,7 @@ Chữ trên nền `success`/`danger` đặc dùng `surface` (đạt ở cả hai
 - Mặc định theo máy (`prefers-color-scheme`). Bộ màu tối viết hai lần, đặt sát nhau: trong `@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) }` và trong `:root[data-theme='dark']`. Không dùng `light-dark()`: cần iOS 17.5, iPhone của người dùng có thể cũ hơn (cùng lý do với #59).
 - `color-scheme` khai báo đúng chế độ, để phần trình duyệt tự vẽ (ô chọn file, `<select>`, thanh cuộn) cũng tối theo.
 - Màu thanh trạng thái iPhone: hai thẻ `<meta name="theme-color">` có `media` sáng/tối, không cần JS.
-- *(Planned, bước Settings)* chọn tay System / Light / Dark: lưu `localStorage` của máy (`vocab-theme`), đặt `data-theme` trên `<html>` bằng file `public/theme.js` chạy trong `<head>` trước khi trang hiện, để không chớp trắng. File ngoài chứ không inline vì CSP `script-src 'self'`. Không lưu lên cloud: mỗi máy một sở thích.
+- Chọn tay System / Light / Dark ở Settings: lưu `localStorage` của máy (`vocab-theme`), đặt `data-theme` trên `<html>` bằng file `public/theme.js` chạy trong `<head>` trước khi trang hiện, để không chớp trắng. File ngoài chứ không inline vì CSP `script-src 'self'`. Không lưu lên cloud: mỗi máy một sở thích.
 
 ## Chữ, khoảng cách, hình khối
 - Cỡ chữ 5 mức: `--text-xs` 0.8125rem · `--text-sm` 0.875rem · `--text-md` 1rem · `--text-lg` 1.25rem · `--text-xl` 1.5rem. Ô nhập luôn ≥ 1rem (iOS không phóng to khi focus).
@@ -47,7 +47,7 @@ Component `shared/Icon.tsx`: SVG viết tay, nét 2 px, `currentColor`, `aria-hi
 
 ## Bố cục màn hình (kế hoạch #86, làm dần)
 1. Hệ thống thiết kế (file này).
-2. *(Planned)* Màn **Settings** (`#/settings`, icon ⚙ trên thanh đầu): Appearance, Backup (Export + Restore chuyển từ Home), Account (email, Sign out).
+2. Màn **Settings** (`#/settings`, icon ⚙ trên thanh đầu): Appearance, Backup (Export + Restore chuyển từ Home), Account (Sign out). Xem [ui.md](ui.md).
 3. *(Planned)* Home: ô streak + folder dạng thẻ; tạo mới thu vào nút "+ New folder". Folder: file dạng thẻ có thanh % mastered.
 4. *(Planned)* File: tên, số từ, nút Learn nổi bật → Notes → "+ Add term" (file trống thì mở sẵn; mở rồi giữ mở để nhập liên tục) → danh sách từ, chạm vào từ để nghe.
 5. *(Planned)* Learn: thanh đầu thu gọn khi đang học (không Settings/Sign out).

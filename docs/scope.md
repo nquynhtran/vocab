@@ -34,7 +34,7 @@ Cả hai đổi cấu trúc dữ liệu trong **một lần**: Dexie v5, backup 
 
 ## Luồng người dùng
 ```
-Home (Folder + Streak)
+Home (Folder + Streak)        ⚙ Settings (giao diện, sao lưu, tài khoản)
   └─ Folder "IELTS Environment"
        └─ File "Unit 1" ──► Danh sách từ (thêm/sửa/xóa)
                                ├─ Notes (đầu trang, thu gọn được)

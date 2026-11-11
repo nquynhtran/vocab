@@ -41,6 +41,7 @@
 
 ## Công cụ
 - Đổi cách chia/tải file JS (`import()`, chunk) mà chỉ thử app trên máy chủ dev, nơi không có CSP, `base` hay file đã gộp → thử thêm trên bản `vite build` + `vite preview`.
+- Sửa file bằng script cắt `s[:i] + mới + s[j:]` với `j = s.index(mốc)` mà mốc cũng xuất hiện **trước** `i` → nhân đôi nửa file → mỗi mốc phải `assert s.count(mốc) == 1` và `i < j` trước khi cắt.
 - `a && b; git commit && git push`: `a` hỏng (sed sai dấu phân cách) thì `&&` chỉ bỏ qua tới `;`, commit/push vẫn chạy với nội dung thiếu → lệnh ghi ra ngoài (commit, push, deploy) chạy riêng, sau khi đã thấy bước trước thành công.
 - Ghi lệnh kiểm tra `TZ=...` vào tài liệu mà cấu hình test ghi đè `TZ`, nên lệnh chạy vẫn xanh ở múi giờ cũ → trước khi ghi một lệnh kiểm tra vào tài liệu, chạy đúng lệnh đó và thấy nó đỏ được.
 - Sửa rủi ro đăng xuất nhầm bằng cách chặn đúng một nơi gửi request (ô streak), trong khi nguyên nhân là `expireSession` không phân biệt 401 của phiên nào; mọi request đều gặp → trước khi vá, tìm nơi quyết định gây hại rồi hỏi còn đường nào khác đi tới đó. (lặp lại ×2: giai đoạn 5, lỗi 502 không mã chỉ sửa trong `replaceAll` trong khi `runRequest` dùng chung cho mọi thao tác ghi) Bản sửa gốc lần đầu lại coi mọi lỗi "không thử lại được" là hết phiên (429, trang lỗi proxy) → với thao tác gây hại, liệt kê đúng trường hợp được phép, không loại trừ.
