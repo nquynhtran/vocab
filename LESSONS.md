@@ -10,6 +10,8 @@
 - Test chờ "thấy ô Note" rồi bắn `visibilitychange`, trong khi listener gắn trong `useEffect` chạy sau → CI chậm thì mất sự kiện, test lúc đỏ lúc xanh → chờ đúng điều kiện bước sau cần (`await act(async () => {})` để effect chạy xong), không chờ một dấu hiệu gần giống. (lặp lại ×3: đếm `mounts` ngay khi hộp đăng nhập biến mất; 3b: kiểm ô nháp ngay khi thấy "Unsaved draft restored.", trước khi effect chạy, nên code đồng bộ sai vẫn xanh; khi sửa một test kiểu này, rà luôn mọi test cùng mẫu trong file)
 - Cùng một quy tắc có hai bản (`progressAfter` + SQL `record_answer`) mà nhánh "đúng, không lên hộp" chỉ test ở domain, bộ hợp đồng chỉ kiểm `studyDays` → 3 lỗi SQL vẫn xanh; test "một bậc mỗi ngày" bắt đầu ở hộp 4 nên trần hộp 5 che mất quy tắc → mỗi nhánh của quy tắc có hai bản phải có test trong bộ chạy cho cả hai, so cả bản ghi (`toStrictEqual`), và chọn dữ liệu đầu sao cho không giới hạn nào khác che kết quả.
 - Viết helper test rối (`Object.create` để ghi đè method) → thêm tham số cho helper.
+- Test pgTAP chỉ chạy bằng role postgres (không có header, không role authenticated): thu hồi EXECUTE của hàm dùng trong CHECK làm mọi lần ghi của app lỗi mà suite vẫn xanh → mọi hàm CHECK/trigger chạy với quyền người ghi; kiểm bằng test ở role authenticated và gửi header như app.
+- Test "bản cũ" dựng từ fixture phiên bản hiện tại (`validBackup()` đã có `kind`) rồi đổi số version → test kiểm sai dữ liệu, đỏ/xanh không liên quan đến bước migrate → dựng bản cũ từ hình dạng thật của phiên bản đó (hàm `termV3`).
 
 ## UI
 - Đổi `useAsync.reload` (hook dùng chung) để hiện Loading sau lỗi, chỉ nghĩ tới nút Try again, quên `useStreak` gọi `reload` mỗi lần cửa sổ được focus → ô streak lỗi nhấp nháy → trước khi đổi hành vi một hàm dùng chung, `grep` mọi nơi gọi nó (CLAUDE.md §1); hành vi mới cho một nơi thì thêm hàm riêng.
@@ -40,6 +42,7 @@
 
 - Thêm trường mà không tăng version Dexie vì "dữ liệu cũ vẫn đọc được" → chỉ xét chiều đọc, quên code cũ ở tab khác ghi đè cả bản ghi làm mất trường mới → đổi cấu trúc là tăng version, xét cả chiều đọc lẫn chiều ghi.
 - Test "tab cũ nhận versionchange" khai báo schema v1 thiếu bảng → Dexie tự nâng version nên test xanh cả khi thiếu code → bản giả của phiên bản cũ phải đúng y bản đã phát hành; phá code thử để chắc test đỏ được.
+- Viết trong tài liệu "cơ chế X đã có" (header `x-client-version`, cloud-sync.md) mà code chưa có → ghi cơ chế vào tài liệu chỉ sau khi có code và test; rà lại mọi câu "đã có" trước khi báo xong.
 
 ## Công cụ
 - Đổi cách chia/tải file JS (`import()`, chunk) mà chỉ thử app trên máy chủ dev, nơi không có CSP, `base` hay file đã gộp → thử thêm trên bản `vite build` + `vite preview`.

@@ -7,7 +7,7 @@ Web app học từ vựng cá nhân (một người dùng), chỉ có chế đ�
 |---|-----------|-------|
 | F1 | Folder | Tạo / đổi tên / xóa folder theo chủ đề |
 | F2 | File (bộ từ) | Trong folder tạo / đổi tên / xóa file |
-| F3 | Từ vựng | 4 ô: **Từ vựng**, **Loại từ** (chọn từ danh sách, không bắt buộc), **Nghĩa**, **Ví dụ** (không bắt buộc). Thêm / sửa / xóa bất cứ lúc nào. Từ đã có (ở file khác **hoặc cùng file**) → cảnh báo "Already in *Folder / File*" nhưng vẫn cho thêm (từ nhiều nghĩa là hợp lệ) |
+| F3 | Từ vựng | các ô: **Từ vựng**, **Kiểu** (Word / Collocation, #90), **Loại từ** (chọn một hoặc nhiều từ danh sách, không bắt buộc), **Nghĩa**, **Ví dụ** (không bắt buộc). Thêm / sửa / xóa bất cứ lúc nào. Từ đã có (ở file khác **hoặc cùng file**) → cảnh báo "Already in *Folder / File*" nhưng vẫn cho thêm (từ nhiều nghĩa là hợp lệ) |
 | F4 | Xem danh sách | Bấm vào file → **list** toàn bộ từ (không dùng thẻ lật), từ mới nhất trên cùng. Mỗi file hiện số từ và % đã thuộc. Chạm vào từ để nghe phát âm (#86) (giọng Anh-Anh, giọng đọc có sẵn của trình duyệt) |
 | F5 | Learn | Trắc nghiệm + viết lại, ưu tiên từ hay sai → [learn-algorithm.md](learn-algorithm.md) |
 | F6 | Streak | Ngày đã học, chuỗi ngày liên tiếp, lịch → [streak.md](streak.md) |
@@ -26,6 +26,12 @@ Nhiều người dùng, flashcard, Match, Test, chia sẻ bộ từ, file ghi â
 | F9 | Phiên âm (IPA) | Ô **Pronunciation** không bắt buộc ở form từ, gõ/dán tay được; nút **Look up** tự điền từ Wiktionary (lỗi thì báo nhẹ, không chặn lưu) → [pronunciation-lookup.md](pronunciation-lookup.md). Hiện ở danh sách từ, màn phản hồi Learn và các danh sách tóm tắt sau vòng/phiên (#70), không hiện lúc đang hỏi (lộ đáp án câu viết) |
 
 Cả hai đổi cấu trúc dữ liệu trong **một lần**: Dexie v5, backup `schemaVersion` 3, migration cloud + `min_client_version` 3 ([cloud-sync.md](cloud-sync.md#giai-đoạn-3b-ghi-chú--phiên-âm)). Không làm: định dạng chữ trong ghi chú, ghi chú cho folder hay cho từng từ, tìm kiếm trong ghi chú, tự tra phiên âm khi gõ (chỉ khi bấm nút), tra hàng loạt cho từ cũ. Đã qua `challenger`, chốt #65–#67.
+
+## Đợt 3c: mục collocation và nhiều loại từ (#90)
+| # | Tính năng | Mô tả |
+|---|-----------|-------|
+| F10 | Mục collocation | Mục có **Kiểu** *Collocation* nằm trong bảng từ như mục khác, không vào Learn (không câu hỏi, không đáp án nhiễu, không tính %) → [learn-algorithm.md](learn-algorithm.md#phạm-vi-học-mục-collocation-90). Dùng để ghi cụm từ cần đọc lại |
+| F11 | Nhiều loại từ | **Loại từ** chọn được nhiều giá trị (ví dụ `adj. / n.`) |
 
 ## Có thể làm sau (chưa cam kết)
 - Dán nhanh danh sách từ (mỗi dòng `từ<TAB>nghĩa<TAB>ví dụ`).
