@@ -187,20 +187,19 @@ export function TermForm({
           {duplicates.length > 0 && `Already in ${formatLocations(duplicates)}`}
         </p>
       </div>
-      <div className="field field--check">
-        {/* Same height as a label, so the checkbox lines up with the input beside it. */}
-        <span className="label-spacer" aria-hidden="true">
-          &nbsp;
-        </span>
-        <label className="check-row">
-          <input
-            type="checkbox"
-            checked={kind === 'collocation'}
-            onChange={(event) => setKind(event.target.checked ? 'collocation' : 'word')}
-          />{' '}
-          Collocation (not learned)
-        </label>
-        <FieldError id={`${ids.kind}-error`} message={kindError} />
+      <div className="field">
+        <label htmlFor={ids.meaning}>Meaning</label>
+        <input
+          id={ids.meaning}
+          value={meaning}
+          onChange={(event) => setMeaning(event.target.value)}
+          autoComplete="off"
+          // Usually Vietnamese: an English dictionary would underline every word.
+          spellCheck={false}
+          aria-invalid={meaningError !== undefined}
+          aria-describedby={describedBy(meaningError && `${ids.meaning}-error`)}
+        />
+        <FieldError id={`${ids.meaning}-error`} message={meaningError} />
       </div>
       <div className="field">
         <label htmlFor={ids.partsOfSpeech}>Part of speech</label>
@@ -264,20 +263,6 @@ export function TermForm({
           )}
         </p>
       </div>
-      <div className="field">
-        <label htmlFor={ids.meaning}>Meaning</label>
-        <input
-          id={ids.meaning}
-          value={meaning}
-          onChange={(event) => setMeaning(event.target.value)}
-          autoComplete="off"
-          // Usually Vietnamese: an English dictionary would underline every word.
-          spellCheck={false}
-          aria-invalid={meaningError !== undefined}
-          aria-describedby={describedBy(meaningError && `${ids.meaning}-error`)}
-        />
-        <FieldError id={`${ids.meaning}-error`} message={meaningError} />
-      </div>
       <div className="field field--wide">
         <label htmlFor={ids.example}>Example (optional)</label>
         <input
@@ -293,6 +278,18 @@ export function TermForm({
         <FieldError id={`${ids.example}-error`} message={exampleError} />
       </div>
       <div className="term-form__actions">
+        <div className="term-form__option">
+          <label className="check-row">
+            <input
+              type="checkbox"
+              checked={kind === 'collocation'}
+              onChange={(event) => setKind(event.target.checked ? 'collocation' : 'word')}
+            />{' '}
+            Collocation (not learned)
+          </label>
+          <FieldError id={`${ids.kind}-error`} message={kindError} />
+        </div>
+
         <button type="submit" className="button button--primary" disabled={pending}>
           {submitLabel}
         </button>

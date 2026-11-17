@@ -435,7 +435,15 @@ label {
 
 .term-form__actions {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--space-2);
+}
+
+/* The collocation checkbox sits on the action row, away from the buttons' primary action. */
+.term-form__option {
+  min-height: var(--tap-size);
 }
 
 /* ---- Folder and file cards (design.md, step 3) ---- */
@@ -761,16 +769,6 @@ input[type='checkbox'] {
   cursor: pointer;
 }
 
-/* Takes the height of a label line, so a row without a label lines up with its neighbours. */
-.label-spacer {
-  display: block;
-  margin-bottom: var(--space-1);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  line-height: 1.5;
-  visibility: hidden;
-}
-
 /* Two classes: the wide screens' four columns of .term come later and must not squeeze the form. */
 .term.term--editing {
   grid-template-columns: minmax(0, 1fr);
@@ -817,9 +815,10 @@ input[type='checkbox'] {
     width: var(--tap-size);
   }
 
-  /* Term · part of speech · pronunciation, then meaning · example. */
+  /* Term and meaning side by side (both required), then the optional fields in pairs. The
+     example and the action row take the full width. Narrow screens keep one column. */
   .term-form {
-    grid-template-columns: 1fr 10rem 1fr;
+    grid-template-columns: 1fr 1fr;
     align-items: start;
   }
 
