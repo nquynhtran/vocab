@@ -378,7 +378,7 @@ describe('terms', () => {
 
   it('keeps a collocation in the list, marked not learned, and never offers it in Learn (#90)', async () => {
     const { repository, unit2 } = await renderFile()
-    fireEvent.click(screen.getByRole('radio', { name: 'Collocation (not learned)' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Collocation (not learned)' }))
     await addTerm('take away', 'lấy đi')
 
     expect(screen.getByText('not learned')).toBeInTheDocument()

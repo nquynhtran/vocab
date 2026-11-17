@@ -739,26 +739,56 @@ label {
   font-style: italic;
 }
 
-/* Radio and checkbox groups (Kind, Part of speech): a fieldset with no box, options wrap on
-   narrow screens instead of scrolling sideways. */
-.choice-group {
-  border: 0;
-  margin: 0;
-  padding: 0;
-  min-width: 0;
+/* Checkbox rows (Collocation, Part of speech). A checkbox keeps the tap target of a row. */
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap-size);
+  cursor: pointer;
 }
 
-.choice-group legend {
-  padding: 0;
-  margin-bottom: var(--space-1);
+/* Part of speech is a compact picker: the chosen values show on the summary line, and the
+   checkboxes open below it, so the form stays short when nothing is being changed. */
+.parts-picker summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: var(--tap-size);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-control);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  cursor: pointer;
+  list-style: none;
+}
+
+.parts-picker summary::-webkit-details-marker {
+  display: none;
+}
+
+.parts-picker__label {
   color: var(--color-muted);
   font-size: var(--text-sm);
 }
 
-.choice-group__options {
-  display: flex;
-  flex-wrap: wrap;
+.parts-picker__value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.parts-picker__options {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
   gap: var(--space-1) var(--space-4);
+  margin: var(--space-2) 0 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  min-width: 0;
 }
 
 /* Two classes: the wide screens' four columns of .term come later and must not squeeze the form. */

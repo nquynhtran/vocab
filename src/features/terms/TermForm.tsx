@@ -181,43 +181,32 @@ export function TermForm({
           {duplicates.length > 0 && `Already in ${formatLocations(duplicates)}`}
         </p>
       </div>
-      <fieldset
-        className="field choice-group"
-        aria-describedby={describedBy(kindError && `${ids.kind}-error`)}
-      >
-        <legend>Kind</legend>
-        <div className="choice-group__options">
-          <label>
-            <input
-              type="radio"
-              name={ids.kind}
-              value="word"
-              checked={kind === 'word'}
-              onChange={() => setKind('word')}
-            />{' '}
-            Word
-          </label>
-          <label>
-            <input
-              type="radio"
-              name={ids.kind}
-              value="collocation"
-              checked={kind === 'collocation'}
-              onChange={() => setKind('collocation')}
-            />{' '}
-            Collocation (not learned)
-          </label>
-        </div>
+      <div className="field">
+        <label className="check-row">
+          <input
+            type="checkbox"
+            checked={kind === 'collocation'}
+            onChange={(event) => setKind(event.target.checked ? 'collocation' : 'word')}
+            aria-describedby={describedBy(kindError && `${ids.kind}-error`)}
+          />{' '}
+          Collocation (not learned)
+        </label>
         <FieldError id={`${ids.kind}-error`} message={kindError} />
-      </fieldset>
-      <fieldset
-        className="field choice-group"
-        aria-describedby={describedBy(partsOfSpeechError && `${ids.partsOfSpeech}-error`)}
-      >
-        <legend>Part of speech</legend>
-        <div className="choice-group__options">
+      </div>
+      <details className="field parts-picker">
+        <summary>
+          <span className="parts-picker__label">Part of speech</span>
+          <span className="parts-picker__value">
+            {partsOfSpeech.length > 0 ? partsOfSpeech.join(' / ') : 'None'}
+          </span>
+        </summary>
+        <fieldset
+          className="parts-picker__options"
+          aria-label="Part of speech"
+          aria-describedby={describedBy(partsOfSpeechError && `${ids.partsOfSpeech}-error`)}
+        >
           {PARTS_OF_SPEECH.map((value) => (
-            <label key={value}>
+            <label key={value} className="check-row">
               <input
                 type="checkbox"
                 value={value}
@@ -233,9 +222,9 @@ export function TermForm({
               {value} ({PART_OF_SPEECH_ABBREVIATIONS[value]})
             </label>
           ))}
-        </div>
+        </fieldset>
         <FieldError id={`${ids.partsOfSpeech}-error`} message={partsOfSpeechError} />
-      </fieldset>
+      </details>
       <div className="field">
         <label htmlFor={ids.pronunciation}>Pronunciation (optional)</label>
         <div className="lookup-row">
