@@ -356,24 +356,33 @@ describe('terms', () => {
     expect(await repository.listTerms(unit2.id)).toMatchObject([{ meaning: 'đi bộ' }])
   })
 
-  it('saves optional parts of speech and shows their abbreviations', async () => {
+  it('saves an optional part of speech and shows its abbreviation', async () => {
     const { repository, unit2 } = await renderFile()
-    const phrasalVerb = { name: 'phrasal verb (phr. v.)' }
-    const addGroup = () => screen.getByRole('group', { name: 'Part of speech' })
-    fireEvent.click(within(addGroup()).getByRole('checkbox', phrasalVerb))
+    fireEvent.change(screen.getByLabelText('Part of speech'), { target: { value: 'phrasal verb' } })
     await addTerm('give up', 'từ bỏ')
     expect(screen.getByText('phr. v.')).toHaveAttribute('title', 'phrasal verb')
     // Reset for the next term.
-    expect(within(addGroup()).getByRole('checkbox', phrasalVerb)).not.toBeChecked()
+    expect(screen.getByLabelText('Part of speech')).toHaveValue('')
 
     const editRow = await startEditing('give up')
-    const editGroup = within(editRow.getByRole('group', { name: 'Part of speech' }))
-    expect(editGroup.getByRole('checkbox', phrasalVerb)).toBeChecked()
-    fireEvent.click(editGroup.getByRole('checkbox', phrasalVerb))
+    const select = editRow.getByLabelText('Part of speech')
+    expect(select).toHaveValue('phrasal verb')
+    fireEvent.change(select, { target: { value: '' } })
     fireEvent.click(editRow.getByRole('button', { name: 'Save' }))
 
     await waitFor(() => expect(screen.queryByText('phr. v.')).not.toBeInTheDocument())
     expect((await repository.listTerms(unit2.id))[0]).toMatchObject({ partsOfSpeech: [] })
+  })
+
+  it('saves a combination of parts of speech in list order', async () => {
+    const { repository, unit2 } = await renderFile()
+    fireEvent.change(screen.getByLabelText('Part of speech'), {
+      target: { value: 'adjective / adverb' },
+    })
+    await addTerm('fast', 'nhanh')
+    expect((await repository.listTerms(unit2.id))[0]).toMatchObject({
+      partsOfSpeech: ['adjective', 'adverb'],
+    })
   })
 
   it('keeps a collocation in the list, marked not learned, and never offers it in Learn (#90)', async () => {

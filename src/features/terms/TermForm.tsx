@@ -1,14 +1,9 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { ValidationError } from '../../domain/errors.ts'
-import {
-  PARTS_OF_SPEECH,
-  type PartOfSpeech,
-  type TermInput,
-  type TermKind,
-} from '../../domain/schemas.ts'
+import { type PartOfSpeech, type TermInput, type TermKind } from '../../domain/schemas.ts'
 import { errorMessage } from '../../shared/errorMessage.ts'
 import { FieldError } from '../../shared/FieldError.tsx'
-import { PART_OF_SPEECH_ABBREVIATIONS } from '../../shared/partOfSpeech.ts'
+import { PART_OF_SPEECH_CHOICES, choiceKey, choiceLabel } from '../../shared/partOfSpeech.ts'
 import { usePronunciationLookup } from '../../shared/pronunciationLookupContext.ts'
 import { formatLocations, useDuplicateWarning } from './useDuplicateWarning.ts'
 
@@ -32,6 +27,11 @@ const EMPTY: TermInput = {
   pronunciation: '',
   meaning: '',
   example: '',
+}
+
+/** The stored list for a select value; unknown values (none offered) map to no parts. */
+function choiceParts(value: string): PartOfSpeech[] {
+  return PART_OF_SPEECH_CHOICES.find((parts) => choiceKey(parts) === value)?.slice() ?? []
 }
 
 type LookupStatus = 'idle' | 'looking' | 'not-found' | 'failed'
@@ -143,6 +143,12 @@ export function TermForm({
   const wordError = errorFor('word')
   const kindError = errorFor('kind')
   const partsOfSpeechError = errorFor('partsOfSpeech')
+  // A stored combination outside the list is still shown, so editing it never drops it silently.
+  const partChoices =
+    PART_OF_SPEECH_CHOICES.some((parts) => choiceKey(parts) === choiceKey(partsOfSpeech)) ||
+    partsOfSpeech.length === 0
+      ? PART_OF_SPEECH_CHOICES
+      : [...PART_OF_SPEECH_CHOICES, partsOfSpeech]
   const pronunciationError = errorFor('pronunciation')
   const meaningError = errorFor('meaning')
   const exampleError = errorFor('example')
@@ -181,50 +187,39 @@ export function TermForm({
           {duplicates.length > 0 && `Already in ${formatLocations(duplicates)}`}
         </p>
       </div>
-      <div className="field">
+      <div className="field field--check">
+        {/* Same height as a label, so the checkbox lines up with the input beside it. */}
+        <span className="label-spacer" aria-hidden="true">
+          &nbsp;
+        </span>
         <label className="check-row">
           <input
             type="checkbox"
             checked={kind === 'collocation'}
             onChange={(event) => setKind(event.target.checked ? 'collocation' : 'word')}
-            aria-describedby={describedBy(kindError && `${ids.kind}-error`)}
           />{' '}
           Collocation (not learned)
         </label>
         <FieldError id={`${ids.kind}-error`} message={kindError} />
       </div>
-      <details className="field parts-picker">
-        <summary>
-          <span className="parts-picker__label">Part of speech</span>
-          <span className="parts-picker__value">
-            {partsOfSpeech.length > 0 ? partsOfSpeech.join(' / ') : 'None'}
-          </span>
-        </summary>
-        <fieldset
-          className="parts-picker__options"
-          aria-label="Part of speech"
+      <div className="field">
+        <label htmlFor={ids.partsOfSpeech}>Part of speech</label>
+        <select
+          id={ids.partsOfSpeech}
+          value={choiceKey(partsOfSpeech)}
+          onChange={(event) => setPartsOfSpeech(choiceParts(event.target.value))}
+          aria-invalid={partsOfSpeechError !== undefined}
           aria-describedby={describedBy(partsOfSpeechError && `${ids.partsOfSpeech}-error`)}
         >
-          {PARTS_OF_SPEECH.map((value) => (
-            <label key={value} className="check-row">
-              <input
-                type="checkbox"
-                value={value}
-                checked={partsOfSpeech.includes(value)}
-                onChange={(event) =>
-                  setPartsOfSpeech((current) =>
-                    event.target.checked
-                      ? [...current, value]
-                      : current.filter((part) => part !== value),
-                  )
-                }
-              />{' '}
-              {value} ({PART_OF_SPEECH_ABBREVIATIONS[value]})
-            </label>
+          <option value="">—</option>
+          {partChoices.map((parts) => (
+            <option key={choiceKey(parts)} value={choiceKey(parts)}>
+              {choiceLabel(parts)}
+            </option>
           ))}
-        </fieldset>
+        </select>
         <FieldError id={`${ids.partsOfSpeech}-error`} message={partsOfSpeechError} />
-      </details>
+      </div>
       <div className="field">
         <label htmlFor={ids.pronunciation}>Pronunciation (optional)</label>
         <div className="lookup-row">
