@@ -4,6 +4,7 @@ import {
   DataAlreadyExistsError,
   DuplicateNameError,
   EntityNotFoundError,
+  NotLearnableError,
   ValidationError,
 } from '../domain/errors.ts'
 import {
@@ -14,6 +15,7 @@ import {
   TermProgressSchema,
   TermSchema,
   VocabFileSchema,
+  type PartOfSpeech,
   type StudyDay,
   type TermInput,
   type TermProgress,
@@ -377,9 +379,9 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
       expect(await repo.getFolderContents(folder.id)).toStrictEqual({
         folder,
         files: [
-          { ...file, termCount: 3, masteredCount: 1 },
-          { ...unit2, termCount: 0, masteredCount: 0 },
-          { ...empty, termCount: 0, masteredCount: 0 },
+          { ...file, termCount: 3, learnableCount: 3, masteredCount: 1 },
+          { ...unit2, termCount: 0, learnableCount: 0, masteredCount: 0 },
+          { ...empty, termCount: 0, learnableCount: 0, masteredCount: 0 },
         ],
       })
     })
@@ -411,20 +413,32 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
       expect(await repo.listTerms(file.id)).toStrictEqual([walk, term])
     })
 
-    it('stores every part of speech, and omits an empty one', async () => {
+    it('stores each part of speech as a list in list order, and an empty list when unset', async () => {
       const { repo } = await setup()
       const { file, term } = await seedTerm(repo)
       const created = []
-      for (const partOfSpeech of PARTS_OF_SPEECH) {
+      for (const part of PARTS_OF_SPEECH) {
         created.push(
-          await repo.createTerm(file.id, { word: partOfSpeech, meaning: 'x', partOfSpeech }),
+          await repo.createTerm(file.id, { word: part, meaning: 'x', partsOfSpeech: [part] }),
         )
       }
-      const unset = await repo.createTerm(file.id, { word: 'jog', meaning: 'x', partOfSpeech: '' })
+      const unset = await repo.createTerm(file.id, { word: 'jog', meaning: 'x' })
+      // Given out of order, stored in the order of PARTS_OF_SPEECH: equal sets are equal arrays.
+      const both = await repo.createTerm(file.id, {
+        word: 'present',
+        meaning: 'hiện tại',
+        partsOfSpeech: ['adjective', 'noun'],
+      })
 
-      expect(created.map((t) => t.partOfSpeech)).toEqual(PARTS_OF_SPEECH)
-      expect(unset).not.toHaveProperty('partOfSpeech')
-      expect(await repo.listTerms(file.id)).toStrictEqual([unset, ...created.toReversed(), term])
+      expect(created.map((t) => t.partsOfSpeech)).toEqual(PARTS_OF_SPEECH.map((part) => [part]))
+      expect(unset.partsOfSpeech).toEqual([])
+      expect(both.partsOfSpeech).toEqual(['noun', 'adjective'])
+      expect(await repo.listTerms(file.id)).toStrictEqual([
+        both,
+        unset,
+        ...created.toReversed(),
+        term,
+      ])
     })
 
     it('stores a pronunciation as typed, and omits a blank one', async () => {
@@ -467,7 +481,9 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
       const invalid: TermInput[] = [
         { word: ' ', meaning: 'x' },
         { word: 'x', meaning: 'x', example: 'e'.repeat(501) },
-        { word: 'x', meaning: 'x', partOfSpeech: 'verbs' as TermInput['partOfSpeech'] },
+        { word: 'x', meaning: 'x', partsOfSpeech: ['verbs' as PartOfSpeech] },
+        { word: 'x', meaning: 'x', partsOfSpeech: ['noun', 'noun'] },
+        { word: 'x', meaning: 'x', kind: 'idiom' as TermInput['kind'] },
       ]
       for (const input of invalid) {
         await expect(repo.createTerm(file.id, input)).rejects.toBeInstanceOf(ValidationError)
@@ -489,12 +505,12 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
       const term = await repo.updateTerm(seeded.id, {
         word: 'run',
         meaning: 'chạy',
-        partOfSpeech: 'verb',
+        partsOfSpeech: ['verb'],
         pronunciation: '/rʌn/',
         example: 'I run.',
       })
       expect(term).toMatchObject({
-        partOfSpeech: 'verb',
+        partsOfSpeech: ['verb'],
         pronunciation: '/rʌn/',
         example: 'I run.',
       })
@@ -507,6 +523,8 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
         id: term.id,
         fileId: file.id,
         word: 'Run',
+        kind: 'word',
+        partsOfSpeech: [],
         meaning: 'chạy bộ',
         createdAt: term.createdAt,
         updatedAt: '2026-10-22T08:00:04.000Z',
@@ -612,6 +630,85 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
       const { term } = await seedTerm(repo)
       expect(await repo.findTermsByWord('run', term.id)).toEqual([])
       expect(await repo.findTermsByWord('   ')).toEqual([])
+    })
+  })
+
+  describe('collocations and several parts of speech (#90)', () => {
+    const answer = (termId: string): AnswerRecord => ({
+      termId,
+      correct: true,
+      promote: false,
+      answeredAt: '2026-10-25T09:00:00.123Z',
+      day: '2026-10-25',
+    })
+
+    it('keeps a collocation in the list, but out of Learn, its distractors and the mastery counts', async () => {
+      const { repo, addProgress } = await setup()
+      const { folder, file, term } = await seedTerm(repo)
+      const phrase = await repo.createTerm(file.id, {
+        word: 'take away',
+        meaning: 'lấy đi',
+        kind: 'collocation',
+      })
+      const unit2 = await repo.createFile(folder.id, { name: 'Unit 2' })
+      const elsewhere = await repo.createTerm(unit2.id, {
+        word: 'phrase elsewhere',
+        meaning: 'cụm khác',
+        kind: 'collocation',
+      })
+      // Progress left on a collocation (its kind was changed) must not count anywhere.
+      await addProgress([
+        { termId: phrase.id, box: 5, correctCount: 3, wrongCount: 0 },
+        { termId: elsewhere.id, box: 5, correctCount: 3, wrongCount: 0 },
+      ])
+
+      expect((await repo.listTerms(file.id)).map((t) => t.id)).toContain(phrase.id)
+      const learn = await repo.getLearnData(file.id)
+      expect(learn?.terms.map((t) => t.id)).toEqual([term.id])
+      expect(learn?.progress.map((p) => p.termId)).not.toContain(phrase.id)
+      expect(learn?.distractors.map((d) => d.word)).not.toContain('phrase elsewhere')
+
+      const contents = await repo.getFolderContents(folder.id)
+      expect(contents?.files.find((f) => f.id === file.id)).toMatchObject({
+        termCount: 2,
+        learnableCount: 1,
+        masteredCount: 0,
+      })
+    })
+
+    it('refuses an answer for a collocation and writes neither progress nor a study day', async () => {
+      const { repo } = await setup()
+      const { file } = await seedTerm(repo)
+      const phrase = await repo.createTerm(file.id, {
+        word: 'take away',
+        meaning: 'lấy đi',
+        kind: 'collocation',
+      })
+
+      await expect(repo.recordAnswer(answer(phrase.id))).rejects.toBeInstanceOf(NotLearnableError)
+      const backup = await repo.exportBackup()
+      expect(backup.progress).toEqual([])
+      expect(backup.studyDays).toEqual([])
+    })
+
+    it('keeps progress when a term changes kind, and counts it again when it is a word', async () => {
+      const { repo, addProgress } = await setup()
+      const { file, term } = await seedTerm(repo)
+      await addProgress([{ termId: term.id, box: 4, correctCount: 2, wrongCount: 0 }])
+
+      await repo.updateTerm(term.id, { word: 'run', meaning: 'chạy', kind: 'collocation' })
+      expect((await repo.getLearnData(file.id))?.terms).toEqual([])
+      await repo.updateTerm(term.id, { word: 'run', meaning: 'chạy', kind: 'word' })
+
+      const learn = await repo.getLearnData(file.id)
+      expect(learn?.progress).toEqual([{ termId: term.id, box: 4, correctCount: 2, wrongCount: 0 }])
+    })
+
+    it('stores a word by default', async () => {
+      const { repo } = await setup()
+      const { file } = await seedTerm(repo)
+      const plain = await repo.createTerm(file.id, { word: 'walk', meaning: 'đi bộ' })
+      expect(plain.kind).toBe('word')
     })
   })
 
@@ -914,7 +1011,7 @@ export function describeRepositoryContract(createHarness: CreateHarness): void {
       const backup = await repo.exportBackup()
 
       expect(backup).toStrictEqual({
-        schemaVersion: 3,
+        schemaVersion: 4,
         exportedAt: '2026-10-22T08:00:04.000Z',
         folders: [folder],
         files: [file],
@@ -1117,7 +1214,7 @@ const byDate = (a: StudyDay, b: StudyDay) => (a.date < b.date ? -1 : 1)
 function sampleBackup(): Backup {
   const at = '2026-10-01T07:30:00.250Z'
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     exportedAt: '2026-10-20T00:00:00.000Z',
     folders: [{ id: testId(101), name: 'IELTS', createdAt: at, updatedAt: at }],
     files: [
@@ -1136,7 +1233,8 @@ function sampleBackup(): Backup {
         id: testId(301),
         fileId: testId(201),
         word: 'Run',
-        partOfSpeech: PARTS_OF_SPEECH[0],
+        kind: 'word',
+        partsOfSpeech: [PARTS_OF_SPEECH[0]],
         pronunciation: '/rʌn/',
         meaning: 'chạy',
         example: 'I run.',
@@ -1147,6 +1245,8 @@ function sampleBackup(): Backup {
         id: testId(302),
         fileId: testId(201),
         word: 'walk',
+        kind: 'word',
+        partsOfSpeech: [],
         meaning: 'đi bộ',
         createdAt: at,
         updatedAt: at,

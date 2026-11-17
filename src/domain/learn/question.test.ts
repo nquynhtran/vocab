@@ -7,7 +7,8 @@ const run: Term = {
   id: '00000000-0000-4000-8000-000000000001',
   fileId: '00000000-0000-4000-8000-000000000099',
   word: 'run',
-  partOfSpeech: 'verb',
+  kind: 'word',
+  partsOfSpeech: ['verb'],
   meaning: 'chạy',
   example: 'I run every day.',
   createdAt: '2026-10-01T00:00:00.000Z',
@@ -24,13 +25,13 @@ const others = [
 ]
 
 describe('buildQuestion', () => {
-  it('asks multiple choice at level 0, with the part of speech and example (#61, #57)', () => {
+  it('asks multiple choice at level 0, with the parts of speech and example (#61, #57)', () => {
     const question = buildQuestion(at(0), [run, ...others], [], Math.random)
     expect(question).toMatchObject({
       kind: 'choice',
       termId: run.id,
       meaning: 'chạy',
-      partOfSpeech: 'verb',
+      partsOfSpeech: ['verb'],
       example: 'I ____ every day.',
       word: 'run',
     })
@@ -56,7 +57,7 @@ describe('buildQuestion', () => {
       kind: 'written',
       termId: run.id,
       meaning: 'chạy',
-      partOfSpeech: 'verb',
+      partsOfSpeech: ['verb'],
       word: 'run',
       example: 'I ____ every day.',
     })
@@ -74,9 +75,9 @@ describe('buildQuestion', () => {
   })
 
   it('leaves the part of speech out when the term has none', () => {
-    const { partOfSpeech: _, ...plain } = run
+    const plain = { ...run, partsOfSpeech: [] }
     const question = buildQuestion({ ...at(1), term: plain }, [], [], Math.random)
-    expect(question).not.toHaveProperty('partOfSpeech')
+    expect(question).not.toHaveProperty('partsOfSpeech')
   })
 
   it('asks written at level 0 when no distractor is usable', () => {

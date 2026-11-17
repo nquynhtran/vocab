@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { CLIENT_VERSION, CLIENT_VERSION_HEADER } from './clientVersion.ts'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import {
   AuthenticationError,
@@ -47,7 +48,7 @@ const folderRow = {
 }
 
 const EMPTY_BACKUP: Backup = {
-  schemaVersion: 3,
+  schemaVersion: 4,
   exportedAt: '2026-10-22T08:00:00.000Z',
   folders: [],
   files: [],
@@ -250,11 +251,19 @@ describe('SupabaseRepository errors', () => {
 /** Local Supabase CLI defaults (`npx supabase status`): public values, not secrets. */
 const LOCAL_URL = 'http://127.0.0.1:54321'
 const LOCAL_PUBLISHABLE_KEY = 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH'
+
+/** Every client of these tests sends the build number, as the app's client does (#90). */
+function localClient() {
+  return createClient(LOCAL_URL, LOCAL_PUBLISHABLE_KEY, {
+    auth: NO_SESSION,
+    global: { headers: { [CLIENT_VERSION_HEADER]: String(CLIENT_VERSION) } },
+  })
+}
 /** Created by supabase/seed.sql, since sign-up is disabled. */
 const TEST_USER = { email: 'contract@test.local', password: 'contract-test-password' }
 
 describe.runIf(import.meta.env.VOCAB_SUPABASE_TESTS === '1')('on local Supabase', () => {
-  const client = createClient(LOCAL_URL, LOCAL_PUBLISHABLE_KEY, { auth: NO_SESSION })
+  const client = localClient()
 
   beforeAll(async () => {
     const { error } = await client.auth.signInWithPassword(TEST_USER)
@@ -293,7 +302,7 @@ describe.runIf(import.meta.env.VOCAB_SUPABASE_TESTS === '1')('on local Supabase'
     })
 
     it('signs in with SupabaseAuth and tells wrong credentials apart', async () => {
-      const own = createClient(LOCAL_URL, LOCAL_PUBLISHABLE_KEY, { auth: NO_SESSION })
+      const own = localClient()
       const auth = new SupabaseAuth(own)
       await expect(auth.signIn({ ...TEST_USER, password: 'wrong' })).rejects.toThrow(
         new AuthenticationError('Wrong email or password.'),
@@ -308,7 +317,7 @@ describe.runIf(import.meta.env.VOCAB_SUPABASE_TESTS === '1')('on local Supabase'
     })
 
     it('keeps a working session on a late 401, and ends one the server revoked', async () => {
-      const own = createClient(LOCAL_URL, LOCAL_PUBLISHABLE_KEY, { auth: NO_SESSION })
+      const own = localClient()
       const auth = new SupabaseAuth(own)
       await auth.signIn(TEST_USER)
 
@@ -318,7 +327,7 @@ describe.runIf(import.meta.env.VOCAB_SUPABASE_TESTS === '1')('on local Supabase'
       // Signing out everywhere from another device revokes this session on the server. Done with
       // a separate login: a global sign-out also revokes the session the shared client uses, so
       // that client signs in again for the tests after this one.
-      const other = createClient(LOCAL_URL, LOCAL_PUBLISHABLE_KEY, { auth: NO_SESSION })
+      const other = localClient()
       await other.auth.signInWithPassword(TEST_USER)
       await other.auth.signOut({ scope: 'global' })
       await client.auth.signInWithPassword(TEST_USER)
@@ -329,7 +338,7 @@ describe.runIf(import.meta.env.VOCAB_SUPABASE_TESTS === '1')('on local Supabase'
 
     it('reads app_config only when signed in', async () => {
       expect(await isClientOutdated(client)).toBe(false)
-      const signedOut = createClient(LOCAL_URL, LOCAL_PUBLISHABLE_KEY, { auth: NO_SESSION })
+      const signedOut = localClient()
       const onSessionExpired = vi.fn()
       await expect(isClientOutdated(signedOut, onSessionExpired)).rejects.toBeInstanceOf(
         SessionExpiredError,
@@ -338,7 +347,7 @@ describe.runIf(import.meta.env.VOCAB_SUPABASE_TESTS === '1')('on local Supabase'
     })
 
     it('reports SessionExpiredError when nobody is signed in', async () => {
-      const signedOut = createClient(LOCAL_URL, LOCAL_PUBLISHABLE_KEY, { auth: NO_SESSION })
+      const signedOut = localClient()
       const repo = new SupabaseRepository(signedOut, testDeps())
       await expect(repo.listFolders()).rejects.toBeInstanceOf(SessionExpiredError)
       await expect(repo.createFolder({ name: 'IELTS' })).rejects.toBeInstanceOf(SessionExpiredError)

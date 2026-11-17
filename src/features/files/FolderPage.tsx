@@ -63,15 +63,20 @@ export function FolderPage() {
       {files.length > 0 && (
         <ul className="item-grid" aria-label="Files">
           {files.map((file) => {
-            const { termCount, masteredCount } = file
-            const percent = masteredPercent(masteredCount, termCount)
+            const { termCount, learnableCount, masteredCount } = file
+            const percent = masteredPercent(masteredCount, learnableCount)
+            // A file with only collocations has nothing to master: no percentage (#90).
+            const onlyCollocations = termCount > 0 && learnableCount === 0
+            const detail = onlyCollocations
+              ? plural(termCount, 'term')
+              : `${plural(termCount, 'term')} · ${percent}% mastered`
             return (
               <NamedItemRow
                 key={file.id}
                 kind="file"
                 name={file.name}
                 to={`/files/${file.id}`}
-                detail={`${plural(termCount, 'term')} · ${percent}% mastered`}
+                detail={detail}
                 progress={percent}
                 onRename={(name) => write(() => repository.renameFile(file.id, { name }))}
                 onDelete={() => handleDelete(file)}

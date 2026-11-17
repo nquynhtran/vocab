@@ -1,3 +1,4 @@
+import { isLearnable } from '../../domain/learnable.ts'
 import { useState } from 'react'
 import type { Term, TermInput } from '../../domain/schemas.ts'
 import { ListenWord } from '../../shared/ListenWord.tsx'
@@ -36,7 +37,8 @@ export function TermRow({ term, onUpdate, onDelete }: TermRowProps) {
     <li className="term">
       <span className="term__head">
         <ListenWord word={term.word} className="term__word" />
-        {term.partOfSpeech && <PartOfSpeechLabel partOfSpeech={term.partOfSpeech} />}
+        {term.partsOfSpeech.length > 0 && <PartOfSpeechLabel partsOfSpeech={term.partsOfSpeech} />}
+        {!isLearnable(term) && <span className="tag">not learned</span>}
         {term.pronunciation && <span className="pronunciation">{term.pronunciation}</span>}
       </span>
       <span className="term__meaning">{term.meaning}</span>

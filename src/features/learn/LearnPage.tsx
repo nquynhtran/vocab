@@ -56,14 +56,14 @@ function LearnLoader({ fileId, onReload }: { fileId: string; onReload: () => voi
       <LearnFrame fileId={fileId} title={data.file.name}>
         <EmptyState
           icon="file"
-          title="No terms to learn"
+          title="Nothing to learn here"
           actions={
             <Link to={`/files/${fileId}`} className="button button--primary">
               Add terms
             </Link>
           }
         >
-          Add some terms to this file first.
+          This file has no words to learn: add words, or check the collocations on the file page.
         </EmptyState>
       </LearnFrame>
     )

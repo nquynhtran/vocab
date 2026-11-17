@@ -21,7 +21,8 @@ create function pg_temp.snapshot() returns jsonb language sql as $$
     'terms', jsonb_build_array(jsonb_build_object(
       'id', 'a0000000-0000-4000-8000-000000000003',
       'file_id', 'a0000000-0000-4000-8000-000000000002', 'word', 'apple', 'word_key', 'apple',
-      'part_of_speech', 'noun', 'pronunciation', '/ˈæp.əl/', 'meaning', 'quả táo',
+      'kind', 'word', 'parts_of_speech', jsonb_build_array('noun'),
+      'pronunciation', '/ˈæp.əl/', 'meaning', 'quả táo',
       'example', null,
       'created_at', '2026-10-01T08:00:00.000Z', 'updated_at', '2026-10-01T08:00:00.000Z')),
     'progress', jsonb_build_array(jsonb_build_object(
@@ -36,6 +37,7 @@ grant execute on function pg_temp.snapshot() to authenticated;
 
 select set_config('request.jwt.claims',
   '{"sub":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","role":"authenticated"}', true);
+select set_config('request.headers', '{"x-client-version":"4"}', true);
 set local role authenticated;
 
 -- ---- import_snapshot: validation and atomicity ----
@@ -50,7 +52,7 @@ select is_empty($$ select id from public.folders $$,
   'a failed import leaves nothing behind (one transaction)');
 select throws_ok($$
   select public.import_snapshot(jsonb_set(pg_temp.snapshot(), '{terms,0}',
-    (pg_temp.snapshot() #> '{terms,0}') - 'part_of_speech' || '{"partOfSpeech":"noun"}'))
+    (pg_temp.snapshot() #> '{terms,0}') - 'parts_of_speech' || '{"partsOfSpeech":["noun"]}'))
 $$, '22023', null, 'a misspelled key is rejected instead of silently dropped');
 select throws_ok($$
   select public.import_snapshot(jsonb_set(pg_temp.snapshot(), '{terms,0}',
@@ -137,6 +139,7 @@ select is(
 reset role;
 select set_config('request.jwt.claims',
   '{"sub":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb","role":"authenticated"}', true);
+select set_config('request.headers', '{"x-client-version":"4"}', true);
 set local role authenticated;
 
 select is(

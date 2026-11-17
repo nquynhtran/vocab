@@ -356,22 +356,36 @@ describe('terms', () => {
     expect(await repository.listTerms(unit2.id)).toMatchObject([{ meaning: 'đi bộ' }])
   })
 
-  it('saves an optional part of speech and shows its abbreviation', async () => {
+  it('saves optional parts of speech and shows their abbreviations', async () => {
     const { repository, unit2 } = await renderFile()
-    typeInto('Part of speech', 'phrasal verb')
+    const phrasalVerb = { name: 'phrasal verb (phr. v.)' }
+    const addGroup = () => screen.getByRole('group', { name: 'Part of speech' })
+    fireEvent.click(within(addGroup()).getByRole('checkbox', phrasalVerb))
     await addTerm('give up', 'từ bỏ')
     expect(screen.getByText('phr. v.')).toHaveAttribute('title', 'phrasal verb')
     // Reset for the next term.
-    expect(screen.getByLabelText('Part of speech')).toHaveValue('')
+    expect(within(addGroup()).getByRole('checkbox', phrasalVerb)).not.toBeChecked()
 
     const editRow = await startEditing('give up')
-    const select = editRow.getByLabelText('Part of speech')
-    expect(select).toHaveValue('phrasal verb')
-    fireEvent.change(select, { target: { value: '' } })
+    const editGroup = within(editRow.getByRole('group', { name: 'Part of speech' }))
+    expect(editGroup.getByRole('checkbox', phrasalVerb)).toBeChecked()
+    fireEvent.click(editGroup.getByRole('checkbox', phrasalVerb))
     fireEvent.click(editRow.getByRole('button', { name: 'Save' }))
 
     await waitFor(() => expect(screen.queryByText('phr. v.')).not.toBeInTheDocument())
-    expect((await repository.listTerms(unit2.id))[0]).not.toHaveProperty('partOfSpeech')
+    expect((await repository.listTerms(unit2.id))[0]).toMatchObject({ partsOfSpeech: [] })
+  })
+
+  it('keeps a collocation in the list, marked not learned, and never offers it in Learn (#90)', async () => {
+    const { repository, unit2 } = await renderFile()
+    fireEvent.click(screen.getByRole('radio', { name: 'Collocation (not learned)' }))
+    await addTerm('take away', 'lấy đi')
+
+    expect(screen.getByText('not learned')).toBeInTheDocument()
+    expect((await repository.listTerms(unit2.id))[0]).toMatchObject({ kind: 'collocation' })
+    // Unit 2 holds only a collocation: no Learn button, and the page says why.
+    expect(screen.queryByRole('link', { name: 'Learn' })).not.toBeInTheDocument()
+    expect(screen.getByText('Only collocations here: they are not learned.')).toBeInTheDocument()
   })
 
   it('reads a word aloud in British English', async () => {
@@ -636,7 +650,7 @@ describe('backup', () => {
     })
     const backup = JSON.parse(await blobs[0]!.text())
     expect(backup).toMatchObject({
-      schemaVersion: 3,
+      schemaVersion: 4,
       folders: [{ name: 'IELTS' }],
       files: [{ name: 'Unit 1' }],
       terms: [{ word: 'run', meaning: 'chạy' }],

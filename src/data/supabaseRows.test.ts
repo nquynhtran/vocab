@@ -22,7 +22,8 @@ const termRow = {
   file_id: FILE_ID,
   word: "don't",
   word_key: "don't",
-  part_of_speech: null,
+  kind: 'word',
+  parts_of_speech: [],
   meaning: 'đừng',
   example: null,
   created_at: '2026-10-22T08:00:00+00:00',
@@ -35,6 +36,8 @@ describe('parseRow', () => {
       id: ID,
       fileId: FILE_ID,
       word: "don't",
+      kind: 'word',
+      partsOfSpeech: [],
       meaning: 'đừng',
       createdAt: '2026-10-22T08:00:00.000Z',
       updatedAt: '2026-10-22T08:00:01.500Z',
@@ -42,9 +45,9 @@ describe('parseRow', () => {
   })
 
   it('keeps optional fields that are set', () => {
-    const row = { ...termRow, part_of_speech: 'verb', example: 'Don’t go.' }
+    const row = { ...termRow, parts_of_speech: ['verb'], example: 'Don’t go.' }
     expect(parseRow(TermSchema, row, 'terms 0')).toMatchObject({
-      partOfSpeech: 'verb',
+      partsOfSpeech: ['verb'],
       example: 'Don’t go.',
     })
   })
@@ -80,8 +83,11 @@ describe('parseRow', () => {
   })
 
   it('rejects invalid values with their location', () => {
-    expect(() => parseRow(TermSchema, { ...termRow, part_of_speech: 'verbs' }, 'terms 0')).toThrow(
-      /terms 0: partOfSpeech/,
+    expect(() =>
+      parseRow(TermSchema, { ...termRow, parts_of_speech: ['verbs'] }, 'terms 0'),
+    ).toThrow(/terms 0: partsOfSpeech/)
+    expect(() => parseRow(TermSchema, { ...termRow, kind: 'idiom' }, 'terms 0')).toThrow(
+      /terms 0: kind/,
     )
     expect(() => parseRow(TermSchema, { ...termRow, created_at: 'soon' }, 'terms 0')).toThrow(
       /terms 0: createdAt/,
@@ -149,7 +155,15 @@ describe('stage 3b columns', () => {
     expect(parseRow(TermSchema, { ...row, pronunciation: null }, 'terms 0')).not.toHaveProperty(
       'pronunciation',
     )
-    expect(termContentToRow({ word: 'x', meaning: 'y', pronunciation: '/x/' })).toMatchObject({
+    expect(
+      termContentToRow({
+        word: 'x',
+        kind: 'word',
+        partsOfSpeech: [],
+        meaning: 'y',
+        pronunciation: '/x/',
+      }),
+    ).toMatchObject({
       pronunciation: '/x/',
     })
   })
@@ -175,6 +189,8 @@ describe('writing', () => {
     id: ID,
     fileId: FILE_ID,
     word: 'Don’t',
+    kind: 'word' as const,
+    partsOfSpeech: [],
     meaning: 'đừng',
     createdAt: '2026-10-22T08:00:00.000Z',
     updatedAt: '2026-10-22T08:00:00.000Z',
@@ -186,7 +202,8 @@ describe('writing', () => {
       file_id: FILE_ID,
       word: 'Don’t',
       word_key: "don't",
-      part_of_speech: null,
+      kind: 'word',
+      parts_of_speech: [],
       pronunciation: null,
       meaning: 'đừng',
       example: null,
@@ -203,10 +220,13 @@ describe('writing', () => {
   })
 
   it('replaces only content columns on edit, clearing removed fields', () => {
-    expect(termContentToRow({ word: 'Run', meaning: 'chạy' })).toStrictEqual({
+    expect(
+      termContentToRow({ word: 'Run', kind: 'word', partsOfSpeech: ['verb'], meaning: 'chạy' }),
+    ).toStrictEqual({
       word: 'Run',
       word_key: 'run',
-      part_of_speech: null,
+      kind: 'word',
+      parts_of_speech: ['verb'],
       pronunciation: null,
       meaning: 'chạy',
       example: null,

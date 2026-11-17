@@ -22,7 +22,8 @@ create function pg_temp.snapshot() returns jsonb language sql as $$
     'terms', jsonb_build_array(jsonb_build_object(
       'id', 'a0000000-0000-4000-8000-000000000003',
       'file_id', 'a0000000-0000-4000-8000-000000000002', 'word', 'apple', 'word_key', 'apple',
-      'part_of_speech', null, 'pronunciation', null, 'meaning', 'quả táo', 'example', null,
+      'kind', 'word', 'parts_of_speech', jsonb_build_array(), 'pronunciation', null,
+      'meaning', 'quả táo', 'example', null,
       'created_at', '2026-10-01T08:00:00.000Z', 'updated_at', '2026-10-01T08:00:00.000Z')),
     'progress', jsonb_build_array(jsonb_build_object(
       'term_id', 'a0000000-0000-4000-8000-000000000003', 'box', 3, 'correct_count', 4,
@@ -46,6 +47,7 @@ grant execute on function pg_temp.counts() to authenticated;
 
 select set_config('request.jwt.claims',
   '{"sub":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb","role":"authenticated"}', true);
+select set_config('request.headers', '{"x-client-version":"4"}', true);
 set local role authenticated;
 insert into public.folders (id, name, name_key, created_at, updated_at) values
   ('b0000000-0000-4000-8000-000000000001', 'B folder', 'b folder', now(), now());

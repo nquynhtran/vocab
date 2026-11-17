@@ -1,5 +1,5 @@
 import type { PostgrestError } from '@supabase/supabase-js'
-import { ConnectionError, SessionExpiredError } from '../domain/errors.ts'
+import { ConnectionError, OutdatedClientError, SessionExpiredError } from '../domain/errors.ts'
 
 export type ConstraintHandler = (
   constraint: string,
@@ -48,6 +48,8 @@ export async function runRequest(
   }
   const mapped = onErrorCode?.(error.code)
   if (mapped) throw mapped
+  // Raised by the write gate for builds older than the server's minimum, on any write (#90).
+  if (error.code === 'VC003') throw new OutdatedClientError()
   const code = error.code || `HTTP ${status}`
   throw new Error(`Cloud request failed (${code}): ${error.message}`, { cause: error })
 }

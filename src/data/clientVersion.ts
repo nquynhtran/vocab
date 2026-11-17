@@ -10,8 +10,13 @@ import { parseRow } from './supabaseRows.ts'
  * failed deploy never locks out the app still online.
  * 2: progress.last_promoted_day (decision #50).
  * 3: files.notes, terms.pronunciation (decision #67).
+ * 4: terms.kind and terms.parts_of_speech (#90). Sent as the X-Client-Version header on every
+ *    request, which the write gate of migration B checks (docs/cloud-sync.md).
  */
-export const CLIENT_VERSION = 3
+export const CLIENT_VERSION = 4
+
+/** Header the server's write gate reads. A build older than this sends nothing or a smaller number. */
+export const CLIENT_VERSION_HEADER = 'x-client-version'
 
 const AppConfigSchema = z.object({ minClientVersion: z.int().min(1) })
 

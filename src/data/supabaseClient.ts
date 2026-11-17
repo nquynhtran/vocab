@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { CLIENT_VERSION, CLIENT_VERSION_HEADER } from './clientVersion.ts'
 
 /**
  * localStorage is shared by every GitHub Pages repo of the account (one origin), so the session
@@ -28,6 +29,9 @@ export function createSupabaseClient(
       // Sign-in is by password only, and the URL hash belongs to HashRouter.
       detectSessionInUrl: false,
     },
-    ...(customFetch && { global: { fetch: customFetch } }),
+    global: {
+      headers: { [CLIENT_VERSION_HEADER]: String(CLIENT_VERSION) },
+      ...(customFetch && { fetch: customFetch }),
+    },
   })
 }

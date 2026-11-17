@@ -57,7 +57,7 @@ const NotesSchema = optionalText('Notes', NOTES_MAX_LENGTH, normalizeMultilineTe
 /**
  * Stored as these full names; abbreviations ("v.") are display only (features/terms).
  * Removing or renaming a value needs a migration of stored terms and backups. Any change also
- * needs a SQL migration of the `part_of_speech` CHECK in supabase/migrations.
+ * needs a SQL migration of the `parts_of_speech` CHECK in supabase/migrations (docs/cloud-sync.md).
  */
 export const PARTS_OF_SPEECH = [
   'noun',
@@ -73,12 +73,31 @@ export const PARTS_OF_SPEECH = [
 ] as const
 export type PartOfSpeech = (typeof PARTS_OF_SPEECH)[number]
 
-/** The form's empty choice '' means "not set", stored as an absent field like a blank example. */
-const PartOfSpeechSchema = z
-  .enum(['', ...PARTS_OF_SPEECH], { error: 'Choose a part of speech from the list' })
-  .optional()
-  .transform((value) => value || undefined)
-  .pipe(z.enum(PARTS_OF_SPEECH).optional())
+/**
+ * What a term is for. `collocation` (a phrase or collocation, #90) stays in the file's list but is
+ * never learned; only `word` takes part in Learn and mastery. Stored on every term.
+ */
+export const TERM_KINDS = ['word', 'collocation'] as const
+export type TermKind = (typeof TERM_KINDS)[number]
+
+/**
+ * A term can have several parts of speech ("present" is an adjective and a noun). Stored as a
+ * list in the order of PARTS_OF_SPEECH, so equal sets are equal arrays. The empty list means
+ * "not set". A value repeated in the input is rejected rather than silently merged.
+ */
+const PartsOfSpeechSchema = z
+  .array(z.string())
+  // Checked here rather than with z.enum on the items: a bad item then reports under the field
+  // itself ("partsOfSpeech"), not under its index, which is where the form shows errors.
+  .superRefine((values, ctx) => {
+    if (!values.every((value) => (PARTS_OF_SPEECH as readonly string[]).includes(value))) {
+      ctx.addIssue({ code: 'custom', message: 'Choose parts of speech from the list' })
+    }
+    if (new Set(values).size !== values.length) {
+      ctx.addIssue({ code: 'custom', message: 'Each part of speech can be chosen once' })
+    }
+  })
+  .transform((values) => PARTS_OF_SPEECH.filter((part) => values.includes(part)))
 
 export const IdSchema = z.uuid()
 export const TimestampSchema = z.iso.datetime()
@@ -90,7 +109,8 @@ export const FileInputSchema = z.object({ name: requiredText('Name', NAME_MAX_LE
 export const FileNotesInputSchema = z.object({ notes: NotesSchema })
 export const TermInputSchema = z.object({
   word: requiredText('Term', NAME_MAX_LENGTH),
-  partOfSpeech: PartOfSpeechSchema,
+  kind: z.enum(TERM_KINDS, { error: 'Choose word or collocation' }).default('word'),
+  partsOfSpeech: PartsOfSpeechSchema.default([]),
   pronunciation: PronunciationSchema,
   meaning: requiredText('Meaning', NAME_MAX_LENGTH),
   example: ExampleSchema,
@@ -143,7 +163,11 @@ export const StudyDaySchema = z.object({
 export type FolderInput = z.input<typeof FolderInputSchema>
 export type FileInput = z.input<typeof FileInputSchema>
 export type FileNotesInput = z.input<typeof FileNotesInputSchema>
-export type TermInput = z.input<typeof TermInputSchema>
+/** What callers pass in: the list and kind are typed as their values, not as plain strings. */
+export type TermInput = Omit<z.input<typeof TermInputSchema>, 'kind' | 'partsOfSpeech'> & {
+  kind?: TermKind
+  partsOfSpeech?: PartOfSpeech[]
+}
 
 export type Folder = z.output<typeof FolderSchema>
 export type VocabFile = z.output<typeof VocabFileSchema>

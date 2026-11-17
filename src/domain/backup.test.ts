@@ -7,7 +7,7 @@ const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')
 
 function validBackup(): Backup {
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     exportedAt: NOW,
     folders: [{ id: id(1), name: 'IELTS', createdAt: NOW, updatedAt: NOW }],
     files: [
@@ -25,7 +25,8 @@ function validBackup(): Backup {
         id: id(3),
         fileId: id(2),
         word: 'run',
-        partOfSpeech: 'verb',
+        kind: 'word',
+        partsOfSpeech: ['verb'],
         pronunciation: '/rʌn/',
         meaning: 'chạy',
         example: 'I run.',
@@ -75,14 +76,35 @@ describe('validateBackup', () => {
     expect(validateBackup(empty)).toStrictEqual(empty)
   })
 
-  /** The current sample as an older version wrote it: without the fields added later. */
-  function version2Backup() {
-    const current = validBackup()
+  /** A term as version 3 wrote it: one part of speech, no kind (#90). */
+  function termV3(term: Backup['terms'][number]): Record<string, unknown> {
+    const { kind: _kind, partsOfSpeech, ...rest } = term
+    return partsOfSpeech.length > 0 ? { ...rest, partOfSpeech: partsOfSpeech[0] } : rest
+  }
+
+  /** The same term as version 4 reads it after migration: a list, and always a word. */
+  function termV4(term: Record<string, unknown>): Record<string, unknown> {
+    const { partOfSpeech, ...rest } = term
     return {
-      ...current,
+      ...rest,
+      kind: 'word',
+      partsOfSpeech: partOfSpeech === undefined ? [] : [partOfSpeech],
+    }
+  }
+
+  /** The current sample as older versions wrote it: without the fields added later. */
+  function version3Backup() {
+    const current = validBackup()
+    return { ...current, schemaVersion: 3, terms: current.terms.map(termV3) }
+  }
+
+  function version2Backup() {
+    const v3 = version3Backup()
+    return {
+      ...v3,
       schemaVersion: 2,
-      files: current.files.map(({ notes: _notes, ...rest }) => rest),
-      terms: current.terms.map(({ pronunciation: _pronunciation, ...rest }) => rest),
+      files: v3.files.map(({ notes: _notes, ...rest }) => rest),
+      terms: v3.terms.map(({ pronunciation: _pronunciation, ...rest }) => rest),
     }
   }
 
@@ -95,16 +117,21 @@ describe('validateBackup', () => {
     }
   }
 
-  it('is at version 3', () => {
-    expect(BACKUP_SCHEMA_VERSION).toBe(3)
+  it('is at version 4', () => {
+    expect(BACKUP_SCHEMA_VERSION).toBe(4)
   })
 
   it.each([
     ['1', version1Backup],
     ['2', version2Backup],
-  ])('brings a version %s backup up to the current version unchanged', (_, older) => {
+    ['3', version3Backup],
+  ])('brings a version %s backup up to the current version (#90 converts terms)', (_, older) => {
     const backup = older()
-    expect(validateBackup(backup)).toStrictEqual({ ...backup, schemaVersion: 3 })
+    expect(validateBackup(backup)).toStrictEqual({
+      ...backup,
+      schemaVersion: 4,
+      terms: backup.terms.map(termV4),
+    })
   })
 
   it('rejects a version 1 backup carrying lastPromotedDay, which version 1 never wrote', () => {
@@ -120,12 +147,24 @@ describe('validateBackup', () => {
       'files.0.notes': ['Unexpected or non-normalized value'],
       'terms.0.pronunciation': ['Unexpected or non-normalized value'],
     }
-    const current = validBackup()
-    expect(problemsOf({ ...current, schemaVersion: 2 })).toEqual(expected)
-    expect(problemsOf({ ...current, schemaVersion: 1 })).toEqual({
+    const v3 = version3Backup()
+    expect(problemsOf({ ...v3, schemaVersion: 2 })).toEqual(expected)
+    expect(problemsOf({ ...v3, schemaVersion: 1 })).toEqual({
       ...expected,
       'progress.0.lastPromotedDay': ['Unexpected or non-normalized value'],
     })
+  })
+
+  it('rejects a version 3 backup carrying kind or partsOfSpeech, which version 3 never wrote', () => {
+    expect(problemsOf({ ...validBackup(), schemaVersion: 3 })).toEqual({
+      'terms.0.kind': ['Unexpected or non-normalized value'],
+      'terms.0.partsOfSpeech': ['Unexpected or non-normalized value'],
+    })
+  })
+
+  it('rejects a current backup that still has the old single partOfSpeech', () => {
+    const current = { ...validBackup(), terms: validBackup().terms.map(termV3) }
+    expect(Object.keys(problemsOf(current))).toEqual(['terms.0.partOfSpeech'])
   })
 
   it('rejects notes with Windows line breaks, which the app never writes', () => {
@@ -143,7 +182,7 @@ describe('validateBackup', () => {
   })
 
   it('asks to reload for a backup from a newer version', () => {
-    expect(problemsOf({ ...validBackup(), schemaVersion: 4 })).toEqual({
+    expect(problemsOf({ ...validBackup(), schemaVersion: BACKUP_SCHEMA_VERSION + 1 })).toEqual({
       schemaVersion: ['This backup is from a newer version. Reload the page to update the app.'],
     })
   })

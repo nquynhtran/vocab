@@ -86,6 +86,30 @@ export class VocabDb extends Dexie {
       meta: 'key',
     })
 
+    // Terms gained `kind` and `partsOfSpeech` (a list, #90). The upgrade converts stored rows; the
+    // indexes stay the same. The bump makes tabs on v5 code reload instead of rebuilding rows
+    // with the old `partOfSpeech` field.
+    this.version(6)
+      .stores({
+        folders: 'id, &nameKey',
+        files: 'id, folderId, &[folderId+nameKey]',
+        terms: 'id, fileId, wordKey',
+        progress: 'termId',
+        studyDays: 'date',
+        meta: 'key',
+      })
+      .upgrade((tx) =>
+        tx
+          .table('terms')
+          .toCollection()
+          .modify((term: Record<string, unknown>) => {
+            const partOfSpeech = term.partOfSpeech
+            term.kind = 'word'
+            term.partsOfSpeech = typeof partOfSpeech === 'string' ? [partOfSpeech] : []
+            delete term.partOfSpeech
+          }),
+      )
+
     // Dexie's default handler closes but allows auto-reopening, which would let this tab's old
     // code write rows in the old shape into the upgraded database. Returning false skips it.
     this.on('versionchange', () => {

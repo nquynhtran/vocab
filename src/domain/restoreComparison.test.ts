@@ -21,6 +21,8 @@ const term = (n: number, updatedAt: string) => ({
   id: id(n),
   fileId: id(10),
   word: `w${n}`,
+  kind: 'word' as const,
+  partsOfSpeech: [],
   meaning: 'm',
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt,
@@ -29,7 +31,7 @@ const days = (...dates: string[]) => dates.map((date) => ({ date, answeredCount:
 
 function backup(parts: Partial<Backup> = {}): Backup {
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     exportedAt: '2026-11-08T00:00:00.000Z',
     folders: [],
     files: [],

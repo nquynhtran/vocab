@@ -9,6 +9,7 @@ insert into auth.users (id, email, aud, role) values
 
 select set_config('request.jwt.claims',
   '{"sub":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","role":"authenticated"}', true);
+select set_config('request.headers', '{"x-client-version":"4"}', true);
 set local role authenticated;
 
 -- Folder 1 holds file 2 (1001 terms, more than max_rows) and an empty file 3.
@@ -76,8 +77,8 @@ select results_eq(
 select is(
   (select array_agg(k order by k) from jsonb_object_keys(
     public.get_folder_contents('a0000000-0000-4000-8000-000000000001') -> 'terms' -> 0) k),
-  array['box', 'file_id'],
-  'terms carry only the file and the box'
+  array['box', 'file_id', 'kind'],
+  'terms carry only the file, the kind and the box (#90)'
 );
 
 -- ---- Another user ----
@@ -85,6 +86,7 @@ select is(
 reset role;
 select set_config('request.jwt.claims',
   '{"sub":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb","role":"authenticated"}', true);
+select set_config('request.headers', '{"x-client-version":"4"}', true);
 set local role authenticated;
 
 select is(

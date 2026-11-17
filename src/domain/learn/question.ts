@@ -11,7 +11,8 @@ import type { SessionTerm } from './session.ts'
 interface Asked {
   termId: string
   meaning: string
-  partOfSpeech?: PartOfSpeech
+  /** Every part of speech of the word, in the stored order; absent when none is set. */
+  partsOfSpeech?: PartOfSpeech[]
   example?: string
   /** The answer. */
   word: string
@@ -36,7 +37,7 @@ export function buildQuestion(
   const base: Asked = {
     termId: term.id,
     meaning: term.meaning,
-    ...(term.partOfSpeech !== undefined && { partOfSpeech: term.partOfSpeech }),
+    ...(term.partsOfSpeech.length > 0 && { partsOfSpeech: term.partsOfSpeech }),
     ...(example !== undefined && { example }),
     word: term.word,
     ...(term.pronunciation !== undefined && { pronunciation: term.pronunciation }),

@@ -48,6 +48,7 @@ $$, 'every function is SECURITY INVOKER (RLS applies) with an empty search_path'
 
 select set_config('request.jwt.claims',
   '{"sub":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","role":"authenticated"}', true);
+select set_config('request.headers', '{"x-client-version":"4"}', true);
 set local role authenticated;
 
 select lives_ok($$
@@ -70,6 +71,8 @@ select is(
   'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'::uuid,
   'user_id defaults to the signed-in user'
 );
+-- Becomes 4 together with the write gate: move supabase/pending/20261117120100_*.sql into
+-- supabase/migrations and change this expectation in the same commit (docs/cloud-sync.md).
 select is((select min_client_version from public.app_config), 3,
   'app_config is readable and requires the client that knows notes and pronunciation');
 
@@ -157,6 +160,7 @@ select throws_ok($$ update public.app_config set min_client_version = 0 $$, '425
 reset role;
 select set_config('request.jwt.claims',
   '{"sub":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb","role":"authenticated"}', true);
+select set_config('request.headers', '{"x-client-version":"4"}', true);
 set local role authenticated;
 
 select is_empty($$ select id from public.folders $$, 'B sees no folders');
@@ -194,6 +198,7 @@ $$, 'B may use a folder name that A already uses');
 reset role;
 select set_config('request.jwt.claims',
   '{"sub":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","role":"authenticated"}', true);
+select set_config('request.headers', '{"x-client-version":"4"}', true);
 set local role authenticated;
 
 select is(

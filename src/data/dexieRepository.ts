@@ -4,6 +4,7 @@ import {
   DuplicateNameError,
   EntityNotFoundError,
   parseOrThrow,
+  NotLearnableError,
 } from '../domain/errors.ts'
 import { AnswerRecordSchema, type AnswerRecord } from '../domain/learn/answer.ts'
 import { progressAfter } from '../domain/learn/progress.ts'
@@ -22,6 +23,7 @@ import {
   type TermProgress,
   type VocabFile,
 } from '../domain/schemas.ts'
+import { isLearnable } from '../domain/learnable.ts'
 import { toKey } from '../domain/text.ts'
 import type { FileRow, FolderRow, TermRow, VocabDb } from './db.ts'
 import { defaultDeps, type RepositoryDeps } from './deps.ts'
@@ -72,7 +74,11 @@ export class DexieRepository implements Repository {
         folder: toFolder(folderRow),
         files: summarizeFiles(
           fileRows.map(toFile),
-          termRows.map((term, index) => ({ fileId: term.fileId, box: progressRows[index]?.box })),
+          termRows.map((term, index) => ({
+            fileId: term.fileId,
+            kind: term.kind,
+            box: progressRows[index]?.box,
+          })),
         ),
       }
     })
@@ -279,12 +285,14 @@ export class DexieRepository implements Repository {
     return this.db.transaction('r', [files, terms, progress], async () => {
       const fileRow = await files.get(fileId)
       if (!fileRow) return undefined
-      const termRows = await terms.where('fileId').equals(fileId).toArray()
+      const termRows = (await terms.where('fileId').equals(fileId).toArray()).filter(isLearnable)
       const progressRows = await progress.bulkGet(termRows.map((term) => term.id))
       const otherFileIds = (
         await files.where('folderId').equals(fileRow.folderId).primaryKeys()
       ).filter((id) => id !== fileId)
-      const distractorRows = await terms.where('fileId').anyOf(otherFileIds).toArray()
+      const distractorRows = (await terms.where('fileId').anyOf(otherFileIds).toArray()).filter(
+        isLearnable,
+      )
       return {
         file: toFile(fileRow),
         terms: termRows.map(toTerm).toSorted(newestFirst),
@@ -300,7 +308,10 @@ export class DexieRepository implements Repository {
     // `terms` is in the transaction so a delete in another tab cannot slip between the check
     // and the write and leave progress for a term that is gone.
     await this.db.transaction('rw', [terms, progress, studyDays], async () => {
-      if (!(await terms.get(answer.termId))) return
+      const term = await terms.get(answer.termId)
+      if (!term) return
+      // Checked before any write: progress for a term that is not learned would never be counted.
+      if (!isLearnable(term)) throw new NotLearnableError()
       const next = progressAfter(await progress.get(answer.termId), answer)
       if (!next) return
       const day = await studyDays.get(answer.day)
@@ -418,7 +429,8 @@ function toTerm({
   id,
   fileId,
   word,
-  partOfSpeech,
+  kind,
+  partsOfSpeech,
   pronunciation,
   meaning,
   example,
@@ -429,7 +441,8 @@ function toTerm({
     id,
     fileId,
     word,
-    ...(partOfSpeech !== undefined && { partOfSpeech }),
+    kind,
+    partsOfSpeech,
     ...(pronunciation !== undefined && { pronunciation }),
     meaning,
     ...(example !== undefined && { example }),
@@ -462,20 +475,24 @@ function toStudyDay({ date, answeredCount }: StudyDay): StudyDay {
   return { date, answeredCount }
 }
 
-type TermContent = Pick<Term, 'word' | 'partOfSpeech' | 'pronunciation' | 'meaning' | 'example'>
+type TermContent = Pick<
+  Term,
+  'word' | 'kind' | 'partsOfSpeech' | 'pronunciation' | 'meaning' | 'example'
+>
 type TermMeta = Pick<Term, 'id' | 'fileId' | 'createdAt' | 'updatedAt'>
 
 function toTermRow(
   meta: TermMeta,
-  { word, partOfSpeech, pronunciation, meaning, example }: TermContent,
+  { word, kind, partsOfSpeech, pronunciation, meaning, example }: TermContent,
 ): TermRow {
   return {
     ...meta,
     word,
     wordKey: toKey(word),
+    kind,
+    partsOfSpeech,
     // Optional fields are omitted rather than stored as undefined, so stored rows match what a
     // backup contains.
-    ...(partOfSpeech !== undefined && { partOfSpeech }),
     ...(pronunciation !== undefined && { pronunciation }),
     meaning,
     ...(example !== undefined && { example }),

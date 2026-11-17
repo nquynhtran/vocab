@@ -4,6 +4,7 @@ import {
   DataAlreadyExistsError,
   DuplicateNameError,
   EntityNotFoundError,
+  NotLearnableError,
   parseOrThrow,
 } from '../domain/errors.ts'
 import { AnswerRecordSchema, type AnswerRecord } from '../domain/learn/answer.ts'
@@ -54,7 +55,7 @@ import {
 export const MAX_ROWS = 1000
 
 /** The per-term part of `get_folder_contents`: only what the counts need. */
-const TermBoxSchema = TermSchema.pick({ fileId: true }).extend({
+const TermBoxSchema = TermSchema.pick({ fileId: true, kind: true }).extend({
   box: TermProgressSchema.shape.box.optional(),
 })
 
@@ -313,7 +314,7 @@ export class SupabaseRepository implements Repository {
   async recordAnswer(input: AnswerRecord): Promise<void> {
     const answer = parseOrThrow(AnswerRecordSchema, input)
     // The whole rule, retry check included, runs in SQL in one statement (supabase/migrations).
-    await this.run(
+    await runRequest(
       this.client.rpc('record_answer', {
         p_term_id: answer.termId,
         p_correct: answer.correct,
@@ -321,6 +322,11 @@ export class SupabaseRepository implements Repository {
         p_answered_at: answer.answeredAt,
         p_day: answer.day,
       }),
+      {
+        onSessionExpired: this.onSessionExpired,
+        // Raised for a collocation: it is not learned, so no progress is written (#90).
+        onErrorCode: (code) => (code === 'VC002' ? new NotLearnableError() : undefined),
+      },
     )
   }
 

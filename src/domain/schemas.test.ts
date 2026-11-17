@@ -63,6 +63,8 @@ describe('input schemas', () => {
   it('drops a blank example', () => {
     expect(TermInputSchema.parse({ word: 'run', meaning: 'chạy', example: '   ' })).toEqual({
       word: 'run',
+      kind: 'word',
+      partsOfSpeech: [],
       meaning: 'chạy',
       example: undefined,
     })
@@ -70,20 +72,32 @@ describe('input schemas', () => {
   })
 })
 
-describe('part of speech', () => {
-  it('accepts a listed value and treats the empty choice as not set', () => {
-    const base = { word: 'run', meaning: 'chạy' }
-    expect(TermInputSchema.parse({ ...base, partOfSpeech: 'phrasal verb' }).partOfSpeech).toBe(
-      'phrasal verb',
-    )
-    expect(TermInputSchema.parse({ ...base, partOfSpeech: '' }).partOfSpeech).toBeUndefined()
-    expect(TermInputSchema.parse(base).partOfSpeech).toBeUndefined()
+describe('part of speech and kind (#90)', () => {
+  const base = { word: 'run', meaning: 'chạy' }
+
+  it('stores a list of listed values in list order, and an empty list when none is given', () => {
+    expect(
+      TermInputSchema.parse({ ...base, partsOfSpeech: ['verb', 'adjective'] }).partsOfSpeech,
+    ).toEqual(['verb', 'adjective'])
+    expect(TermInputSchema.parse(base).partsOfSpeech).toEqual([])
   })
 
   it('rejects a value outside the list, e.g. from a tampered backup', () => {
+    expect(() => parseOrThrow(TermInputSchema, { ...base, partsOfSpeech: ['Verb'] })).toThrow(
+      new ValidationError({ partsOfSpeech: ['Choose parts of speech from the list'] }),
+    )
+  })
+
+  it('rejects the same part of speech twice instead of merging it', () => {
     expect(() =>
-      parseOrThrow(TermInputSchema, { word: 'run', meaning: 'chạy', partOfSpeech: 'Verb' }),
-    ).toThrow(new ValidationError({ partOfSpeech: ['Choose a part of speech from the list'] }))
+      parseOrThrow(TermInputSchema, { ...base, partsOfSpeech: ['noun', 'noun'] }),
+    ).toThrow(new ValidationError({ partsOfSpeech: ['Each part of speech can be chosen once'] }))
+  })
+
+  it('defaults kind to word and rejects an unknown kind', () => {
+    expect(TermInputSchema.parse(base).kind).toBe('word')
+    expect(TermInputSchema.parse({ ...base, kind: 'collocation' }).kind).toBe('collocation')
+    expect(() => parseOrThrow(TermInputSchema, { ...base, kind: 'idiom' })).toThrow(ValidationError)
   })
 })
 
@@ -160,7 +174,7 @@ describe('entity schemas', () => {
       createdAt: NOW,
       updatedAt: NOW,
     }
-    expect(TermSchema.parse(term)).toEqual({ ...term, example: undefined })
+    expect(TermSchema.parse(term)).toEqual({ ...term, kind: 'word', partsOfSpeech: [] })
   })
 
   it('rejects ids that are not RFC UUIDs', () => {

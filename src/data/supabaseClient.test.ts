@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { CLIENT_VERSION } from './clientVersion.ts'
 import { AUTH_STORAGE_KEY, createSupabaseClient } from './supabaseClient.ts'
 
 // Every other test builds its client with persistSession off, so the app's own session settings
@@ -52,6 +53,13 @@ afterEach(async () => {
 })
 
 describe('createSupabaseClient', () => {
+  it('sends its build number on every request, which the write gate checks (#90)', async () => {
+    const { client, fetch } = appClient()
+    await client.from('terms').select('*')
+    const headers = new Headers(fetch.mock.calls.at(-1)?.[1]?.headers)
+    expect(headers.get('x-client-version')).toBe(String(CLIENT_VERSION))
+  })
+
   it('keeps the session in localStorage under its own key', async () => {
     const { client } = appClient()
     await client.auth.signInWithPassword({ email: 'me@example.com', password: 'x' })

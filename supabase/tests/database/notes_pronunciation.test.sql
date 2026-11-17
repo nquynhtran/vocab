@@ -7,6 +7,7 @@ insert into auth.users (id, email, aud, role) values
   ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'a@test.local', 'authenticated', 'authenticated');
 select set_config('request.jwt.claims',
   '{"sub":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","role":"authenticated"}', true);
+select set_config('request.headers', '{"x-client-version":"4"}', true);
 set local role authenticated;
 
 insert into public.folders (id, name, name_key, created_at, updated_at) values

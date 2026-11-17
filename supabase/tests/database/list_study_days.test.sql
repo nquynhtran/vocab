@@ -9,6 +9,7 @@ insert into auth.users (id, email, aud, role) values
 
 select set_config('request.jwt.claims',
   '{"sub":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","role":"authenticated"}', true);
+select set_config('request.headers', '{"x-client-version":"4"}', true);
 set local role authenticated;
 
 select is(public.list_study_days(), '[]'::jsonb, 'no study days gives an empty array');

@@ -19,6 +19,7 @@ $$;
 
 select set_config('request.jwt.claims',
   '{"sub":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","role":"authenticated"}', true);
+select set_config('request.headers', '{"x-client-version":"4"}', true);
 set local role authenticated;
 
 -- Folder 1: file 2 (terms 11, 12) and file 3 (term 13). Folder 4: file 5 (term 14).
@@ -180,6 +181,7 @@ $$, 'a missing term is not an error');
 reset role;
 create trigger delete_term_first before insert on public.progress
   for each row execute function pg_temp.delete_term_first();
+select set_config('request.headers', '{"x-client-version":"4"}', true);
 set local role authenticated;
 select lives_ok($$
   select public.record_answer('a0000000-0000-4000-8000-000000000013', true, false,
@@ -187,6 +189,7 @@ select lives_ok($$
 $$, 'a term deleted while the answer is written is not an error');
 reset role;
 drop trigger delete_term_first on public.progress;
+select set_config('request.headers', '{"x-client-version":"4"}', true);
 set local role authenticated;
 select is_empty(
   $$ select 1 from public.progress where term_id = 'a0000000-0000-4000-8000-000000000013' $$,
@@ -261,6 +264,7 @@ select is(
 reset role;
 select set_config('request.jwt.claims',
   '{"sub":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb","role":"authenticated"}', true);
+select set_config('request.headers', '{"x-client-version":"4"}', true);
 set local role authenticated;
 
 select is(

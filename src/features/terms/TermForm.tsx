@@ -1,6 +1,11 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { ValidationError } from '../../domain/errors.ts'
-import { PARTS_OF_SPEECH, type PartOfSpeech, type TermInput } from '../../domain/schemas.ts'
+import {
+  PARTS_OF_SPEECH,
+  type PartOfSpeech,
+  type TermInput,
+  type TermKind,
+} from '../../domain/schemas.ts'
 import { errorMessage } from '../../shared/errorMessage.ts'
 import { FieldError } from '../../shared/FieldError.tsx'
 import { PART_OF_SPEECH_ABBREVIATIONS } from '../../shared/partOfSpeech.ts'
@@ -20,7 +25,14 @@ interface TermFormProps {
 
 type FieldErrors = Readonly<Record<string, readonly string[]>>
 
-const EMPTY: TermInput = { word: '', partOfSpeech: '', pronunciation: '', meaning: '', example: '' }
+const EMPTY: TermInput = {
+  word: '',
+  kind: 'word',
+  partsOfSpeech: [],
+  pronunciation: '',
+  meaning: '',
+  example: '',
+}
 
 type LookupStatus = 'idle' | 'looking' | 'not-found' | 'failed'
 
@@ -38,7 +50,8 @@ export function TermForm({
   autoFocus = false,
 }: TermFormProps) {
   const [word, setWord] = useState(initial.word)
-  const [partOfSpeech, setPartOfSpeech] = useState<PartOfSpeech | ''>(initial.partOfSpeech ?? '')
+  const [kind, setKind] = useState<TermKind>(initial.kind ?? 'word')
+  const [partsOfSpeech, setPartsOfSpeech] = useState<PartOfSpeech[]>(initial.partsOfSpeech ?? [])
   const [pronunciation, setPronunciation] = useState(initial.pronunciation ?? '')
   const [lookupStatus, setLookupStatus] = useState<LookupStatus>('idle')
   const [meaning, setMeaning] = useState(initial.meaning)
@@ -54,7 +67,8 @@ export function TermForm({
   const baseId = useId()
   const ids = {
     word: `${baseId}-word`,
-    partOfSpeech: `${baseId}-part-of-speech`,
+    kind: `${baseId}-kind`,
+    partsOfSpeech: `${baseId}-parts-of-speech`,
     pronunciation: `${baseId}-pronunciation`,
     lookupStatus: `${baseId}-lookup-status`,
     meaning: `${baseId}-meaning`,
@@ -99,9 +113,10 @@ export function TermForm({
     setFieldErrors({})
     setFormError(undefined)
     try {
-      await onSubmit({ word, partOfSpeech, pronunciation, meaning, example })
+      await onSubmit({ word, kind, partsOfSpeech, pronunciation, meaning, example })
       setWord(initial.word)
-      setPartOfSpeech(initial.partOfSpeech ?? '')
+      setKind(initial.kind ?? 'word')
+      setPartsOfSpeech(initial.partsOfSpeech ?? [])
       setPronunciation(initial.pronunciation ?? '')
       setMeaning(initial.meaning)
       setExample(initial.example ?? '')
@@ -126,7 +141,8 @@ export function TermForm({
   }
 
   const wordError = errorFor('word')
-  const partOfSpeechError = errorFor('partOfSpeech')
+  const kindError = errorFor('kind')
+  const partsOfSpeechError = errorFor('partsOfSpeech')
   const pronunciationError = errorFor('pronunciation')
   const meaningError = errorFor('meaning')
   const exampleError = errorFor('example')
@@ -165,25 +181,61 @@ export function TermForm({
           {duplicates.length > 0 && `Already in ${formatLocations(duplicates)}`}
         </p>
       </div>
-      <div className="field">
-        <label htmlFor={ids.partOfSpeech}>Part of speech</label>
-        <select
-          id={ids.partOfSpeech}
-          value={partOfSpeech}
-          // Options come from PARTS_OF_SPEECH, and the repository validates again anyway.
-          onChange={(event) => setPartOfSpeech(event.target.value as PartOfSpeech | '')}
-          aria-invalid={partOfSpeechError !== undefined}
-          aria-describedby={describedBy(partOfSpeechError && `${ids.partOfSpeech}-error`)}
-        >
-          <option value="">—</option>
+      <fieldset
+        className="field choice-group"
+        aria-describedby={describedBy(kindError && `${ids.kind}-error`)}
+      >
+        <legend>Kind</legend>
+        <div className="choice-group__options">
+          <label>
+            <input
+              type="radio"
+              name={ids.kind}
+              value="word"
+              checked={kind === 'word'}
+              onChange={() => setKind('word')}
+            />{' '}
+            Word
+          </label>
+          <label>
+            <input
+              type="radio"
+              name={ids.kind}
+              value="collocation"
+              checked={kind === 'collocation'}
+              onChange={() => setKind('collocation')}
+            />{' '}
+            Collocation (not learned)
+          </label>
+        </div>
+        <FieldError id={`${ids.kind}-error`} message={kindError} />
+      </fieldset>
+      <fieldset
+        className="field choice-group"
+        aria-describedby={describedBy(partsOfSpeechError && `${ids.partsOfSpeech}-error`)}
+      >
+        <legend>Part of speech</legend>
+        <div className="choice-group__options">
           {PARTS_OF_SPEECH.map((value) => (
-            <option key={value} value={value}>
+            <label key={value}>
+              <input
+                type="checkbox"
+                value={value}
+                checked={partsOfSpeech.includes(value)}
+                onChange={(event) =>
+                  setPartsOfSpeech((current) =>
+                    event.target.checked
+                      ? [...current, value]
+                      : current.filter((part) => part !== value),
+                  )
+                }
+              />{' '}
               {value} ({PART_OF_SPEECH_ABBREVIATIONS[value]})
-            </option>
+            </label>
           ))}
-        </select>
-        <FieldError id={`${ids.partOfSpeech}-error`} message={partOfSpeechError} />
-      </div>
+        </div>
+        <FieldError id={`${ids.partsOfSpeech}-error`} message={partsOfSpeechError} />
+      </fieldset>
       <div className="field">
         <label htmlFor={ids.pronunciation}>Pronunciation (optional)</label>
         <div className="lookup-row">

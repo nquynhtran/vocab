@@ -16,6 +16,8 @@ const term = (n: number, word = `word ${n}`): Term => ({
   id: id(n),
   fileId: id(999),
   word,
+  kind: 'word',
+  partsOfSpeech: [],
   meaning: `nghĩa ${n}`,
   createdAt: '2026-10-01T00:00:00.000Z',
   updatedAt: '2026-10-01T00:00:00.000Z',

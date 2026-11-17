@@ -1,3 +1,4 @@
+import { isLearnable } from '../../domain/learnable.ts'
 import { useCallback } from 'react'
 import { Link, useParams } from 'react-router'
 import type { Term, TermInput, VocabFile } from '../../domain/schemas.ts'
@@ -55,7 +56,7 @@ export function FilePage() {
           <h1>{file.name}</h1>
           <p className="muted">{plural(terms.length, 'term')}</p>
         </div>
-        {terms.length > 0 ? (
+        {terms.some(isLearnable) ? (
           <Link
             className="button button--primary file-header__learn"
             to={`/files/${file.id}/learn`}
@@ -63,7 +64,11 @@ export function FilePage() {
             Learn
           </Link>
         ) : (
-          <p className="muted">Add some terms to start learning.</p>
+          <p className="muted">
+            {terms.length > 0
+              ? 'Only collocations here: they are not learned.'
+              : 'Add some terms to start learning.'}
+          </p>
         )}
       </div>
       <FileNotes

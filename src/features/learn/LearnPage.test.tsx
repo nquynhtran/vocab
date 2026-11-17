@@ -251,7 +251,7 @@ describe('Learn', () => {
 
   it('shows the part of speech after the meaning (#61)', async () => {
     const { repository, file } = await setUp([
-      { word: 'big', partOfSpeech: 'adjective', meaning: 'to' },
+      { word: 'big', partsOfSpeech: ['adjective'], meaning: 'to' },
     ])
     renderAt(repository, `/files/${file.id}/learn`)
     await asked()
@@ -405,7 +405,9 @@ describe('Learn', () => {
 
     // The same sentence was on the file page: wait for what only the Learn page has.
     window.location.hash = `#/files/${file.id}/learn`
-    expect(await screen.findByRole('heading', { name: 'No terms to learn' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: 'Nothing to learn here' }),
+    ).toBeInTheDocument()
     fireEvent.click(screen.getByRole('link', { name: 'Add terms' }))
     expect(await screen.findByRole('navigation', { name: 'Breadcrumb' })).toBeInTheDocument()
     expect(screen.getByLabelText('Term')).toBeInTheDocument()

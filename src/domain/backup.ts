@@ -12,7 +12,7 @@ import {
 import { toKey } from './text.ts'
 
 /** Bump with a migration for older files whenever the backup shape changes (docs/data-model.md). */
-export const BACKUP_SCHEMA_VERSION = 3
+export const BACKUP_SCHEMA_VERSION = 4
 
 export const BackupSchema = z.object({
   schemaVersion: z.literal(BACKUP_SCHEMA_VERSION),
@@ -69,6 +69,29 @@ const FIELDS_ADDED_IN: Readonly<
     ['files', 'notes'],
     ['terms', 'pronunciation'],
   ],
+  // Version 4 also changed terms.partOfSpeech into partsOfSpeech; see termsToV4 (#90).
+  4: [
+    ['terms', 'kind'],
+    ['terms', 'partsOfSpeech'],
+  ],
+}
+
+/**
+ * Version 4 turned one part of speech into a list and added `kind`. Older terms become a list
+ * of one (or none) and are words. Only a file older than 4 gets here: the field check above
+ * already rejected a newer field in an older file.
+ */
+function termsToV4(terms: unknown): unknown {
+  if (!Array.isArray(terms)) return terms // the schema reports the missing table
+  return terms.map((row: unknown) => {
+    if (typeof row !== 'object' || row === null) return row
+    const { partOfSpeech, ...rest } = row as Record<string, unknown>
+    return {
+      ...rest,
+      kind: 'word',
+      partsOfSpeech: partOfSpeech === undefined ? [] : [partOfSpeech],
+    }
+  })
 }
 
 /** Brings an older backup up to `BACKUP_SCHEMA_VERSION`; anything else is returned as is. */
@@ -92,7 +115,8 @@ function migrateBackup(value: unknown): unknown {
     }
   }
   if (Object.keys(problems).length > 0) throw new ValidationError(problems)
-  return { ...backup, schemaVersion: BACKUP_SCHEMA_VERSION }
+  const converted = (version as number) < 4 ? { ...backup, terms: termsToV4(backup.terms) } : backup
+  return { ...converted, schemaVersion: BACKUP_SCHEMA_VERSION }
 }
 
 /** Checked before reading a chosen file, so a wrong pick cannot freeze the page (data-model.md). */

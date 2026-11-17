@@ -113,6 +113,22 @@ export class DataAlreadyExistsError extends UserFacingError {
   }
 }
 
+/** The term is kept for reference only (`kind` is not `word`), so it cannot be learned (#90). */
+export class NotLearnableError extends UserFacingError {
+  constructor() {
+    super('This entry is not learned. Its progress was not saved.')
+    this.name = 'NotLearnableError'
+  }
+}
+
+/** The server refuses writes from an app build older than its minimum (cloud-sync.md, #90). */
+export class OutdatedClientError extends UserFacingError {
+  constructor() {
+    super('A new version is available. Reload the page to update the app.')
+    this.name = 'OutdatedClientError'
+  }
+}
+
 /** A sign-in or sign-out failure, e.g. wrong credentials. */
 export class AuthenticationError extends UserFacingError {
   constructor(message: string) {

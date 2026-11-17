@@ -23,8 +23,11 @@ export interface TermLocation {
 
 /** A file with the numbers shown in its folder and in delete confirmations. */
 export interface FileSummary extends VocabFile {
+  /** Every term of the file, learnable or not. */
   termCount: number
-  /** Terms whose progress counts as mastered (`isMastered`). */
+  /** Terms Learn works on (`isLearnable`); the basis of the mastered percentage. */
+  learnableCount: number
+  /** Learnable terms whose progress counts as mastered (`isMastered`). */
   masteredCount: number
 }
 

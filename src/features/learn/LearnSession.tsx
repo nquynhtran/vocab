@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { LearnData } from '../../data/repository.ts'
-import { ConnectionError } from '../../domain/errors.ts'
+import { ConnectionError, NotLearnableError } from '../../domain/errors.ts'
 import type { Question } from '../../domain/learn/question.ts'
 import { toSaved } from '../../domain/learn/resume.ts'
 import { isSessionOver, progressCounts, type LearnSession } from '../../domain/learn/session.ts'
@@ -233,10 +233,10 @@ function Prompt({ question }: { question: Question }) {
       <p className="muted">Meaning</p>
       <h2 className="learn__meaning">
         {question.meaning}
-        {question.partOfSpeech && (
+        {question.partsOfSpeech && (
           <>
             {' '}
-            <PartOfSpeechLabel partOfSpeech={question.partOfSpeech} />
+            <PartOfSpeechLabel partsOfSpeech={question.partsOfSpeech} />
           </>
         )}
       </h2>
@@ -258,14 +258,18 @@ function SaveError({
   // The generic ConnectionError text says to reload, which here would lose the session.
   const detail =
     error instanceof ConnectionError ? 'Check your connection, then retry.' : errorMessage(error)
+  // Retrying the same record cannot succeed for a refused entry (#90): only Stop is offered.
+  const retryable = !(error instanceof NotLearnableError)
   return (
     <div className="save-error" role="alert">
       <p>Your answer could not be saved. {detail}</p>
       <div className="feedback__actions">
-        <button type="button" className="button button--primary" onClick={onRetry} autoFocus>
-          Retry
-        </button>
-        <button type="button" className="button" onClick={onStop}>
+        {retryable && (
+          <button type="button" className="button button--primary" onClick={onRetry} autoFocus>
+            Retry
+          </button>
+        )}
+        <button type="button" className="button" onClick={onStop} autoFocus={!retryable}>
           Stop
         </button>
       </div>

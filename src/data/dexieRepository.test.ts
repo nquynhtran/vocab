@@ -78,33 +78,16 @@ describe('replaceAll', () => {
 })
 
 describe('stored data', () => {
-  it('reads terms stored before partOfSpeech existed (decision #29: no migration)', async () => {
-    const { repo, db } = setup()
-    const { file } = await seedTerm(repo)
-    const oldRow = {
-      id: '00000000-0000-4000-8000-0000000000bb',
-      fileId: file.id,
-      word: 'swim',
-      wordKey: 'swim',
-      meaning: 'bơi',
-      createdAt: '2026-10-22T07:00:00.000Z',
-      updatedAt: '2026-10-22T07:00:00.000Z',
-    }
-    await db.terms.add(oldRow)
-    const { wordKey: _, ...expected } = oldRow
-    expect((await repo.listTerms(file.id)).find((t) => t.id === oldRow.id)).toStrictEqual(expected)
-    expect(TermSchema.parse(expected)).toEqual(expected)
-  })
-
   it('omits unset optional fields instead of storing undefined', async () => {
     const { repo, db } = setup()
     const { file, term } = await seedTerm(repo)
-    const bare = await repo.createTerm(file.id, { word: 'jog', meaning: 'x', partOfSpeech: '' })
+    const bare = await repo.createTerm(file.id, { word: 'jog', meaning: 'x' })
     await repo.updateTerm(term.id, { word: 'run', meaning: 'chạy', example: ' ' })
     for (const id of [bare.id, term.id]) {
       const row = await db.terms.get(id)
-      expect(row).not.toHaveProperty('partOfSpeech')
       expect(row).not.toHaveProperty('example')
+      // The list is always stored (empty when unset), so the shape never varies by term (#90).
+      expect(row?.partsOfSpeech).toEqual([])
     }
   })
 
@@ -114,7 +97,7 @@ describe('stored data', () => {
     const { repo, db } = setup()
     const { term } = await seedTerm(repo)
     await repo.updateTerm(term.id, { word: ' Don’t  ', meaning: ' đi\nbộ ' })
-    await repo.createTerm(term.fileId, { word: 'walk', meaning: 'đi bộ', partOfSpeech: 'verb' })
+    await repo.createTerm(term.fileId, { word: 'walk', meaning: 'đi bộ', partsOfSpeech: ['verb'] })
 
     for (const { nameKey, ...folder } of await db.folders.toArray()) {
       expect(FolderSchema.parse(folder)).toEqual(folder)
@@ -177,9 +160,10 @@ describe('version 2', () => {
     const db = new VocabDb({ indexedDB, IDBKeyRange })
     await db.open()
 
-    expect(db.verno).toBe(5)
+    expect(db.verno).toBe(6)
     expect(await db.folders.toArray()).toMatchObject([folder])
-    expect(await db.terms.toArray()).toStrictEqual([term])
+    // Version 6 upgrades terms to the kind and parts-of-speech list (#90); nothing else changes.
+    expect(await db.terms.toArray()).toStrictEqual([{ ...term, kind: 'word', partsOfSpeech: [] }])
     db.close()
   })
 
@@ -224,7 +208,7 @@ describe('version 3', () => {
     await db.open()
 
     expect(onOldTabVersionChange).toHaveBeenCalledOnce()
-    expect(db.verno).toBe(5)
+    expect(db.verno).toBe(6)
     db.close()
   })
 })
@@ -250,7 +234,7 @@ describe('version 4', () => {
     await db.open()
 
     expect(onOldTabVersionChange).toHaveBeenCalledOnce()
-    expect(db.verno).toBe(5)
+    expect(db.verno).toBe(6)
     db.close()
   })
 })
@@ -274,7 +258,7 @@ describe('version 5', () => {
     await db.open()
 
     expect(onOldTabVersionChange).toHaveBeenCalledOnce()
-    expect(db.verno).toBe(5)
+    expect(db.verno).toBe(6)
     db.close()
   })
 })
